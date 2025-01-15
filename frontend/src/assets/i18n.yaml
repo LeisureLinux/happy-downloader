@@ -1,0 +1,21 @@
+---
+# Check the i18n src/assets/i18n folder.
+#
+# This file maps the language name to its translations file
+# english -> /src/assets/i18n/en_US.yaml
+
+languages:
+  catalan: ca.yaml
+  german: de.yaml
+  english: en_US.yaml
+  spanish: es.yaml
+  french: fr.yaml
+  italian: it_IT.yaml
+  japanese: ja.yaml
+  korean: ko.yaml
+  polish: pl.yaml
+  portuguese-br: pt_BR.yaml
+  russian: ru.yaml
+  swedish: sv.yaml
+  ukrainian: uk.yaml
+  chinese: zh_CN.yaml
