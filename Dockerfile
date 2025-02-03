@@ -1,8 +1,8 @@
 # Node (pnpm) ------------------------------------------------------------------
-FROM node:20-slim AS ui
+FROM node:22-slim AS ui
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN corepack prepare pnpm@10.0.0 --activate && corepack enable
 COPY . /usr/src/yt-dlp-webui
 
 WORKDIR /usr/src/yt-dlp-webui/frontend

@@ -41,10 +41,10 @@ export class RPCClient {
     })
   }
 
-  private argsSanitizer(args: string) {
+  private argsSanitizer(args: string): string[] {
     return args
       .split(' ')
-      .map(a => a.trim().replaceAll("'", '').replaceAll('"', ''))
+      .map(a => a.trim().replaceAll('"', ''))
       .filter(Boolean)
   }
 
