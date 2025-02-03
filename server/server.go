@@ -23,7 +23,7 @@ import (
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/archiver"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/config"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/dbutil"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/handlers"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/filebrowser"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/internal"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/internal/livestream"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/logging"
@@ -32,6 +32,7 @@ import (
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/rest"
 	ytdlpRPC "github.com/marcopiovanello/yt-dlp-web-ui/v3/server/rpc"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/status"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/user"
 
 	_ "modernc.org/sqlite"
 )
@@ -187,11 +188,11 @@ func newServer(c serverConfig) *http.Server {
 		if config.Instance().UseOpenId {
 			r.Use(openid.Middleware)
 		}
-		r.Post("/downloaded", handlers.ListDownloaded)
-		r.Post("/delete", handlers.DeleteFile)
-		r.Get("/d/{id}", handlers.DownloadFile)
-		r.Get("/v/{id}", handlers.SendFile)
-		r.Get("/bulk", handlers.BulkDownload(c.mdb))
+		r.Post("/downloaded", filebrowser.ListDownloaded)
+		r.Post("/delete", filebrowser.DeleteFile)
+		r.Get("/d/{id}", filebrowser.DownloadFile)
+		r.Get("/v/{id}", filebrowser.SendFile)
+		r.Get("/bulk", filebrowser.BulkDownload(c.mdb))
 	})
 
 	// Archive routes
@@ -199,8 +200,8 @@ func newServer(c serverConfig) *http.Server {
 
 	// Authentication routes
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/login", handlers.Login)
-		r.Get("/logout", handlers.Logout)
+		r.Post("/login", user.Login)
+		r.Get("/logout", user.Logout)
 
 		r.Route("/openid", func(r chi.Router) {
 			r.Get("/login", openid.Login)
