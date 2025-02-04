@@ -1,7 +1,5 @@
 import AddIcon from '@mui/icons-material/Add'
 import CloseIcon from '@mui/icons-material/Close'
-import DeleteIcon from '@mui/icons-material/Delete'
-import EditIcon from '@mui/icons-material/Edit'
 import {
   Alert,
   AppBar,
@@ -20,13 +18,13 @@ import {
 import { TransitionProps } from '@mui/material/transitions'
 import { matchW } from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
+import { useAtomValue } from 'jotai'
 import { forwardRef, useEffect, useState, useTransition } from 'react'
 import { serverURL } from '../atoms/settings'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
 import { ffetch } from '../lib/httpClient'
 import { CustomTemplate } from '../types'
-import { useAtomValue } from 'jotai'
 import TemplateTextField from './TemplateTextField'
 
 const Transition = forwardRef(function Transition(

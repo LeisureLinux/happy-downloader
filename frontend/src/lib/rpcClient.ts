@@ -42,10 +42,12 @@ export class RPCClient {
   }
 
   private argsSanitizer(args: string): string[] {
+    const splitOnlyWhitespaces = /[^\s"']+|"([^"]*)"|'([^']*)'/gm
+
     return args
-      .split(' ')
-      .map(a => a.trim().replaceAll('"', ''))
-      .filter(Boolean)
+      .match(splitOnlyWhitespaces)
+      ?.map(a => a.trim())
+      .filter(Boolean) ?? []
   }
 
   private async sendHTTP<T>(req: RPCRequest) {

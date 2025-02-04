@@ -48,6 +48,7 @@ type Process struct {
 	Id         string
 	Url        string
 	Livestream bool
+	AutoRemove bool
 	Params     []string
 	Info       DownloadInfo
 	Progress   DownloadProgress
@@ -253,6 +254,8 @@ func (p *Process) Complete() {
 		slog.String("id", p.getShortId()),
 		slog.String("url", p.Url),
 	)
+
+	memDbEvents <- p
 }
 
 // Kill a process and remove it from the memory

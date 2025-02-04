@@ -1,12 +1,6 @@
 import { tryCatch } from 'fp-ts/TaskEither'
 
-export const ffetch = <T>(url: string, opt?: RequestInit) => tryCatch(
-  () => fetcher<T>(url, opt),
-  (e) => `error while fetching: ${e}`
-)
-
-
-const fetcher = async <T>(url: string, opt?: RequestInit) => {
+async function fetcher<T>(url: string, opt?: RequestInit): Promise<T> {
   const jwt = localStorage.getItem('token')
 
   if (opt && !opt.headers) {
@@ -26,5 +20,11 @@ const fetcher = async <T>(url: string, opt?: RequestInit) => {
   if (!res.ok) {
     throw await res.text()
   }
+
   return res.json() as T
 }
+
+export const ffetch = <T>(url: string, opt?: RequestInit) => tryCatch(
+  () => fetcher<T>(url, opt),
+  (e) => `error while fetching: ${e}`
+)

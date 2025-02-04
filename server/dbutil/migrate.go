@@ -49,6 +49,18 @@ func Migrate(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 
+	if _, err := db.ExecContext(
+		ctx,
+		`CREATE TABLE IF NOT EXISTS subscriptions (
+			id CHAR(36) PRIMARY KEY,
+			url VARCHAR(2048) UNIQUE NOT NULL,
+			params TEXT NOT NULL,
+			cron TEXT
+		)`,
+	); err != nil {
+		return err
+	}
+
 	if lockFileExists() {
 		return nil
 	}

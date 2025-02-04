@@ -28,3 +28,4 @@ frontend/.yarn/install-state.gz
 .db.lock
 livestreams.dat
 .vite/deps
+archive.txt

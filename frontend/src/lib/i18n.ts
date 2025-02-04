@@ -38,7 +38,7 @@ export default class Translator {
   t(key: string): string {
     if (this.current) {
       //@ts-ignore
-      return this.current[key] ?? fallback.keys[key]
+      return this.current[key] ?? fallback.keys[key] ?? 'caption not defined'
     }
     return 'caption not defined'
   }

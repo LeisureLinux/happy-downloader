@@ -3,6 +3,7 @@ package internal
 import (
 	"encoding/gob"
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -10,6 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/config"
 )
+
+var memDbEvents = make(chan *Process)
 
 // In-Memory Thread-Safe Key-Value Storage with optional persistence
 type MemoryDB struct {
@@ -141,6 +144,15 @@ func (m *MemoryDB) Restore(mq *MessageQueue) {
 
 		if restored.Progress.Status != StatusCompleted {
 			mq.Publish(restored)
+		}
+	}
+}
+
+func (m *MemoryDB) EventListener() {
+	for p := range memDbEvents {
+		if p.AutoRemove {
+			slog.Info("compacting MemoryDB", slog.String("id", p.Id))
+			m.Delete(p.Id)
 		}
 	}
 }

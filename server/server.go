@@ -32,6 +32,8 @@ import (
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/rest"
 	ytdlpRPC "github.com/marcopiovanello/yt-dlp-web-ui/v3/server/rpc"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/status"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/subscription"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/subscription/task"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/user"
 
 	_ "modernc.org/sqlite"
@@ -107,6 +109,7 @@ func RunBlocking(rc *RunConfig) {
 	}
 	mq.SetupConsumers()
 	go mdb.Restore(mq)
+	go mdb.EventListener()
 
 	lm := livestream.NewMonitor(mq, mdb)
 	go lm.Schedule()
@@ -150,6 +153,9 @@ func RunBlocking(rc *RunConfig) {
 
 func newServer(c serverConfig) *http.Server {
 	archiver.Register(c.db)
+
+	cronTaskRunner := task.NewCronTaskRunner(c.mq, c.mdb)
+	go cronTaskRunner.Spawner(context.TODO())
 
 	service := ytdlpRPC.Container(c.mdb, c.mq, c.lm)
 	rpc.Register(service)
@@ -225,6 +231,9 @@ func newServer(c serverConfig) *http.Server {
 
 	// Status
 	r.Route("/status", status.ApplyRouter(c.mdb))
+
+	// Subscriptions
+	r.Route("/subscriptions", subscription.Container(c.db, cronTaskRunner).ApplyRouter())
 
 	return &http.Server{Handler: r}
 }

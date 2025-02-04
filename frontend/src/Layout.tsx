@@ -6,6 +6,7 @@ import LiveTvIcon from '@mui/icons-material/LiveTv'
 import Menu from '@mui/icons-material/Menu'
 import SettingsIcon from '@mui/icons-material/Settings'
 import TerminalIcon from '@mui/icons-material/Terminal'
+import UpdateIcon from '@mui/icons-material/Update'
 import { Box, createTheme } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
 import Divider from '@mui/material/Divider'
@@ -138,6 +139,19 @@ export default function Layout() {
                   <CloudDownloadIcon />
                 </ListItemIcon>
                 <ListItemText primary={i18n.t('archiveButtonLabel')} />
+              </ListItemButton>
+            </Link>
+            <Link to={'/subscriptions'} style={
+              {
+                textDecoration: 'none',
+                color: mode === 'dark' ? '#ffffff' : '#000000DE'
+              }
+            }>
+              <ListItemButton>
+                <ListItemIcon>
+                  <UpdateIcon />
+                </ListItemIcon>
+                <ListItemText primary={i18n.t('subscriptionsButtonLabel')} />
               </ListItemButton>
             </Link>
             <Link to={'/monitor'} style={

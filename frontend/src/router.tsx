@@ -10,6 +10,7 @@ const Archive = lazy(() => import('./views/Archive'))
 const Settings = lazy(() => import('./views/Settings'))
 const LiveStream = lazy(() => import('./views/Livestream'))
 const Filebrowser = lazy(() => import('./views/Filebrowser'))
+const Subscriptions = lazy(() => import('./views/Subscriptions'))
 
 const ErrorBoundary = lazy(() => import('./components/ErrorBoundary'))
 
@@ -65,6 +66,19 @@ export const router = createHashRouter([
         element: (
           <Suspense fallback={<CircularProgress />}>
             <Filebrowser />
+          </Suspense >
+        ),
+        errorElement: (
+          <Suspense fallback={<CircularProgress />}>
+            <ErrorBoundary />
+          </Suspense >
+        )
+      },
+      {
+        path: '/subscriptions',
+        element: (
+          <Suspense fallback={<CircularProgress />}>
+            <Subscriptions />
           </Suspense >
         ),
         errorElement: (
