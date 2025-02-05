@@ -65,8 +65,18 @@ keys:
   urlBase: base URL, per supporto a reverse proxy (subdir), default vuoto
   rpcPollingTimeTitle: Intervallo di polling RPC
   rpcPollingTimeDescription: Un intervallo più corto implica un maggior utilizzo di CPU (lato client e server)
-  generalDownloadSettings: 'General Download Settings'
-  deleteCookies: Delete Cookies
-  noFilesFound: 'No Files Found'
-  tableView: 'Table View'
-  deleteSelected: 'Delete selected'
+  generalDownloadSettings: 'Settaggi generali downloads'
+  deleteCookies: Cancella i cookies
+  noFilesFound: Nessun file trovato
+  tableView: Vista tabella
+  deleteSelected: Cancella selezionati
+  subscriptionsButtonLabel: Iscrizioni
+  subscriptionsEmptyLabel: Nessuna iscrizione
+  subscriptionsURLInput: URL canale
+  subscriptionsInfo: |
+    Iscriviti a un particolare canale. Solo l'ultimo video verrà scaricato.
+    Il monitoraggio verrà triggerato/periodicizzato da un'espressione cron 
+    (il default è ogni 5 minuti se lasciato vuoto)
+  cronExpressionLabel: 'Espressione cron'
+  editButtonLabel: 'Modifica'
+  newSubscriptionButton: Nuova iscrizione
