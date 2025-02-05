@@ -25,6 +25,11 @@ docker pull ghcr.io/marcopiovanello/yt-dlp-web-ui:latest
 
 *Keeps the project alive!* 😃
 
+## Community stuff
+Feel free to join :)
+
+[![Discord Banner](https://api.weblutions.com/discord/invite/3Sj9ZZHv/)](https://discord.gg/3Sj9ZZHv)
+
 ## Some screeshots
 ![image](https://github.com/user-attachments/assets/fc43a3fb-ecf9-449d-b5cb-5d5635020c00)
 ![image](https://github.com/user-attachments/assets/3210f6ac-0dd8-403c-b839-3c24ff7d7d00)
