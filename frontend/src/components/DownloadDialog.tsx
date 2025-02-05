@@ -110,7 +110,7 @@ const DownloadDialog: FC<Props> = ({ open, onClose, onDownloadStart }) => {
       if (pickedAudioFormat !== '') codes.push(pickedAudioFormat)
       if (pickedBestFormat !== '') codes.push(pickedBestFormat)
 
-      const downloadTemplate = `${customArgsState} ${cookies}`
+      const downloadTemplate = `${customArgs} ${cookies}`
         .replace(/  +/g, ' ')
         .trim()
 
