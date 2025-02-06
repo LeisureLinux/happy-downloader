@@ -88,10 +88,10 @@ func PlaylistDetect(req DownloadRequest, mq *MessageQueue, db *MemoryDB) error {
 
 			proc.Info.URL = meta.URL
 
-			time.Sleep(time.Millisecond)
-
 			db.Set(proc)
 			mq.Publish(proc)
+
+			proc.Info.CreatedAt = meta.CreatedAt
 		}
 
 		return nil
