@@ -7,9 +7,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
+	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/archive"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/config"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/internal"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v3/server/subscription/domain"
@@ -48,11 +48,6 @@ func NewCronTaskRunner(mq *internal.MessageQueue, db *internal.MemoryDB) TaskRun
 		running: make(map[string]*monitorTask),
 	}
 }
-
-const (
-	commandTemplate    = "-I1 --flat-playlist --print webpage_url $1"
-	getVideoIdTemplate = "--print \"%(extractor)s %(id)s\" $1"
-)
 
 var argsSplitterRe = regexp.MustCompile(`(?mi)[^\s"']+|"([^"]*)"|'([^']*)'`)
 
@@ -103,21 +98,21 @@ func (t *CronTaskRunner) StopTask(id string) error {
 	return nil
 }
 
-// Notify on a channel when a fetcher has completed
+// Start a fetcher and notify on a channel when a fetcher has completed
 func (t *CronTaskRunner) doFetch(ctx context.Context, req *monitorTask) <-chan struct{} {
-	events := make(chan struct{})
+	completed := make(chan struct{})
 
 	// generator func
 	go func() {
 		for {
 			sleepFor := t.fetcher(ctx, req)
-			events <- struct{}{}
+			completed <- struct{}{}
 
 			time.Sleep(sleepFor)
 		}
 	}()
 
-	return events
+	return completed
 }
 
 // Perform the retrieval of the latest video of the channel.
@@ -125,12 +120,15 @@ func (t *CronTaskRunner) doFetch(ctx context.Context, req *monitorTask) <-chan s
 func (t *CronTaskRunner) fetcher(ctx context.Context, req *monitorTask) time.Duration {
 	slog.Info("fetching latest video for channel", slog.String("channel", req.Subscription.URL))
 
-	fetcherParams := strings.Split(strings.Replace(commandTemplate, "$1", req.Subscription.URL, 1), " ")
+	nextSchedule := time.Until(req.Schedule.Next(time.Now()))
 
 	cmd := exec.CommandContext(
 		ctx,
 		config.Instance().DownloaderPath,
-		fetcherParams...,
+		"-I1",
+		"--flat-playlist",
+		"--print", "webpage_url",
+		req.Subscription.URL,
 	)
 
 	stdout, err := cmd.Output()
@@ -139,10 +137,16 @@ func (t *CronTaskRunner) fetcher(ctx context.Context, req *monitorTask) time.Dur
 		return time.Duration(0)
 	}
 
-	latestChannelURL := string(bytes.Trim(stdout, "\n"))
+	latestVideoURL := string(bytes.Trim(stdout, "\n"))
+
+	// if the download exists there's not point in sending it into the message queue.
+	exists, err := archive.DownloadExists(ctx, latestVideoURL)
+	if exists && err == nil {
+		return nextSchedule
+	}
 
 	p := &internal.Process{
-		Url: latestChannelURL,
+		Url: latestVideoURL,
 		Params: append(
 			argsSplitterRe.FindAllString(req.Subscription.Params, 1),
 			[]string{
@@ -153,10 +157,8 @@ func (t *CronTaskRunner) fetcher(ctx context.Context, req *monitorTask) time.Dur
 		AutoRemove: true,
 	}
 
-	t.db.Set(p)
-	t.mq.Publish(p)
-
-	nextSchedule := time.Until(req.Schedule.Next(time.Now()))
+	t.db.Set(p)     // give it an id
+	t.mq.Publish(p) // send it to the message queue waiting to be processed
 
 	slog.Info(
 		"cron task runner next schedule",
