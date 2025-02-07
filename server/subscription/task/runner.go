@@ -93,8 +93,11 @@ func (t *CronTaskRunner) Spawner(ctx context.Context) {
 
 // Stop a currently scheduled job
 func (t *CronTaskRunner) StopTask(id string) error {
-	t.running[id].Done <- struct{}{}
-	delete(t.running, id)
+	task := t.running[id]
+	if task != nil {
+		t.running[id].Done <- struct{}{}
+		delete(t.running, id)
+	}
 	return nil
 }
 
