@@ -8,3 +8,5 @@ type Metadata struct {
 	PlaylistTitle string                `json:"title"`
 	Type          string                `json:"_type"`
 }
+
+func (m *Metadata) IsPlaylist() bool { return m.Type == "playlist" }

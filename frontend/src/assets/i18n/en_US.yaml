@@ -80,3 +80,4 @@ keys:
   cronExpressionLabel: 'Cron expression'
   editButtonLabel: 'Edit'
   newSubscriptionButton: New subscription
+  clearCompletedButton: 'Clear completed'

@@ -3,6 +3,7 @@
 result/
 result
 dist
+.pnpm-store/
 .pnpm-debug.log
 node_modules
 .env
@@ -20,9 +21,11 @@ cookies.txt
 __debug*
 ui/
 .idea
+.idea/
 frontend/.pnp.cjs
 frontend/.pnp.loader.mjs
 frontend/.yarn/install-state.gz
 .db.lock
 livestreams.dat
-.git
+.vite/deps
+archive.txt

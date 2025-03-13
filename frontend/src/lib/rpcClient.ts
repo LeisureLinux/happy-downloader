@@ -200,4 +200,11 @@ export class RPCClient {
       params: []
     })
   }
+
+  public clearCompleted() {
+    return this.sendHTTP({
+      method: 'Service.ClearCompleted',
+      params: []
+    })
+  }
 }

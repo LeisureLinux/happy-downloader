@@ -50,7 +50,7 @@ func PlaylistDetect(req DownloadRequest, mq *MessageQueue, db *MemoryDB) error {
 		return errors.New("probably not a valid URL")
 	}
 
-	if m.Type == "playlist" {
+	if m.IsPlaylist() {
 		entries := slices.CompactFunc(slices.Compact(m.Entries), func(a common.DownloadInfo, b common.DownloadInfo) bool {
 			return a.URL == b.URL
 		})

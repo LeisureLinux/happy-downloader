@@ -2,6 +2,7 @@ package internal
 
 import (
 	"container/heap"
+	"log/slog"
 )
 
 type LoadBalancer struct {
@@ -9,7 +10,29 @@ type LoadBalancer struct {
 	done chan *Worker
 }
 
-func (b *LoadBalancer) Balance(work chan Process) {
+func NewLoadBalancer(numWorker int) *LoadBalancer {
+	var pool Pool
+
+	doneChan := make(chan *Worker)
+
+	for i := range numWorker {
+		w := &Worker{
+			requests: make(chan *Process, 1),
+			index:    i,
+		}
+		go w.Work(doneChan)
+		pool = append(pool, w)
+
+		slog.Info("spawned worker", slog.Int("index", i))
+	}
+
+	return &LoadBalancer{
+		pool: pool,
+		done: doneChan,
+	}
+}
+
+func (b *LoadBalancer) Balance(work chan *Process) {
 	for {
 		select {
 		case req := <-work:
@@ -20,7 +43,7 @@ func (b *LoadBalancer) Balance(work chan Process) {
 	}
 }
 
-func (b *LoadBalancer) dispatch(req Process) {
+func (b *LoadBalancer) dispatch(req *Process) {
 	w := heap.Pop(&b.pool).(*Worker)
 	w.requests <- req
 	w.pending++

@@ -183,6 +183,7 @@ func (s *Service) KillAll(args NoArgs, killed *string) error {
 		}
 
 		slog.Info("succesfully killed process", slog.String("id", proc.Id))
+		proc = nil // gc helper
 	}
 
 	return nil
@@ -192,6 +193,35 @@ func (s *Service) KillAll(args NoArgs, killed *string) error {
 func (s *Service) Clear(args string, killed *string) error {
 	slog.Info("Clearing process with id", slog.String("id", args))
 	s.db.Delete(args)
+	return nil
+}
+
+// Removes completed processes
+func (s *Service) ClearCompleted(cleared *string) error {
+	var (
+		keys       = s.db.Keys()
+		removeFunc = func(p *internal.Process) error {
+			defer s.db.Delete(p.Id)
+
+			if p.Progress.Status != internal.StatusCompleted {
+				return nil
+			}
+
+			return p.Kill()
+		}
+	)
+
+	for _, key := range *keys {
+		proc, err := s.db.Get(key)
+		if err != nil {
+			return err
+		}
+
+		if err := removeFunc(proc); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
