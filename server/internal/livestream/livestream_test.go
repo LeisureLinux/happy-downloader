@@ -9,15 +9,17 @@ import (
 )
 
 func setupTest() {
-	config.Instance().DownloaderPath = "yt-dlp"
+	config.Instance().DownloaderPath = "build/yt-dlp"
 }
+
+const URL = "https://www.youtube.com/watch?v=pwoAyLGOysU"
 
 func TestLivestream(t *testing.T) {
 	setupTest()
 
 	done := make(chan *LiveStream)
 
-	ls := New("https://www.youtube.com/watch?v=LSm1daKezcE", done, &internal.MessageQueue{}, &internal.MemoryDB{})
+	ls := New(URL, done, &internal.MessageQueue{}, &internal.MemoryDB{})
 	go ls.Start()
 
 	time.AfterFunc(time.Second*20, func() {

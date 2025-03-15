@@ -141,26 +141,13 @@ func (l *LiveStream) monitorStartTime(r io.Reader) {
 		}
 	}
 
-	const TRIES = 5
-	/*
-		if it's waiting a livestream the 5th line will indicate the time to live
-		its a dumb and not robust method.
+	scanner.Scan()
 
-		example:
-			[youtube] Extracting URL: https://www.youtube.com/watch?v=IQVbGfVVjgY
-			[youtube] IQVbGfVVjgY: Downloading webpage
-			[youtube] IQVbGfVVjgY: Downloading ios player API JSON
-			[youtube] IQVbGfVVjgY: Downloading web creator player API JSON
-			WARNING: [youtube] This live event will begin in 27 minutes.       <- STDERR, ignore
-			[wait] Waiting for 00:27:15 - Press Ctrl+C to try now              <- 5th line
-	*/
-	for range TRIES {
+	for !strings.Contains(scanner.Text(), "Waiting for") {
 		scanner.Scan()
-
-		if strings.Contains(scanner.Text(), "Waiting for") {
-			waitTimeScanner()
-		}
 	}
+
+	waitTimeScanner()
 }
 
 func (l *LiveStream) WaitTime() <-chan time.Duration {
