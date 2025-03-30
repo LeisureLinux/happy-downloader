@@ -141,12 +141,16 @@ export const serverURL = atom((get) =>
 
 export const rpcWebSocketEndpoint = atom((get) => {
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${proto}//${get(serverAddressAndPortState)}/rpc/ws`
+  const sap = get(serverAddressAndPortState)
+
+  return `${proto}//${sap.endsWith('/') ? sap.slice(0, -1) : sap}/rpc/ws`
 })
 
 export const rpcHTTPEndpoint = atom((get) => {
   const proto = window.location.protocol
-  return `${proto}//${get(serverAddressAndPortState)}/rpc/http`
+  const sap = get(serverAddressAndPortState)
+
+  return `${proto}//${sap.endsWith('/') ? sap.slice(0, -1) : sap}/rpc/http`
 })
 
 export const serverSideCookiesState = atom<Promise<string>>(async (get) => await pipe(
