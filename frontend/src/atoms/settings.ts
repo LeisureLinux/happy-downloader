@@ -119,28 +119,25 @@ export const appTitleState = atomWithStorage(
 )
 
 export const serverAddressAndPortState = atom((get) => {
-  let retval = ''
-
   if (get(servedFromReverseProxySubDirState)) {
-    retval = `${get(serverAddressState)}/${get(servedFromReverseProxySubDirState)}/`
-      .replaceAll('"', '') // TODO: atomWithStorage put extra double quotes on strings
+    return `${get(serverAddressState)}/${get(servedFromReverseProxySubDirState)}/`
+      .replaceAll('"', '')    // XXX: atomWithStorage uses JSON.stringify to serialize
+      .replaceAll('//', '/')  // which puts extra double quotes.
   }
   if (get(servedFromReverseProxyState)) {
-    retval = `${get(serverAddressState)}`
+    return `${get(serverAddressState)}`
       .replaceAll('"', '')
   }
-  retval = `${get(serverAddressState)}:${get(serverPortState)}`
+
+  const sap = `${get(serverAddressState)}:${get(serverPortState)}`
     .replaceAll('"', '')
 
-  return retval.endsWith('/') ? retval.slice(0, -1) : retval
+  return sap.endsWith('/') ? sap.slice(0, -1) : sap
 })
 
-export const serverURL = atom((get) => {
-  const _serverURL = `${window.location.protocol}//${get(serverAddressAndPortState)}`
-  return _serverURL.endsWith('/')
-    ? _serverURL.slice(0, -1)
-    : _serverURL
-})
+export const serverURL = atom((get) =>
+  `${window.location.protocol}//${get(serverAddressAndPortState)}`
+)
 
 export const rpcWebSocketEndpoint = atom((get) => {
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
