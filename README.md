@@ -28,7 +28,7 @@ docker pull ghcr.io/marcopiovanello/yt-dlp-web-ui:latest
 ## Community stuff
 Feel free to join :)
 
-[Discord](https://discord.gg/Cu8wB9FM)
+[Discord](https://discord.gg/GZAX5FfGzE)
 
 ## Some screeshots
 ![image](https://github.com/user-attachments/assets/fc43a3fb-ecf9-449d-b5cb-5d5635020c00)
