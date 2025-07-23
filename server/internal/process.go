@@ -100,6 +100,7 @@ func (p *Process) Start() {
 		templateReplacer.Replace(downloadTemplate),
 		"--progress-template",
 		templateReplacer.Replace(postprocessTemplate),
+		"--no-exec",
 	}
 
 	// if user asked to manually override the output path...
