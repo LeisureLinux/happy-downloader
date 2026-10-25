@@ -93,19 +93,19 @@ export default function Login() {
           </Title>
           <Title fontWeight={'500'} fontSize={16} color={'gray'}>
             To configure authentication check the&nbsp;
-            <a href='https://github.com/marcopiovanello/yt-dlp-web-ui/wiki/Authentication-methods'>wiki</a>.
+            <a href='https://github.com/LeisureLinux/happy-downloader/wiki/Authentication-methods'>wiki</a>.
           </Title>
           <TextField
             label="Username"
             type="text"
-            autoComplete="yt-dlp-webui-username"
+            autoComplete="happy-downloader-username"
             error={formHasError}
             onChange={e => setUsername(e.currentTarget.value)}
           />
           <TextField
             label="Password"
             type="password"
-            autoComplete="yt-dlp-webui-password"
+            autoComplete="happy-downloader-password"
             error={formHasError}
             onChange={e => setPassword(e.currentTarget.value)}
           />

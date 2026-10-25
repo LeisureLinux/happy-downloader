@@ -12,9 +12,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/openid"
+	"github.com/LeisureLinux/happy-downloader/v4/server"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
 
 	"github.com/spf13/viper"
 )
@@ -43,7 +43,7 @@ func main() {
 	v.SetDefault("paths.download_path", ".")
 	v.SetDefault("paths.downloader_path", "yt-dlp")
 	v.SetDefault("paths.local_database_path", ".")
-	v.SetDefault("logging.log_path", "yt-dlp-webui.log")
+	v.SetDefault("logging.log_path", "happy-downloader.log")
 	v.SetDefault("logging.enable_file_logging", false)
 	v.SetDefault("authentication.require_auth", false)
 

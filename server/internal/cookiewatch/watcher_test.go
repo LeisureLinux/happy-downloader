@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/cookies"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
 )
 
 const jsonExport = `[

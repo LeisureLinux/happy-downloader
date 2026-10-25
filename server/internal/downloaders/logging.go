@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 )
 
 type LogConsumer interface {

@@ -11,7 +11,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/google/uuid"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"golang.org/x/oauth2"
 )
 
@@ -137,7 +137,7 @@ func SingIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("Login succesfully, you may now close this window and refresh yt-dlp-webui."))
+	w.Write([]byte("Login succesfully, you may now close this window and refresh happy-downloader."))
 }
 
 func Refresh(w http.ResponseWriter, r *http.Request) {

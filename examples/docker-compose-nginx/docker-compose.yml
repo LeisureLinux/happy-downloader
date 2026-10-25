@@ -1,6 +1,6 @@
 services:
   app:
-    image: marcobaobao/yt-dlp-webui
+    image: ghcr.io/leisurelinux/happy-downloader
     volumes:
       - ./downloads:/downloads
     restart: unless-stopped

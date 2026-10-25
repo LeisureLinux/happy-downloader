@@ -2,12 +2,12 @@ package rpc
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/livestream"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/queue"
-	middlewares "github.com/marcopiovanello/yt-dlp-web-ui/v4/server/middleware"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/openid"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/livestream"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
+	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
+	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
 )
 
 // Dependency injection container.

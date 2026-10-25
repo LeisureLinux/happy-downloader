@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 )
 
 var lockFilePath = filepath.Join(config.Instance().Dir(), ".db.lock")

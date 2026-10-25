@@ -3,7 +3,7 @@ package updater
 import (
 	"os/exec"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 )
 
 // Update using the builtin function of yt-dlp

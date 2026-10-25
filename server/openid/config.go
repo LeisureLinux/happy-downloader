@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"golang.org/x/oauth2"
 )
 

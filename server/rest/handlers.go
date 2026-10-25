@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 )
 
 type Handler struct {

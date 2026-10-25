@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"golang.org/x/sys/unix"
 )
 

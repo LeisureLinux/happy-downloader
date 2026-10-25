@@ -9,9 +9,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/cookies"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/profiles"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/profiles"
 )
 
 // SanitizeRuntime qualifies a bare runtime path with a "node:" prefix.

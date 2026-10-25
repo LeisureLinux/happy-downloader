@@ -4,15 +4,15 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/formats"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/livestream"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/queue"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/playlist"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/sys"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/updater"
+	"github.com/LeisureLinux/happy-downloader/v4/server/formats"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/livestream"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
+	"github.com/LeisureLinux/happy-downloader/v4/server/playlist"
+	"github.com/LeisureLinux/happy-downloader/v4/server/sys"
+	"github.com/LeisureLinux/happy-downloader/v4/server/updater"
 )
 
 type Service struct {

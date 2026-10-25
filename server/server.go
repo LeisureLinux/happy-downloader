@@ -17,25 +17,25 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/filebrowser"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/cookiewatch"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/livestream"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/pipeline"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/profiles"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/queue"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/logging"
-	middlewares "github.com/marcopiovanello/yt-dlp-web-ui/v4/server/middleware"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/openid"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/rest"
-	ytdlpRPC "github.com/marcopiovanello/yt-dlp-web-ui/v4/server/rpc"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/status"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/subscription"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/subscription/task"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/twitch"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/user"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/filebrowser"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookiewatch"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/livestream"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/pipeline"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/profiles"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
+	"github.com/LeisureLinux/happy-downloader/v4/server/logging"
+	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
+	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
+	"github.com/LeisureLinux/happy-downloader/v4/server/rest"
+	ytdlpRPC "github.com/LeisureLinux/happy-downloader/v4/server/rpc"
+	"github.com/LeisureLinux/happy-downloader/v4/server/status"
+	"github.com/LeisureLinux/happy-downloader/v4/server/subscription"
+	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/task"
+	"github.com/LeisureLinux/happy-downloader/v4/server/twitch"
+	"github.com/LeisureLinux/happy-downloader/v4/server/user"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -203,7 +203,7 @@ func Run(ctx context.Context, rc *RunConfig) error {
 		return err
 	}
 
-	slog.Info("yt-dlp-webui started", slog.String("address", address))
+	slog.Info("happy-downloader started", slog.String("address", address))
 
 	if err := srv.Serve(listener); err != nil {
 		slog.Warn("http server stopped", slog.String("err", err.Error()))

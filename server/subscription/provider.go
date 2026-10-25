@@ -3,11 +3,11 @@ package subscription
 import (
 	"sync"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/subscription/domain"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/subscription/repository"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/subscription/rest"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/subscription/service"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/subscription/task"
+	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/domain"
+	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/repository"
+	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/rest"
+	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/service"
+	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/task"
 
 	bolt "go.etcd.io/bbolt"
 )

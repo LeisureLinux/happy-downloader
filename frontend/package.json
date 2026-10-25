@@ -1,13 +1,13 @@
 {
-  "name": "yt-dlp-webui",
+  "name": "happy-downloader",
   "version": "3.2.6",
-  "description": "Frontend compontent of yt-dlp-webui",
+  "description": "Frontend component of Happy Downloader",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build"
   },
   "type": "module",
-  "author": "marcopiovanello",
+  "author": "LeisureLinux",
   "license": "GPL-3.0-only",
   "private": true,
   "dependencies": {

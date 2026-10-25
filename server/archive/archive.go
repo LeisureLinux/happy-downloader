@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/archive/domain"
+	"github.com/LeisureLinux/happy-downloader/v4/server/archive/domain"
 )
 
 // alias type

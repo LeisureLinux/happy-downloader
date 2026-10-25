@@ -57,7 +57,7 @@ jobs:
         with:
           images: |
            ghcr.io/${{ github.repository }}
-           docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/yt-dlp-webui
+           docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/happy-downloader
           tags: |
             type=raw,value=v4
 
@@ -79,4 +79,4 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: |
           cosign sign ghcr.io/${{ github.repository }}@${{ steps.build-and-push.outputs.digest }}
-          cosign sign docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/yt-dlp-webui@${{ steps.build-and-push.outputs.digest }}
+          cosign sign docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/happy-downloader@${{ steps.build-and-push.outputs.digest }}

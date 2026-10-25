@@ -114,4 +114,4 @@ keys:
   clearCompletedButton: 'Clear completed'
   twitchIntegrationInfo: |
     To enable monitoring Twitch streams follow this wiki page.
-    https://github.com/marcopiovanello/yt-dlp-web-ui/wiki/Twitch-integration
+    https://github.com/LeisureLinux/happy-downloader/wiki/Twitch-integration

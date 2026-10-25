@@ -1,15 +1,56 @@
-> [!CAUTION]
-> Unsupervised AI code is prohibited in this repo.
+# Happy Downloader
 
-> [!NOTE]  
-> Read before updating to v4
-> Server v4 migration guide https://github.com/marcopiovanello/yt-dlp-web-ui/wiki/Migrate-to-v4
+A web UI for [yt-dlp](https://github.com/yt-dlp/yt-dlp) built to run on a
+headless host: point it at a cookie export, let it watch the file, and add
+sites from the browser without restarting anything.
 
-> [!NOTE]  
-> A poll is up to decide the future of yt-dlp-web-ui frontend! If you're interested you can take part.  
-> https://github.com/marcopiovanello/yt-dlp-web-ui/discussions/223
+Forked from
+[LeisureLinux/happy-downloader](https://github.com/LeisureLinux/happy-downloader)
+at v4.0.0. Upstream is archived; this fork carries the changes below.
 
-# yt-dlp Web UI
+## What this fork adds
+
+- **Site profiles.** Arguments are composed from an editable table keyed by
+  hostname, and every invocation passes `--ignore-config`, so nothing from the
+  host's yt-dlp config affects a download. Adding a site is a new row.
+- **Cookies from a path.** `paths.cookie_path` accepts a browser extension's
+  JSON export or an existing cookies.txt; the format is detected and converted
+  with `httpOnly` preserved. The file is watched, so replacing it refreshes the
+  session with no restart.
+- **Argument preview.** Settings shows the exact command line a URL resolves
+  to, defaults included.
+- **Version reporting.** The header carries the version and build timestamp
+  injected at build time.
+
+## Install
+
+Static binaries, no runtime dependencies. yt-dlp, ffmpeg and a JS runtime are
+still needed on the host.
+
+```sh
+docker pull ghcr.io/leisurelinux/happy-downloader:v4
+```
+
+## Configuration
+
+```yaml
+server:
+  host: 0.0.0.0
+  port: 3033
+
+paths:
+  download_path: /data/downloads
+  downloader_path: /usr/bin/yt-dlp
+  local_database_path: /data/state
+  js_runtime_path: /usr/bin/node
+  # Optional: a cookie export to convert and watch. JSON or Netscape.
+  cookie_path: /data/youtube-cookie.json
+
+ytdlp:
+  # Optional. Per-site overrides live in the UI.
+  pot_base_url: http://127.0.0.1:4416
+  proxy: http://127.0.0.1:7890
+```
 
 A not so terrible web ui for yt-dlp. 
 
@@ -17,17 +58,17 @@ High performance extendeable web ui and RPC server for yt-dlp with low impact on
 
 Created for the only purpose of *fetching* videos from my server/nas and monitor upcoming livestreams. 
 
-**Docker images are available on [Docker Hub](https://hub.docker.com/r/marcobaobao/yt-dlp-webui) or [ghcr.io](https://github.com/marcopiovanello/yt-dlp-web-ui/pkgs/container/yt-dlp-web-ui)**.
+**Docker images are available on [Docker Hub](https://hub.docker.com/r/leisurelinux/happy-downloader) or [ghcr.io](https://github.com/LeisureLinux/happy-downloader/pkgs/container/yt-dlp-web-ui)**.
 
 ```sh
-docker pull marcobaobao/yt-dlp-webui:v4
+docker pull leisurelinux/happy-downloader:v4
 ```
 ```sh
 # latest stable
-docker pull ghcr.io/marcopiovanello/yt-dlp-web-ui:v4
+docker pull ghcr.io/LeisureLinux/happy-downloader:v4
 ```
 
-## Donate to yt-dlp-webui development
+## Donate to happy-downloader development
 [PayPal](https://paypal.me/marcofw)
 
 *Keeps the project alive!* 😃
@@ -43,7 +84,7 @@ Feel free to join :)
 ![image](https://github.com/user-attachments/assets/16450a40-cda6-4c8b-9d20-8ec36282f6ed)
 
 ## Video showcase
-[app.webm](https://github.com/marcopiovanello/yt-dlp-web-ui/assets/35533749/91545bc4-233d-4dde-8504-27422cb26964)
+[app.webm](https://github.com/LeisureLinux/happy-downloader/assets/35533749/91545bc4-233d-4dde-8504-27422cb26964)
 
 ## Settings
 
@@ -64,22 +105,22 @@ This feature is disabled by default as this intended to be used to retrieve the 
 
 To enable it just go to the settings page and enable the **Enable video/audio formats selection** flag!
 
-## [Docker](https://github.com/marcopiovanello/yt-dlp-web-ui/pkgs/container/yt-dlp-web-ui) run
+## [Docker](https://github.com/LeisureLinux/happy-downloader/pkgs/container/yt-dlp-web-ui) run
 ```sh
-docker pull marcobaobao/yt-dlp-webui
-docker run -d -p 3033:3033 -v <your dir>:/downloads marcobaobao/yt-dlp-webui
+docker pull leisurelinux/happy-downloader
+docker run -d -p 3033:3033 -v <your dir>:/downloads leisurelinux/happy-downloader
 ```
 
 Or with docker but building the container manually.
 
 ```sh
-docker build -t yt-dlp-webui .
-docker run -d -p 3033:3033 -v <your dir>:/downloads yt-dlp-webui
+docker build -t happy-downloader .
+docker run -d -p 3033:3033 -v <your dir>:/downloads happy-downloader
 
 docker run -d -p 3033:3033 \
   -v <your dir>:/downloads \  
   -v <your dir>:/config \ # optional
-  yt-dlp-webui
+  happy-downloader
 
 ```
 
@@ -90,7 +131,7 @@ docker run -d \
     -e JWT_SECRET randomsecret
     -v /path/to/downloads:/downloads \
     -v /path/for/config:/config \ # optional
-    marcobaobao/yt-dlp-webui \
+    leisurelinux/happy-downloader \
     --auth \
     --user your_username \
     --pass your_pass
@@ -104,15 +145,15 @@ docker run -d \
     -p 3033:3033 \
     -e JWT_SECRET randomsecret
     -v /path/to/downloads:/downloads \
-    marcobaobao/yt-dlp-webui \
+    leisurelinux/happy-downloader \
     --qs 2
 ```
 
 ### Docker Compose
 ```yaml
 services:
-  yt-dlp-webui:
-    image: marcobaobao/yt-dlp-webui
+  happy-downloader:
+    image: leisurelinux/happy-downloader
     ports:
       - 3033:3033
     volumes:
@@ -126,31 +167,31 @@ services:
 
 | Cloud Provider | Deploy Button |
 |----------------|---------------|
-| AWS | <a href="https://deploystack.io/deploy/marcopiovanello-yt-dlp-web-ui?provider=aws&language=cfn"><img src="https://raw.githubusercontent.com/deploystackio/deploy-templates/refs/heads/main/.assets/img/aws.svg" height="38"></a> |
-| DigitalOcean | <a href="https://deploystack.io/deploy/marcopiovanello-yt-dlp-web-ui?provider=do&language=dop"><img src="https://raw.githubusercontent.com/deploystackio/deploy-templates/refs/heads/main/.assets/img/do.svg" height="38"></a> |
-| Render | <a href="https://deploystack.io/deploy/marcopiovanello-yt-dlp-web-ui?provider=rnd&language=rnd"><img src="https://raw.githubusercontent.com/deploystackio/deploy-templates/refs/heads/main/.assets/img/rnd.svg" height="38"></a> |
+| AWS | <a href="https://deploystack.io/deploy/LeisureLinux-happy-downloader?provider=aws&language=cfn"><img src="https://raw.githubusercontent.com/deploystackio/deploy-templates/refs/heads/main/.assets/img/aws.svg" height="38"></a> |
+| DigitalOcean | <a href="https://deploystack.io/deploy/LeisureLinux-happy-downloader?provider=do&language=dop"><img src="https://raw.githubusercontent.com/deploystackio/deploy-templates/refs/heads/main/.assets/img/do.svg" height="38"></a> |
+| Render | <a href="https://deploystack.io/deploy/LeisureLinux-happy-downloader?provider=rnd&language=rnd"><img src="https://raw.githubusercontent.com/deploystackio/deploy-templates/refs/heads/main/.assets/img/rnd.svg" height="38"></a> |
 
-<sub>Generated by <a href="https://deploystack.io/c/marcopiovanello-yt-dlp-web-ui" target="_blank">DeployStack.io</a></sub>
+<sub>Generated by <a href="https://deploystack.io/c/LeisureLinux-happy-downloader" target="_blank">DeployStack.io</a></sub>
 
-## [Prebuilt binaries](https://github.com/marcopiovanello/yt-dlp-web-ui/releases) installation
+## [Prebuilt binaries](https://github.com/LeisureLinux/happy-downloader/releases) installation
 
 ```sh
 # download the latest release from the releases page
-mv yt-dlp-webui_linux-[your_system_arch] /usr/local/bin/yt-dlp-webui
+mv happy-downloader_linux-[your_system_arch] /usr/local/bin/happy-downloader
 
 # /home/user/downloads as an example and yt-dlp in $PATH
-yt-dlp-webui --out /home/user/downloads
+happy-downloader --out /home/user/downloads
 
 # specifying yt-dlp path
-yt-dlp-webui --out /home/user/downloads --driver /opt/soemdir/yt-dlp
+happy-downloader --out /home/user/downloads --driver /opt/soemdir/yt-dlp
 
 # specifying using a config file
-yt-dlp-webui --conf /home/user/.config/yt-dlp-webui.conf
+happy-downloader --conf /home/user/.config/happy-downloader.conf
 ```
 
 ### Arguments
 ```sh
-Usage yt-dlp-webui:
+Usage happy-downloader:
   -auth
         Enable RPC authentication
   -conf string
@@ -164,7 +205,7 @@ Usage yt-dlp-webui:
   -host string
         Host where server will listen at (default "0.0.0.0")
   -lf string
-        set log file location (default "yt-dlp-webui.log")
+        set log file location (default "happy-downloader.log")
   -out string
         Where files will be saved (default ".")
   -pass string
@@ -182,7 +223,7 @@ Usage yt-dlp-webui:
 ```
 
 ### Config file
-By running `yt-dlp-webui` in standalone mode you have the ability to also specify a config file.
+By running `happy-downloader` in standalone mode you have the ability to also specify a config file.
 The config file **will overwrite what have been passed as cli argument**.
 With Docker, inside the mounted `/conf` volume inside there must be a file named `config.yml`.
 
@@ -227,47 +268,47 @@ queue_size: 4 # min. 2
 ```
 
 ### Systemd integration
-By defining a service file in `/etc/systemd/system/yt-dlp-webui.service` yt-dlp webui can be launched as in background.
+By defining a service file in `/etc/systemd/system/happy-downloader.service` yt-dlp webui can be launched as in background.
 
 ```
 [Unit]
-Description=yt-dlp-webui service file
+Description=happy-downloader service file
 After=network.target
 
 [Service]
 User=some_user
-ExecStart=/usr/local/bin/yt-dlp-webui --out /mnt/share/downloads --port 8100
+ExecStart=/usr/local/bin/happy-downloader --out /mnt/share/downloads --port 8100
 
 [Install]
 WantedBy=multi-user.target
 ```
 
 ```shell
-systemctl enable yt-dlp-webui
-systemctl start yt-dlp-webui
+systemctl enable happy-downloader
+systemctl start happy-downloader
 ```
-It could be that yt-dlp-webui works correctly when started manually from the console, but with systemd, it does not see the yt-dlp executable, or has issues writing to the database file. One way to fix these issues could be as follows:
+It could be that happy-downloader works correctly when started manually from the console, but with systemd, it does not see the yt-dlp executable, or has issues writing to the database file. One way to fix these issues could be as follows:
 ```shell
 cd
-mkdir yt-dlp-webui-workingdir
+mkdir happy-downloader-workingdir
 # optionally move the already existing database file there:
-mv local.db yt-dlp-webui-workingdir
-nano yt-dlp-webui-workingdir/my.conf
+mv local.db happy-downloader-workingdir
+nano happy-downloader-workingdir/my.conf
 ```
 The config file format is described above; make sure to include the `downloaderPath` setting (the path can possibly be found by running `which yt-dlp`). For example, one could have:
 ```
 downloadPath: /stuff/media
 downloaderPath: /home/your_user/.local/bin/yt-dlp
-log_path: /home/your_user/yt-dlp-webui-workingdir
-session_file_path: /home/your_user/yt-dlp-webui-workingdir
+log_path: /home/your_user/happy-downloader-workingdir
+session_file_path: /home/your_user/happy-downloader-workingdir
 ```
-Adjust the Service section in the `/etc/systemd/system/yt-dlp-webui.service` file as follows:
+Adjust the Service section in the `/etc/systemd/system/happy-downloader.service` file as follows:
 ```
 [Service]
 User=your_user
 Group=your_user
-WorkingDirectory=/home/your_user/yt-dlp-webui-workingdir
-ExecStart=/usr/local/bin/yt-dlp-webui --conf /home/your_user/yt-dlp-webui-workingdir/my.conf
+WorkingDirectory=/home/your_user/happy-downloader-workingdir
+ExecStart=/usr/local/bin/happy-downloader --conf /home/your_user/happy-downloader-workingdir/my.conf
 ```
 
 ## Manual installation
@@ -284,7 +325,7 @@ Navigate to `/openapi` to see the related swagger.
 You dont'like the Material feel?
 Want to build your own frontend? We got you covered 🤠
 
-`yt-dlp-webui` now exposes a nice **JSON-RPC 1.0** interface through Websockets and HTTP-POST
+`happy-downloader` now exposes a nice **JSON-RPC 1.0** interface through Websockets and HTTP-POST
 It is **planned** to also expose a **gRPC** server.
 
 For more information open an issue on GitHub and I will provide more info ASAP.
@@ -309,8 +350,8 @@ path/to/my/frontend
 This repo adds support for Nix(OS) in various ways through a `flake-parts` flake. 
 For more info, please refer to the [official documentation](https://nixos.org/learn/).
 
-## What yt-dlp-webui is not
-`yt-dlp-webui` isn't your ordinary website where to download stuff from the internet, so don't try asking for links of where this is hosted. It's a self hosted platform for a Linux NAS.
+## What happy-downloader is not
+`happy-downloader` isn't your ordinary website where to download stuff from the internet, so don't try asking for links of where this is hosted. It's a self hosted platform for a Linux NAS.
 
 ## Troubleshooting
 -   **It says that it isn't connected.**

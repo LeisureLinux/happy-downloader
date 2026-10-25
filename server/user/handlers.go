@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"golang.org/x/crypto/bcrypt"
 )
 
-const TOKEN_COOKIE_NAME = "jwt-yt-dlp-webui"
+const TOKEN_COOKIE_NAME = "jwt-happy-downloader"
 
 type LoginRequest struct {
 	Username string `json:"username"`

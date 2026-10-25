@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/queue"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
 
 	bolt "go.etcd.io/bbolt"
 )

@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/common"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
+	"github.com/LeisureLinux/happy-downloader/v4/server/common"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 )
 
 func DefaultFetcher(url string) (*common.DownloadMetadata, error) {

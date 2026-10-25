@@ -6,10 +6,10 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
-	middlewares "github.com/marcopiovanello/yt-dlp-web-ui/v4/server/middleware"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/openid"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/subscription/domain"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
+	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
+	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/domain"
 )
 
 type RestHandler struct {

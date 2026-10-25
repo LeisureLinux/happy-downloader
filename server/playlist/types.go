@@ -1,6 +1,6 @@
 package playlist
 
-import "github.com/marcopiovanello/yt-dlp-web-ui/v4/server/common"
+import "github.com/LeisureLinux/happy-downloader/v4/server/common"
 
 type Metadata struct {
 	Entries       []common.DownloadMetadata `json:"entries"`

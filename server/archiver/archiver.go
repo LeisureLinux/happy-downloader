@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"log/slog"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/archive"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/archive"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 )
 
 var (

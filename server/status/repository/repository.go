@@ -4,9 +4,9 @@ import (
 	"context"
 	"slices"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/status/domain"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
+	"github.com/LeisureLinux/happy-downloader/v4/server/status/domain"
 )
 
 type Repository struct {

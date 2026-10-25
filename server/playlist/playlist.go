@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/common"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/queue"
+	"github.com/LeisureLinux/happy-downloader/v4/server/common"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
 )
 
 func PlaylistDetect(req internal.DownloadRequest, mq *queue.MessageQueue, db *kv.Store) error {

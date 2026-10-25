@@ -3,7 +3,7 @@ package archive
 import (
 	"database/sql"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/archive/domain"
+	"github.com/LeisureLinux/happy-downloader/v4/server/archive/domain"
 )
 
 func Container(db *sql.DB) (domain.RestHandler, domain.Service) {

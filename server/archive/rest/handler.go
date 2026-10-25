@@ -6,11 +6,11 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/archive/domain"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/openid"
+	"github.com/LeisureLinux/happy-downloader/v4/server/archive/domain"
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
 
-	middlewares "github.com/marcopiovanello/yt-dlp-web-ui/v4/server/middleware"
+	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
 )
 
 type Handler struct {

@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"sync"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/archive/domain"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/archive/repository"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/archive/rest"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/archive/service"
+	"github.com/LeisureLinux/happy-downloader/v4/server/archive/domain"
+	"github.com/LeisureLinux/happy-downloader/v4/server/archive/repository"
+	"github.com/LeisureLinux/happy-downloader/v4/server/archive/rest"
+	"github.com/LeisureLinux/happy-downloader/v4/server/archive/service"
 )
 
 var (
