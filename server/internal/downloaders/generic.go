@@ -87,8 +87,11 @@ func (g *GenericDownloader) Start() error {
 
 	templateReplacer := strings.NewReplacer("\n", "", "\t", "", " ", "")
 
+	// XXX: the URL used to be truncated at "?list" to force --no-playlist. That
+	// also dropped every legitimate query parameter whenever the video id was
+	// not the first one, so the parameter is handled with --no-playlist alone.
 	baseParams := []string{
-		strings.Split(g.URL, "?list")[0], //XXX: force no playlist
+		g.URL,
 		"--newline",
 		"--no-colors",
 		"--no-playlist",
@@ -96,10 +99,15 @@ func (g *GenericDownloader) Start() error {
 		templateReplacer.Replace(downloadTemplate),
 		"--progress-template",
 		templateReplacer.Replace(postprocessTemplate),
-		"--js-runtimes",
-		config.Instance().Paths.JSRuntimePath,
 		"--remote-components",
 		"ejs:github",
+	}
+
+	// Only pass --js-runtimes when there is a value: an empty argument makes
+	// yt-dlp print the "Ignoring unsupported JavaScript runtime(s)" warning.
+	if runtime := SanitizeRuntime(config.Instance().Paths.JSRuntimePath); runtime != "" {
+		baseParams = slices.Insert(baseParams, len(baseParams)-2,
+			"--js-runtimes", runtime)
 	}
 
 	// if user asked to manually override the output path...
@@ -121,7 +129,7 @@ func (g *GenericDownloader) Start() error {
 	params := append(baseParams, g.Params...)
 	params = append(params, "--no-exec")
 
-	slog.Info("requesting download", slog.String("url", g.URL), slog.Any("params", params))
+	LogCommand("download", g.URL, params)
 
 	ctx, cancel := context.WithCancel(context.Background())
 

@@ -27,7 +27,6 @@ import Drawer from './components/Drawer'
 import Footer from './components/Footer'
 import Logout from './components/Logout'
 import SocketSubscriber from './components/SocketSubscriber'
-import ThemeToggler from './components/ThemeToggler'
 import TwitchIcon from './components/TwitchIcon'
 import { useI18n } from './hooks/useI18n'
 import Toaster from './providers/ToasterProvider'
@@ -207,7 +206,6 @@ export default function Layout() {
                 <ListItemText primary={i18n.t('settingsButtonLabel')} />
               </ListItemButton>
             </Link>
-            <ThemeToggler />
             <Logout />
           </List>
         </Drawer>

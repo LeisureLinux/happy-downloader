@@ -56,7 +56,13 @@ func (l *LiveStreamDownloader) Start() error {
 		"--no-exec",
 	}
 
+	if runtime := SanitizeRuntime(config.Instance().Paths.JSRuntimePath); runtime != "" {
+		baseParams = append(baseParams, "--js-runtimes", runtime)
+	}
+
 	params := append(baseParams, "-o", "-")
+
+	LogCommand("livestream", l.URL, params)
 
 	cmd := exec.Command(config.Instance().Paths.DownloaderPath, params...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

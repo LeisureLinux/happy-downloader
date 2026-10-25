@@ -3,16 +3,19 @@ package formats
 import (
 	"encoding/json"
 	"log/slog"
-	"os/exec"
 	"sync"
 
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
 )
 
 func ParseURL(url string) (*Metadata, error) {
-	cmd := exec.Command(config.Instance().Paths.DownloaderPath, url, "-J")
+	// Same builder as the metadata and download stages: the format probe has to
+	// resolve under the same conditions, or a URL can list formats and then
+	// fail to download them.
+	args := downloaders.BuildArgs(url, "-J")
+	downloaders.LogCommand("formats", url, args)
 
-	stdout, err := cmd.Output()
+	stdout, err := downloaders.NewCommand(args).Output()
 	if err != nil {
 		slog.Error("failed to retrieve metadata", slog.String("err", err.Error()))
 		return nil, err
