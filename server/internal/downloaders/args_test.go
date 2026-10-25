@@ -1,6 +1,63 @@
 package downloaders
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+)
+
+// yt-dlp's --cookies reads the file and writes its cookie jar back into
+// it. Passing the upload straight through lets a download replace it, which
+// drops the login cookies the upload was made for and shows up on the next run
+// as "cookies are no longer valid".
+func TestResolveCookiePathProtectsUploadFromRewrite(t *testing.T) {
+	dir := t.TempDir()
+	upload := filepath.Join(dir, "cookies.txt")
+
+	const original = "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tLOGIN_INFO\tTESTVALUE-NOT-A-REAL-TOKEN\n"
+	if err := os.WriteFile(upload, []byte(original), 0o600); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	// Point the config at this directory the way the service does.
+	config.Instance().Paths.LocalDatabasePath = dir
+	config.Instance().Paths.CookiePath = ""
+
+	got := resolveCookiePath()
+	if got == "" {
+		t.Fatal("resolveCookiePath returned empty with a cookie file present")
+	}
+	if got == upload {
+		c, _ := os.ReadFile(upload)
+		t.Fatalf("uploaded file passed to yt-dlp directly; yt-dlp would rewrite it:\n%s", c)
+	}
+
+	// The staging copy must hold the same content, so yt-dlp sees the login
+	// cookies rather than an empty jar.
+	staged, err := os.ReadFile(got)
+	if err != nil {
+		t.Fatalf("staging file missing: %v", err)
+	}
+	if string(staged) != original {
+		t.Errorf("staging content differs from upload:\ngot:  %q\nwant: %q", staged, original)
+	}
+
+	// Simulate what yt-dlp does: rewrite the file it was given.
+	if err := os.WriteFile(got, []byte("yt-dlp jar"), 0o600); err != nil {
+		t.Fatalf("simulate rewrite: %v", err)
+	}
+
+	// The upload must be untouched.
+	after, err := os.ReadFile(upload)
+	if err != nil {
+		t.Fatalf("upload lost: %v", err)
+	}
+	if string(after) != original {
+		t.Errorf("upload was modified:\ngot:  %q\nwant: %q", after, original)
+	}
+}
 
 func TestSanitizeRuntime(t *testing.T) {
 	cases := []struct {

@@ -6,13 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/cookies"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/livestream"
@@ -78,7 +82,7 @@ func (s *Service) Running(ctx context.Context) (*[]internal.ProcessSnapshot, err
 }
 
 func (s *Service) GetCookies(ctx context.Context) ([]byte, error) {
-	fd, err := os.Open("cookies.txt")
+	fd, err := os.Open(config.CookiesPath())
 	if err != nil {
 		return nil, err
 	}
@@ -93,16 +97,53 @@ func (s *Service) GetCookies(ctx context.Context) ([]byte, error) {
 	return cookies, nil
 }
 
-func (s *Service) SetCookies(ctx context.Context, cookies string) error {
-	fd, err := os.Create("cookies.txt")
+// SetCookies accepts a browser cookie export in any of the shapes extensions
+// produce and stores it as Netscape cookies.txt, which is what yt-dlp reads.
+//
+// The format is detected from the content, so a JSON export from a browser
+// extension and a hand-written cookies.txt both arrive as-is and work. This is
+// what makes the file uploadable to a headless host: there is no browser there
+// to ask for a different format.
+func (s *Service) SetCookies(ctx context.Context, raw string) error {
+	if strings.TrimSpace(raw) == "" {
+		return os.Remove(config.CookiesPath())
+	}
+
+	converted, format, err := cookies.Convert([]byte(raw))
 	if err != nil {
 		return err
 	}
 
-	defer fd.Close()
-	fd.WriteString(cookies)
+	// Cookie values never reach the log. Only the shape and the cookie names do,
+	// which is enough to tell a login session from a guest one.
+	summary := cookies.Summarize(converted)
+	slog.Info("cookie file updated",
+		slog.String("format", string(format)),
+		slog.Int("count", summary.Total),
+		slog.Int("httpOnly", summary.HttpOnly),
+		slog.Int("session", summary.Session),
+		slog.Int("expired", summary.Expired),
+	)
 
-	return nil
+	if missing := cookies.Required(summary.Names); len(missing) > 0 {
+		slog.Warn("cookie file is missing YouTube login cookies; "+
+			"requests may be treated as a guest",
+			slog.Any("missing", missing))
+	}
+
+	if err := os.MkdirAll(filepath.Dir(config.CookiesPath()), 0o755); err != nil {
+		return err
+	}
+
+	// 0600: this file is a live session credential.
+	fd, err := os.OpenFile(config.CookiesPath(), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+
+	_, err = fd.WriteString(converted)
+	return err
 }
 
 func (s *Service) SaveTemplate(ctx context.Context, template *internal.CustomTemplate) error {

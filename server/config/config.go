@@ -80,6 +80,14 @@ func Instance() *Config {
 	return instance
 }
 
+// CookiesPath is where the converted cookie file lives.
+//
+// It is resolved against LocalDatabasePath rather than the working directory,
+// so the file is found regardless of where the process was started from.
+func CookiesPath() string {
+	return filepath.Join(Instance().Paths.LocalDatabasePath, "cookies.txt")
+}
+
 // Path of the directory containing the config file
 func (c *Config) Dir() string { return filepath.Dir(c.path) }
 
