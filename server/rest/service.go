@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -209,10 +210,12 @@ func (s *Service) DeleteTemplate(ctx context.Context, id string) error {
 	})
 }
 
-func (s *Service) GetVersion(ctx context.Context) (string, string, error) {
-	//TODO: load from realease properties file, or anything else outside code
-	const CURRENT_RPC_VERSION = "4.0.0"
+// ServerVersion is the version of this server, injected at build time with
+// -ldflags "-X github.com/marcopiovanello/yt-dlp-web-ui/v4/server.ServerVersion=v4.1.0".
+// It defaults to "dev" so a plain "go build" is visibly not a release build.
+var ServerVersion = "dev"
 
+func (s *Service) GetVersion(ctx context.Context) (string, string, error) {
 	result := make(chan string, 1)
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
@@ -221,13 +224,13 @@ func (s *Service) GetVersion(ctx context.Context) (string, string, error) {
 	cmd := exec.CommandContext(ctx, config.Instance().Paths.DownloaderPath, "--version")
 	go func() {
 		stdout, _ := cmd.Output()
-		result <- string(stdout)
+		result <- strings.TrimSpace(string(stdout))
 	}()
 
 	select {
 	case <-ctx.Done():
-		return CURRENT_RPC_VERSION, "", errors.New("requesting yt-dlp version took too long")
+		return ServerVersion, "", errors.New("requesting yt-dlp version took too long")
 	case res := <-result:
-		return CURRENT_RPC_VERSION, res, nil
+		return ServerVersion, res, nil
 	}
 }

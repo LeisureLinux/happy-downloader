@@ -49,6 +49,13 @@ type CookieStat = {
   birthAt?: string
 }
 
+type Preview = {
+  url: string
+  matched: boolean
+  profile: string
+  argv: string[]
+}
+
 const emptyProfile = (): Profile => ({ name: '', hostSuffix: '', extraArgs: [] })
 
 const authHeader = () => ({ 'X-Authentication': localStorage.getItem('token') ?? '' })
@@ -62,6 +69,8 @@ const DownloadCredentials: React.FC = () => {
   const [stat, setStat] = useState<CookieStat | null>(null)
   const [busy, setBusy] = useState(false)
   const [dirty, setDirty] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [preview, setPreview] = useState<Preview | null>(null)
 
   const refresh = useCallback(async () => {
     setBusy(true)
@@ -105,6 +114,18 @@ const DownloadCredentials: React.FC = () => {
       setBusy(false)
     }
   }, [profiles, serverAddr, pushMessage, i18n])
+
+  const runPreview = useCallback(async (u: string) => {
+    if (!u.trim()) { setPreview(null); return }
+    try {
+      const res = await fetch(
+        `${serverAddr}/api/v1/profiles/preview?url=${encodeURIComponent(u)}`,
+        { headers: authHeader() })
+      if (res.ok) setPreview(await res.json())
+    } catch {
+      setPreview(null)
+    }
+  }, [serverAddr])
 
   const patch = (idx: number, field: keyof Profile, value: unknown) => {
     setProfiles(ps => ps.map((p, i) => (i === idx ? { ...p, [field]: value } : p)))
@@ -278,6 +299,45 @@ const DownloadCredentials: React.FC = () => {
         <Box flexGrow={1} />
         {dirty && <Typography variant="caption" color="warning.main">{i18n.t('profilesUnsaved')}</Typography>}
       </Stack>
+
+      {/* ── argv 预览：确认实际会传什么，便于排查 ──────────── */}
+      <Paper variant="outlined" sx={{ p: 1.5 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          {i18n.t('previewAnchor')}
+        </Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <TextField
+            size="small"
+            fullWidth
+            placeholder="https://www.youtube.com/watch?v=..."
+            value={previewUrl}
+            onChange={e => { setPreviewUrl(e.target.value); void runPreview(e.target.value) }}
+          />
+          {preview && (
+            <Chip
+              size="small"
+              label={preview.matched ? preview.profile : i18n.t('profileFallbackNote')}
+              color={preview.matched ? 'primary' : 'default'}
+              variant="outlined"
+            />
+          )}
+        </Stack>
+        {preview && (
+          <Box
+            component="pre"
+            sx={{
+              mt: 1, p: 1, mb: 0, borderRadius: 1, overflowX: 'auto',
+              bgcolor: 'action.hover', fontSize: '11.5px', fontFamily: 'Roboto Mono',
+              whiteSpace: 'pre-wrap', wordBreak: 'break-all'
+            }}
+          >
+            {preview.argv.join(' ')}
+          </Box>
+        )}
+        <Typography variant="caption" color="text.secondary">
+          {i18n.t('previewHint')}
+        </Typography>
+      </Paper>
 
       <Alert severity="info" icon={false}>
         <Typography variant="caption">{i18n.t('profilesIgnoreConfigNote')}</Typography>

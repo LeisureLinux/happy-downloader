@@ -201,6 +201,14 @@ export class RPCClient {
     })
   }
 
+  // yt-dlp reports its own version; used to tell an upgrade from a no-op.
+  public version() {
+    return this.sendHTTP({
+      method: 'Service.GetVersion',
+      params: []
+    })
+  }
+
   public clearCompleted() {
     return this.sendHTTP({
       method: 'Service.ClearCompleted',

@@ -48,7 +48,6 @@ import {
   themeState
 } from '../atoms/settings'
 import DownloadCredentials from '../components/DownloadCredentials'
-import UpdateBinaryButton from '../components/UpdateBinaryButton'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
 import Translator from '../lib/i18n'
@@ -387,11 +386,6 @@ export default function Settings() {
             {i18n.t('credentialsAnchor')}
           </Typography>
           <DownloadCredentials />
-        </Grid>
-        <Grid>
-          <Stack direction="row" sx={{ pt: 2 }}>
-            <UpdateBinaryButton />
-          </Stack>
         </Grid>
       </Paper>
     </Container>

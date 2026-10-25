@@ -5,7 +5,9 @@ keys:
   selectFormatButton: 选择格式
   startButton: 开始
   abortAllButton: 全部中止
-  updateBinButton: 更新 yt-dlp 可执行文件
+  updateBinButton: '检查 yt-dlp 更新'
+  ytdlpUpdatedTo: 'yt-dlp 已更新至'
+  ytdlpAlreadyLatest: 'yt-dlp 已是最新版本'
   darkThemeButton: 黑暗主题
   lightThemeButton: 明亮主题
   settingsAnchor: 设置
@@ -79,6 +81,8 @@ keys:
   profilesSave: '保存配置'
   profilesSaved: '配置已保存'
   profilesUnsaved: '有未保存的修改'
+  previewAnchor: '参数预览'
+  previewHint: '粘贴一个地址，即可看到实际会传给 yt-dlp 的完整参数（含默认参数）。这也是日志中记录的命令行。'
   profileFallbackNote: '主机名留空 = 兜底，匹配所有未命中的地址'
   profilesIgnoreConfigNote: '服务端会传入 --ignore-config，因此本机 yt-dlp 的配置文件不会影响下载，只使用本表中的设置。'
   cookieSourcePath: 'Cookie 源文件'

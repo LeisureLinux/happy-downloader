@@ -5,7 +5,9 @@ keys:
   selectFormatButton: Select format
   startButton: Start
   abortAllButton: Abort All
-  updateBinButton: Update yt-dlp binary
+  updateBinButton: 'Check for yt-dlp updates'
+  ytdlpUpdatedTo: 'yt-dlp updated to'
+  ytdlpAlreadyLatest: 'yt-dlp is already up to date'
   darkThemeButton: Dark theme
   lightThemeButton: Light theme
   settingsAnchor: Settings
@@ -79,6 +81,8 @@ keys:
   profilesSave: 'Save profiles'
   profilesSaved: 'Profiles saved'
   profilesUnsaved: 'Unsaved changes'
+  previewAnchor: 'Argument preview'
+  previewHint: 'Paste a URL to see exactly what will be passed to yt-dlp, including the defaults. This is the command line the log records.'
   profileFallbackNote: 'empty host = fallback for every unmatched URL'
   profilesIgnoreConfigNote: 'The server passes --ignore-config, so nothing from the host yt-dlp config file affects downloads. Only what is in this table is used.'
   cookieSourcePath: 'Cookie source file'

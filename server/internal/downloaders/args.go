@@ -281,3 +281,12 @@ func LogCommand(stage, url string, args []string) {
 // cookiesConvert is aliased so args.go reads without the import list growing;
 // the conversion itself lives in the cookies package.
 var cookiesConvert = cookies.Convert
+
+// Preview returns the argv a URL would produce, without starting yt-dlp.
+//
+// This backs the UI's "what will actually run" panel: the resolved command
+// line is the only authoritative answer to which cookie, POT provider, proxy
+// and extras apply, and reading it out of the table by hand is error-prone.
+func Preview(url string) []string {
+	return BuildArgs(url)
+}
