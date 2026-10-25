@@ -98,6 +98,14 @@ func (g *GenericDownloader) Start() error {
 		"--newline",
 		"--no-colors",
 		"--no-playlist",
+		// Subtitles are disabled on purpose. A host-level yt-dlp config often
+		// turns on --write-subs/--write-auto-subs, and YouTube rate-limits the
+		// caption endpoint hard (HTTP 429). Without these overrides a throttled
+		// subtitle request aborts the whole job before a single byte of video
+		// is fetched, which reads as "the download just does nothing". Captions
+		// are not worth failing a video over.
+		"--no-write-subs",
+		"--no-write-auto-subs",
 		"--progress-template",
 		templateReplacer.Replace(downloadTemplate),
 		"--progress-template",
