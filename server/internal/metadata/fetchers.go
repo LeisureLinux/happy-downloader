@@ -6,17 +6,22 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"os/exec"
-	"syscall"
 	"time"
 
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/common"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
 )
 
 func DefaultFetcher(url string) (*common.DownloadMetadata, error) {
-	cmd := exec.Command(config.Instance().Paths.DownloaderPath, url, "-J")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// The metadata stage used to run with a bare "<url> -J", which meant it
+	// resolved without the JS runtime, without cookies and without any of the
+	// options the download stage applies. A URL could therefore fail here while
+	// an identical manual yt-dlp call succeeded, with nothing in the log to
+	// explain the difference. It now shares the same argument builder.
+	args := downloaders.BuildArgs(url, "-J")
+	downloaders.LogCommand("metadata", url, args)
+
+	cmd := downloaders.NewCommand(args)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

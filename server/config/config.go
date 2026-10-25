@@ -35,6 +35,9 @@ type PathsConfig struct {
 	DownloaderPath    string `mapstructure:"downloader_path"`
 	LocalDatabasePath string `mapstructure:"local_database_path"`
 	JSRuntimePath     string `mapstructure:"js_runtime_path"`
+	// CookiePath is optional. When set it is passed to yt-dlp as --cookies on
+	// every invocation. Leave it empty to let yt-dlp use its own config.
+	CookiePath string `mapstructure:"cookie_path"`
 }
 
 type AuthConfig struct {

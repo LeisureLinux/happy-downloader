@@ -4,13 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"os/exec"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/common"
-	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
@@ -19,12 +17,10 @@ import (
 
 func PlaylistDetect(req internal.DownloadRequest, mq *queue.MessageQueue, db *kv.Store) error {
 	params := append(req.Params, "--flat-playlist", "-J")
-	urlWithParams := append([]string{req.URL}, params...)
+	args := downloaders.BuildArgs(req.URL, params...)
+	downloaders.LogCommand("playlist", req.URL, args)
 
-	var (
-		downloader = config.Instance().Paths.DownloaderPath
-		cmd        = exec.Command(downloader, urlWithParams...)
-	)
+	cmd := downloaders.NewCommand(args)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
