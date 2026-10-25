@@ -47,7 +47,7 @@ import {
   serverPortState,
   themeState
 } from '../atoms/settings'
-import CookiesTextField from '../components/CookiesTextField'
+import CookieStatusPanel from '../components/CookieStatusPanel'
 import UpdateBinaryButton from '../components/UpdateBinaryButton'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
@@ -386,9 +386,7 @@ export default function Settings() {
           <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
             Cookies
           </Typography>
-          <Suspense>
-            <CookiesTextField />
-          </Suspense>
+          <CookieStatusPanel />
         </Grid>
         <Grid>
           <Stack direction="row" sx={{ pt: 2 }}>

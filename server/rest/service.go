@@ -5,18 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/cookies"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/cookiewatch"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/livestream"
@@ -81,69 +78,70 @@ func (s *Service) Running(ctx context.Context) (*[]internal.ProcessSnapshot, err
 	}
 }
 
-func (s *Service) GetCookies(ctx context.Context) ([]byte, error) {
-	fd, err := os.Open(config.CookiesPath())
-	if err != nil {
-		return nil, err
-	}
-
-	defer fd.Close()
-
-	cookies, err := io.ReadAll(fd)
-	if err != nil {
-		return nil, err
-	}
-
-	return cookies, nil
+// CookieStatus describes the stored cookie file without exposing any value.
+//
+// It exists so the UI can answer "is my cookie file being picked up?" without
+// the user having to infer it from a download failing. The names are reported
+// because a missing LOGIN_INFO is the usual cause of a guest request, but the
+// values never leave the server: a cookie value is a live credential.
+type CookieStatus struct {
+	Exists     bool     `json:"exists"`
+	SourcePath string   `json:"sourcePath,omitempty"`
+	Format     string   `json:"format,omitempty"`
+	Count      int      `json:"count"`
+	HttpOnly   int      `json:"httpOnly"`
+	Session    int      `json:"session"`
+	Expired    int      `json:"expired"`
+	Missing    []string `json:"missing,omitempty"`
+	ModifiedAt string   `json:"modifiedAt,omitempty"`
 }
 
-// SetCookies accepts a browser cookie export in any of the shapes extensions
-// produce and stores it as Netscape cookies.txt, which is what yt-dlp reads.
+// CookieStatus reports what the server currently has on disk.
 //
-// The format is detected from the content, so a JSON export from a browser
-// extension and a hand-written cookies.txt both arrive as-is and work. This is
-// what makes the file uploadable to a headless host: there is no browser there
-// to ask for a different format.
-func (s *Service) SetCookies(ctx context.Context, raw string) error {
-	if strings.TrimSpace(raw) == "" {
-		return os.Remove(config.CookiesPath())
+// It answers "is my cookie export being picked up?" without the user having to
+// infer it from a failed download. The cookie names are reported because a
+// missing LOGIN_INFO is the usual cause of a guest request, but no value is
+// ever included: a cookie value is a live credential.
+func (s *Service) CookieStatus() (*CookieStatus, error) {
+	if w := cookiewatch.Global(); w != nil {
+		st := w.Status()
+		return &CookieStatus{
+			Exists:     st.Exists,
+			SourcePath: st.SourcePath,
+			Format:     st.Format,
+			Count:      st.Count,
+			HttpOnly:   st.HttpOnly,
+			Session:    st.Session,
+			Expired:    st.Expired,
+			Missing:    st.Missing,
+			ModifiedAt: st.ModifiedAt,
+		}, nil
 	}
 
-	converted, format, err := cookies.Convert([]byte(raw))
+	// No export configured: report on the converted file if it already exists.
+	path := config.CookiesPath()
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return &CookieStatus{Exists: false}, nil
+	}
+
+	content, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Cookie values never reach the log. Only the shape and the cookie names do,
-	// which is enough to tell a login session from a guest one.
-	summary := cookies.Summarize(converted)
-	slog.Info("cookie file updated",
-		slog.String("format", string(format)),
-		slog.Int("count", summary.Total),
-		slog.Int("httpOnly", summary.HttpOnly),
-		slog.Int("session", summary.Session),
-		slog.Int("expired", summary.Expired),
-	)
+	summary := cookies.Summarize(string(content))
 
-	if missing := cookies.Required(summary.Names); len(missing) > 0 {
-		slog.Warn("cookie file is missing YouTube login cookies; "+
-			"requests may be treated as a guest",
-			slog.Any("missing", missing))
-	}
-
-	if err := os.MkdirAll(filepath.Dir(config.CookiesPath()), 0o755); err != nil {
-		return err
-	}
-
-	// 0600: this file is a live session credential.
-	fd, err := os.OpenFile(config.CookiesPath(), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
-	_, err = fd.WriteString(converted)
-	return err
+	return &CookieStatus{
+		Exists:     true,
+		Format:     string(cookies.Detect(content)),
+		Count:      summary.Total,
+		HttpOnly:   summary.HttpOnly,
+		Session:    summary.Session,
+		Expired:    summary.Expired,
+		Missing:    cookies.Required(summary.Names),
+		ModifiedAt: info.ModTime().Format(time.RFC3339),
+	}, nil
 }
 
 func (s *Service) SaveTemplate(ctx context.Context, template *internal.CustomTemplate) error {

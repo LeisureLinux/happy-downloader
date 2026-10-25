@@ -153,11 +153,25 @@ export const rpcHTTPEndpoint = atom((get) => {
   return `${proto}//${sap.endsWith('/') ? sap.slice(0, -1) : sap}/rpc/http`
 })
 
-export const serverSideCookiesState = atom<Promise<string>>(async (get) => await pipe(
-  ffetch<Readonly<{ cookies: string }>>(`${get(serverURL)}/api/v1/cookies`),
+// Cookie status reported by the server. The cookie file is configured by path
+// (paths.cookie_path) and converted automatically, so the UI only reads state.
+export type CookieStatus = {
+  exists: boolean
+  sourcePath?: string
+  format?: string
+  count: number
+  httpOnly?: number
+  session?: number
+  expired?: number
+  missing?: string[]
+  modifiedAt?: string
+}
+
+export const cookieStatusState = atom<Promise<CookieStatus>>(async (get) => await pipe(
+  ffetch<CookieStatus>(`${get(serverURL)}/api/v1/cookies/status`),
   matchW(
-    () => '',
-    (r) => r.cookies
+    () => ({ exists: false, count: 0 }) as CookieStatus,
+    (r) => r
   )
 )())
 

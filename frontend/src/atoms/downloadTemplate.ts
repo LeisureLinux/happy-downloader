@@ -4,13 +4,13 @@ import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 import { ffetch } from '../lib/httpClient'
 import { CustomTemplate } from '../types'
-import { serverSideCookiesState, serverURL } from './settings'
+import { serverURL } from './settings'
 
-export const cookiesTemplateState = atom<Promise<string>>(async (get) =>
-  await get(serverSideCookiesState)
-    ? '--cookies=cookies.txt'
-    : ''
-)
+// The server passes --cookies itself, using a converted copy of the configured
+// export. Injecting "--cookies=cookies.txt" here pointed at a relative path in
+// the process working directory, which was never the file the server actually
+// wrote.
+export const cookiesTemplateState = atom<Promise<string>>(async () => '')
 
 export const customArgsState = atomWithStorage(
   'customArgs',

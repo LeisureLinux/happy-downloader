@@ -1,7 +1,9 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -35,8 +37,14 @@ type PathsConfig struct {
 	DownloaderPath    string `mapstructure:"downloader_path"`
 	LocalDatabasePath string `mapstructure:"local_database_path"`
 	JSRuntimePath     string `mapstructure:"js_runtime_path"`
-	// CookiePath is optional. When set it is passed to yt-dlp as --cookies on
-	// every invocation. Leave it empty to let yt-dlp use its own config.
+	// CookiePath points at a cookie export to convert and pass to yt-dlp.
+	//
+	// The file may be a browser extension's JSON export or an existing
+	// Netscape cookies.txt; the format is detected from the content. It is
+	// observed for changes, so replacing the file is enough to refresh the
+	// session on a headless host — no restart, no UI step.
+	//
+	// Relative paths resolve against the config file's directory.
 	CookiePath string `mapstructure:"cookie_path"`
 }
 
@@ -80,12 +88,43 @@ func Instance() *Config {
 	return instance
 }
 
-// CookiesPath is where the converted cookie file lives.
+// CookiesPath is the Netscape file yt-dlp reads. It is derived, not configured:
+// when paths.cookie_path is set the converted output is written here, so the
+// source export is never overwritten by yt-dlp's cookie-jar writeback.
 //
 // It is resolved against LocalDatabasePath rather than the working directory,
 // so the file is found regardless of where the process was started from.
 func CookiesPath() string {
 	return filepath.Join(Instance().Paths.LocalDatabasePath, "cookies.txt")
+}
+
+// ResolvedCookieSource returns paths.cookie_path as an absolute path, or an
+// empty string when no source export is configured.
+//
+// A relative value resolves against the config file's directory, so a tilde-free
+// relative path in the YAML means "next to the config" rather than "next to
+// whatever directory the process happened to start in".
+func ResolvedCookieSource() string {
+	p := strings.TrimSpace(Instance().Paths.CookiePath)
+	if p == "" {
+		return ""
+	}
+
+	if strings.HasPrefix(p, "~") {
+		if home, err := os.UserHomeDir(); err == nil {
+			p = filepath.Join(home, strings.TrimPrefix(p, "~"))
+		}
+	}
+
+	if filepath.IsAbs(p) {
+		return filepath.Clean(p)
+	}
+
+	if dir := Instance().Dir(); dir != "" && dir != "." {
+		return filepath.Join(dir, p)
+	}
+
+	return filepath.Clean(p)
 }
 
 // Path of the directory containing the config file

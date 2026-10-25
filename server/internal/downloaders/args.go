@@ -46,6 +46,10 @@ func SanitizeRuntime(runtime string) string {
 // metadata stage and fail the download, or the reverse, with no way to tell
 // which stage was at fault from the UI.
 func BuildArgs(url string, extra ...string) []string {
+	// Refresh the converted cookie file first: this is the pre-download check
+	// that covers a replaced export when the inotify watch is unavailable.
+	SyncCookies()
+
 	runtime := SanitizeRuntime(config.Instance().Paths.JSRuntimePath)
 
 	args := []string{url}
@@ -65,39 +69,48 @@ func BuildArgs(url string, extra ...string) []string {
 	return append(args, extra...)
 }
 
-// resolveCookiePath picks the cookie file to pass to yt-dlp.
+// cookieSyncHook lets the server refresh the converted cookie file before a
+// download starts. It is a package-level function rather than a direct import
+// of the watcher so this package stays free of the dependency; the server sets
+// it at startup.
 //
-// The uploaded file is written next to the database by the REST layer. It is
-// preferred over paths.cookie_path because it is the one the UI can refresh
-// without a restart, which is the only way to rotate an expiring session on a
-// headless host.
+// It runs before the argv is built, so a cookie export replaced since the last
+// download is picked up even when the inotify watch is unavailable.
+var cookieSyncHook func()
+
+// SetCookieSyncHook registers the pre-download cookie refresh. Called once at
+// startup; passing nil disables it.
+func SetCookieSyncHook(fn func()) {
+	cookieSyncHook = fn
+}
+
+// SyncCookies runs the registered hook, if any. Safe to call at any time.
+func SyncCookies() {
+	if cookieSyncHook != nil {
+		cookieSyncHook()
+	}
+}
+
 // resolveCookiePath picks the cookie file to pass to yt-dlp.
 //
 // yt-dlp's --cookies both reads the file and writes its cookie jar back into
-// it, so the uploaded file is copied to a scratch location first. Handing the
-// upload over directly lets yt-dlp replace it with a jar that lacks the login
-// cookies the upload was made for — which surfaces as "cookies are no longer
-// valid" on the next run.
+// it, so a copy is handed over rather than the converted file itself. Letting
+// yt-dlp rewrite the converted output would replace it with a jar that lacks
+// the login cookies, which surfaces as "cookies are no longer valid" next run.
 //
-// The uploaded file is preferred over paths.cookie_path because it is the one
-// the UI can refresh without a restart, which is the only way to rotate an
-// expiring session on a headless host.
+// The converted file is produced by the cookie watcher from paths.cookie_path.
 func resolveCookiePath() string {
-	explicit := strings.TrimSpace(config.Instance().Paths.CookiePath)
-	if explicit != "" {
-		return explicit
-	}
+	converted := config.CookiesPath()
 
-	uploaded := config.CookiesPath()
-	info, err := os.Stat(uploaded)
+	info, err := os.Stat(converted)
 	if err != nil || info.IsDir() {
 		return ""
 	}
 
-	// Keep the upload pristine and give yt-dlp a copy it may rewrite.
-	staging := uploaded + ".ytdlp-jar"
+	// Keep the converted file pristine and give yt-dlp a copy it may rewrite.
+	staging := converted + ".ytdlp-jar"
 
-	src, err := os.Open(uploaded)
+	src, err := os.Open(converted)
 	if err != nil {
 		return ""
 	}

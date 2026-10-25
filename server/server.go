@@ -19,6 +19,8 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/filebrowser"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/cookiewatch"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/downloaders"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/livestream"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/pipeline"
@@ -109,6 +111,29 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	mq.SetupConsumers()
 	go mdb.Restore(mq)
 	go mdb.EventListener()
+
+	// Convert paths.cookie_path into the Netscape file yt-dlp reads, and keep
+	// it in sync as the export is replaced. On a headless host this replaces
+	// the browser re-export that is not available there.
+	cookieWatcher := cookiewatch.New(
+		config.ResolvedCookieSource(),
+		config.CookiesPath(),
+	)
+	if cookieWatcher.Enabled() {
+		if err := cookieWatcher.Start(); err != nil {
+			slog.Warn("cookie watch failed to start", slog.String("err", err.Error()))
+		}
+		defer cookieWatcher.Stop()
+
+		// Pre-download safety net: re-check the source mtime before each
+		// argv build, which also covers hosts where inotify delivers nothing.
+		downloaders.SetCookieSyncHook(func() {
+			if err := cookieWatcher.Sync(); err != nil {
+				slog.Debug("cookie sync skipped", slog.String("err", err.Error()))
+			}
+		})
+		cookiewatch.SetGlobal(cookieWatcher)
+	}
 
 	lm := livestream.NewMonitor(mq, mdb, boltdb)
 	go lm.Schedule()
