@@ -209,7 +209,7 @@ const DownloadCredentials: React.FC = () => {
           </TableHead>
           <TableBody>
             {profiles.map((p, idx) => (
-              <TableRow key={idx} verticalAlign="top">
+              <TableRow key={idx} sx={{ verticalAlign: "top" }}>
                 <TableCell>
                   <TextField
                     size="small"

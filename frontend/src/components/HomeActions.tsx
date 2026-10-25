@@ -4,22 +4,17 @@ import { loadingAtom } from '../atoms/ui'
 import { useToast } from '../hooks/toast'
 import DownloadDialog from './DownloadDialog'
 import HomeSpeedDial from './HomeSpeedDial'
-import TemplatesEditor from './TemplatesEditor'
 
 const HomeActions: React.FC = () => {
   const setIsLoading = useSetAtom(loadingAtom)
 
   const [openDownload, setOpenDownload] = useState(false)
-  const [openEditor, setOpenEditor] = useState(false)
 
   const { pushMessage } = useToast()
 
   return (
     <>
-      <HomeSpeedDial
-        onDownloadOpen={() => setOpenDownload(true)}
-        onEditorOpen={() => setOpenEditor(true)}
-      />
+      <HomeSpeedDial onDownloadOpen={() => setOpenDownload(true)} />
       <Suspense>
         <DownloadDialog
           open={openDownload}
@@ -35,10 +30,6 @@ const HomeActions: React.FC = () => {
           }}
         />
       </Suspense>
-      <TemplatesEditor
-        open={openEditor}
-        onClose={() => setOpenEditor(false)}
-      />
     </>
   )
 }

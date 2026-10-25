@@ -1,5 +1,4 @@
 import AddCircleIcon from '@mui/icons-material/AddCircle'
-import BuildCircleIcon from '@mui/icons-material/BuildCircle'
 import ClearAllIcon from '@mui/icons-material/ClearAll'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import FolderZipIcon from '@mui/icons-material/FolderZip'
@@ -17,10 +16,9 @@ import { useRPC } from '../hooks/useRPC'
 
 type Props = {
   onDownloadOpen: () => void
-  onEditorOpen: () => void
 }
 
-const HomeSpeedDial: React.FC<Props> = ({ onDownloadOpen, onEditorOpen }) => {
+const HomeSpeedDial: React.FC<Props> = ({ onDownloadOpen }) => {
   const serverAddr = useAtomValue(serverURL)
   const [listView, setListView] = useAtom(listViewState)
 
@@ -52,11 +50,6 @@ const HomeSpeedDial: React.FC<Props> = ({ onDownloadOpen, onEditorOpen }) => {
         icon={<DeleteForeverIcon />}
         tooltipTitle={i18n.t('abortAllButton')}
         onClick={() => client.killAll()}
-      />
-      <SpeedDialAction
-        icon={<BuildCircleIcon />}
-        tooltipTitle={i18n.t('templatesEditor')}
-        onClick={onEditorOpen}
       />
       <SpeedDialAction
         icon={<AddCircleIcon />}

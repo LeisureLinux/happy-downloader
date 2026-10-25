@@ -2,11 +2,9 @@ import { ThemeProvider } from '@emotion/react'
 import ChevronLeft from '@mui/icons-material/ChevronLeft'
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 import Dashboard from '@mui/icons-material/Dashboard'
-import LiveTvIcon from '@mui/icons-material/LiveTv'
 import Menu from '@mui/icons-material/Menu'
 import SettingsIcon from '@mui/icons-material/Settings'
 import TerminalIcon from '@mui/icons-material/Terminal'
-import UpdateIcon from '@mui/icons-material/Update'
 import { Box, createTheme } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
 import Divider from '@mui/material/Divider'
@@ -27,7 +25,6 @@ import Drawer from './components/Drawer'
 import Footer from './components/Footer'
 import Logout from './components/Logout'
 import SocketSubscriber from './components/SocketSubscriber'
-import TwitchIcon from './components/TwitchIcon'
 import { useI18n } from './hooks/useI18n'
 import Toaster from './providers/ToasterProvider'
 import { getAccentValue } from './utils'
@@ -137,45 +134,6 @@ export default function Layout() {
               <ListItemButton>
                 <ListItemIcon>
                   <CloudDownloadIcon />
-                </ListItemIcon>
-                <ListItemText primary={i18n.t('archiveButtonLabel')} />
-              </ListItemButton>
-            </Link>
-            <Link to={'/subscriptions'} style={
-              {
-                textDecoration: 'none',
-                color: mode === 'dark' ? '#ffffff' : '#000000DE'
-              }
-            }>
-              <ListItemButton>
-                <ListItemIcon>
-                  <UpdateIcon />
-                </ListItemIcon>
-                <ListItemText primary={i18n.t('subscriptionsButtonLabel')} />
-              </ListItemButton>
-            </Link>
-            <Link to={'/twitch'} style={
-              {
-                textDecoration: 'none',
-                color: mode === 'dark' ? '#ffffff' : '#000000DE'
-              }
-            }>
-              <ListItemButton>
-                <ListItemIcon>
-                  <TwitchIcon />
-                </ListItemIcon>
-                <ListItemText primary={"Twitch"} />
-              </ListItemButton>
-            </Link>
-            <Link to={'/monitor'} style={
-              {
-                textDecoration: 'none',
-                color: mode === 'dark' ? '#ffffff' : '#000000DE'
-              }
-            }>
-              <ListItemButton>
-                <ListItemIcon>
-                  <LiveTvIcon />
                 </ListItemIcon>
                 <ListItemText primary={i18n.t('archiveButtonLabel')} />
               </ListItemButton>

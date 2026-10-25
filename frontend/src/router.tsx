@@ -6,12 +6,9 @@ import Terminal from './views/Terminal'
 
 const Home = lazy(() => import('./views/Home'))
 const Login = lazy(() => import('./views/Login'))
-const Twitch = lazy(() => import('./views/Twitch'))
 const Archive = lazy(() => import('./views/Archive'))
 const Settings = lazy(() => import('./views/Settings'))
-const LiveStream = lazy(() => import('./views/Livestream'))
 const Filebrowser = lazy(() => import('./views/Filebrowser'))
-const Subscriptions = lazy(() => import('./views/Subscriptions'))
 
 const ErrorBoundary = lazy(() => import('./components/ErrorBoundary'))
 
@@ -76,19 +73,6 @@ export const router = createHashRouter([
         )
       },
       {
-        path: '/subscriptions',
-        element: (
-          <Suspense fallback={<CircularProgress />}>
-            <Subscriptions />
-          </Suspense >
-        ),
-        errorElement: (
-          <Suspense fallback={<CircularProgress />}>
-            <ErrorBoundary />
-          </Suspense >
-        )
-      },
-      {
         path: '/login',
         element: (
           <Suspense fallback={<CircularProgress />}>
@@ -101,22 +85,6 @@ export const router = createHashRouter([
         element: (
           <Suspense fallback={<CircularProgress />}>
             <ErrorBoundary />
-          </Suspense >
-        )
-      },
-      {
-        path: '/monitor',
-        element: (
-          <Suspense fallback={<CircularProgress />}>
-            <LiveStream />
-          </Suspense >
-        )
-      },
-      {
-        path: '/twitch',
-        element: (
-          <Suspense fallback={<CircularProgress />}>
-            <Twitch />
           </Suspense >
         )
       },

@@ -29,7 +29,7 @@ const VersionIndicator: React.FC = () => {
       await client.updateExecutable()
 
       const after = await client.version()
-      const current = after?.result?.ytdlpVersion ?? before
+      const current = (after?.result as { ytdlpVersion?: string })?.ytdlpVersion ?? before
 
       pushMessage(
         current && current !== before
