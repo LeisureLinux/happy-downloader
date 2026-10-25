@@ -32,7 +32,6 @@ import DownloadIcon from '@mui/icons-material/Download'
 import { matchW } from 'fp-ts/lib/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
 import { useEffect, useMemo, useState, useTransition } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { BehaviorSubject, Subject, combineLatestWith, map, share } from 'rxjs'
 import { serverURL } from '../atoms/settings'
 import { useObservable } from '../hooks/observable'
@@ -49,7 +48,6 @@ export default function Downloaded() {
   const [currentFile, setCurrentFile] = useState<DirectoryEntry>()
 
   const serverAddr = useAtomValue(serverURL)
-  const navigate = useNavigate()
 
   const { i18n } = useI18n()
   const { pushMessage } = useToast()
@@ -72,10 +70,7 @@ export default function Downloaded() {
       }
     ),
     matchW(
-      (e) => {
-        pushMessage(e, 'error')
-        navigate('/login')
-      },
+      (e) => pushMessage(e, 'error'),
       (d) => files$.next(d ?? []),
     )
   )()

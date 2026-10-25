@@ -24,7 +24,6 @@ import AppBar from './components/AppBar'
 import AppVersion from './components/AppVersion'
 import Drawer from './components/Drawer'
 import Footer from './components/Footer'
-import Logout from './components/Logout'
 import SocketSubscriber from './components/SocketSubscriber'
 import { useI18n } from './hooks/useI18n'
 import Toaster from './providers/ToasterProvider'
@@ -166,7 +165,6 @@ export default function Layout() {
                 <ListItemText primary={i18n.t('settingsButtonLabel')} />
               </ListItemButton>
             </Link>
-            <Logout />
           </List>
         </Drawer>
         <Box
