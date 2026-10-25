@@ -48,17 +48,14 @@ func NewLiveStreamDownloader(url string, pipes []pipes.Pipe) Downloader {
 func (l *LiveStreamDownloader) Start() error {
 	l.SetPending(true)
 
-	baseParams := []string{
-		l.URL,
+	// Same builder as the other stages, so the runtime and cookie flags
+	// cannot drift apart between them.
+	baseParams := BuildArgs(l.URL,
 		"--newline",
 		"--no-colors",
 		"--no-playlist",
 		"--no-exec",
-	}
-
-	if runtime := SanitizeRuntime(config.Instance().Paths.JSRuntimePath); runtime != "" {
-		baseParams = append(baseParams, "--js-runtimes", runtime)
-	}
+	)
 
 	params := append(baseParams, "-o", "-")
 

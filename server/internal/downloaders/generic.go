@@ -90,8 +90,11 @@ func (g *GenericDownloader) Start() error {
 	// XXX: the URL used to be truncated at "?list" to force --no-playlist. That
 	// also dropped every legitimate query parameter whenever the video id was
 	// not the first one, so the parameter is handled with --no-playlist alone.
-	baseParams := []string{
-		g.URL,
+	//
+	// The runtime and cookie flags come from BuildArgs, so this stage resolves
+	// under exactly the same conditions as metadata: when they disagreed, a URL
+	// could pass metadata and then fail the download.
+	baseParams := BuildArgs(g.URL,
 		"--newline",
 		"--no-colors",
 		"--no-playlist",
@@ -101,14 +104,7 @@ func (g *GenericDownloader) Start() error {
 		templateReplacer.Replace(postprocessTemplate),
 		"--remote-components",
 		"ejs:github",
-	}
-
-	// Only pass --js-runtimes when there is a value: an empty argument makes
-	// yt-dlp print the "Ignoring unsupported JavaScript runtime(s)" warning.
-	if runtime := SanitizeRuntime(config.Instance().Paths.JSRuntimePath); runtime != "" {
-		baseParams = slices.Insert(baseParams, len(baseParams)-2,
-			"--js-runtimes", runtime)
-	}
+	)
 
 	// if user asked to manually override the output path...
 	if !(slices.Contains(g.Params, "-P") || slices.Contains(g.Params, "--paths")) {
