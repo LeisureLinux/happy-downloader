@@ -24,6 +24,7 @@ import (
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/kv"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/livestream"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/pipeline"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/profiles"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/queue"
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/logging"
 	middlewares "github.com/marcopiovanello/yt-dlp-web-ui/v4/server/middleware"
@@ -53,6 +54,7 @@ type serverConfig struct {
 	lm            *livestream.Monitor
 	taskRunner    task.TaskRunner
 	twitchMonitor *twitch.Monitor
+	profileStore  *profiles.Store
 }
 
 // TODO: change scope
@@ -135,6 +137,18 @@ func Run(ctx context.Context, rc *RunConfig) error {
 		cookiewatch.SetGlobal(cookieWatcher)
 	}
 
+	// Site profiles decide which arguments a URL needs: cookie, POT
+	// provider, proxy and extras. Stored in bolt and editable from the UI,
+	// because adding a site must not mean rebuilding the binary.
+	profileStore, err := profiles.NewStore(boltdb, profiles.Profile{
+		CookiePath: config.ResolvedCookieSource(),
+		PotBaseURL: config.Instance().YtDlp.PotBaseURL,
+		Proxy:      config.Instance().YtDlp.Proxy,
+	})
+	if err != nil {
+		return err
+	}
+
 	lm := livestream.NewMonitor(mq, mdb, boltdb)
 	go lm.Schedule()
 	go lm.Restore()
@@ -165,6 +179,7 @@ func Run(ctx context.Context, rc *RunConfig) error {
 		lm:            lm,
 		twitchMonitor: tm,
 		taskRunner:    cronTaskRunner,
+		profileStore:  profileStore,
 	}
 
 	srv := newServer(scfg)
@@ -257,6 +272,8 @@ func newServer(c serverConfig) *http.Server {
 	r.Route("/rpc", ytdlpRPC.ApplyRouter())
 
 	// REST API handlers
+	r.Route("/api/v1/profiles", profiles.NewRestHandler(c.profileStore))
+
 	r.Route("/api/v1", rest.ApplyRouter(&rest.ContainerArgs{
 		DB:  c.db,
 		MDB: c.mdb,

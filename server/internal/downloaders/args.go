@@ -6,9 +6,12 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/config"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/cookies"
+	"github.com/marcopiovanello/yt-dlp-web-ui/v4/server/internal/profiles"
 )
 
 // SanitizeRuntime qualifies a bare runtime path with a "node:" prefix.
@@ -37,14 +40,17 @@ func SanitizeRuntime(runtime string) string {
 	return "node:" + runtime
 }
 
-// BuildArgs assembles the yt-dlp argv shared by every code path that shells
-// out to the downloader: metadata fetch, format probe, playlist expansion and
-// the download itself.
+// BuildArgs assembles the yt-dlp argv for a URL from its site profile.
 //
-// Keeping one builder matters because the stages must agree. When metadata ran
-// with a different (thinner) argv than the download, a URL could pass the
-// metadata stage and fail the download, or the reverse, with no way to tell
-// which stage was at fault from the UI.
+// Every invocation goes through this one builder — metadata fetch, format
+// probe, playlist expansion and the download itself — because the stages must
+// agree: when metadata ran with a thinner argv than the download, a URL could
+// pass one stage and fail the next with no way to tell which.
+//
+// The profile for the URL decides the arguments (cookie, POT provider, proxy,
+// extras). --ignore-config keeps the host's own yt-dlp config out of the
+// picture, so the argv is complete by construction and reproducible from the
+// log line alone.
 func BuildArgs(url string, extra ...string) []string {
 	// Refresh the converted cookie file first: this is the pre-download check
 	// that covers a replaced export when the inotify watch is unavailable.
@@ -52,19 +58,43 @@ func BuildArgs(url string, extra ...string) []string {
 
 	runtime := SanitizeRuntime(config.Instance().Paths.JSRuntimePath)
 
+	profile, matched := profiles.ForURL(url)
+
+	cookieStaging := ""
+	if matched && profile.CookiePath != "" {
+		cookieStaging = stageCookieFile(profile.CookiePath)
+	}
+
+	if !matched {
+		// No profile store (tests): config-file behaviour only.
+		cookieStaging = resolveCookiePath()
+	}
+
 	args := []string{url}
 
-	if runtime != "" {
-		args = append(args, "--js-runtimes", runtime)
+	if !matched {
+		// Legacy path without a profile: keep the config-driven behaviour
+		// but still isolate from the host config file.
+		args = append(args, "--ignore-config")
+
+		if runtime != "" {
+			args = append(args, "--js-runtimes", runtime)
+		}
+		if c := config.Instance().YtDlp.PotBaseURL; c != "" {
+			args = append(args, "--extractor-args", "youtubepot-bgutilhttp:base_url="+c)
+		}
+		if c := config.Instance().YtDlp.Proxy; c != "" {
+			args = append(args, "--proxy", c)
+		}
+		if c := cookieStaging; c != "" {
+			args = append(args, "--cookies", c)
+		}
+
+		return append(args, extra...)
 	}
 
-	// Cookie file, if one is available. An explicitly configured
-	// paths.cookie_path wins; otherwise the file uploaded through the UI is
-	// used, so a headless host needs no flag at all. Left empty, yt-dlp still
-	// reads its own config.
-	if cookie := resolveCookiePath(); cookie != "" {
-		args = append(args, "--cookies", cookie)
-	}
+	// Profile path: the site decides.
+	args = append(args, profile.Argv(cookieStaging, runtime)...)
 
 	return append(args, extra...)
 }
@@ -91,14 +121,99 @@ func SyncCookies() {
 	}
 }
 
-// resolveCookiePath picks the cookie file to pass to yt-dlp.
+// cookieStagingMu serialises staging-file writes: concurrent downloads would
+// otherwise race the copy and hand one yt-dlp process a truncated jar.
+var cookieStagingMu sync.Mutex
+
+// stageCookieFile copies a converted cookie export to a scratch path.
 //
 // yt-dlp's --cookies both reads the file and writes its cookie jar back into
-// it, so a copy is handed over rather than the converted file itself. Letting
-// yt-dlp rewrite the converted output would replace it with a jar that lacks
-// the login cookies, which surfaces as "cookies are no longer valid" next run.
+// it. Handing over the converted file directly lets one download replace it
+// with a jar missing the login cookies, which surfaces as "cookies are no
+// longer valid" on the next run.
 //
-// The converted file is produced by the cookie watcher from paths.cookie_path.
+// The source here is the per-profile CookiePath, converted on demand when the
+// export is newer than the last conversion.
+func stageCookieFile(source string) string {
+	cookieStagingMu.Lock()
+	defer cookieStagingMu.Unlock()
+
+	converted, ok := convertSource(source)
+	if !ok {
+		return ""
+	}
+
+	staging := converted + ".ytdlp-jar"
+
+	src, err := os.Open(converted)
+	if err != nil {
+		return ""
+	}
+	defer src.Close()
+
+	dst, err := os.OpenFile(staging, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		return ""
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, src); err != nil {
+		return ""
+	}
+
+	return staging
+}
+
+// convertSource ensures a Netscape conversion of the export exists and is
+// current, returning its path.
+//
+// The conversion result is cached next to the export with a ".cookies.txt"
+// suffix; when the export is newer the conversion is redone. A failed
+// conversion keeps the previous result, so a partially copied file does not
+// break a working session.
+func convertSource(source string) (string, bool) {
+	stagedMu.Lock()
+	defer stagedMu.Unlock()
+
+	info, err := os.Stat(source)
+	if err != nil || info.IsDir() {
+		return "", false
+	}
+
+	converted := source + ".cookies.txt"
+
+	ci, err := os.Stat(converted)
+	if err == nil && !info.ModTime().After(ci.ModTime()) {
+		return converted, true
+	}
+
+	raw, err := os.ReadFile(source)
+	if err != nil {
+		return "", false
+	}
+
+	out, _, err := cookiesConvert(raw)
+	if err != nil {
+		slog.Warn("cookie conversion failed",
+			slog.String("source", source), slog.String("err", err.Error()))
+		// A previous conversion may still be usable.
+		if ci != nil {
+			return converted, true
+		}
+		return "", false
+	}
+
+	if err := os.WriteFile(converted, []byte(out), 0o600); err != nil {
+		return "", false
+	}
+
+	return converted, true
+}
+
+// stagedMu guards the per-source conversion cache.
+var stagedMu sync.Mutex
+
+// resolveCookiePath is the legacy no-profile path.
 func resolveCookiePath() string {
 	converted := config.CookiesPath()
 
@@ -107,7 +222,6 @@ func resolveCookiePath() string {
 		return ""
 	}
 
-	// Keep the converted file pristine and give yt-dlp a copy it may rewrite.
 	staging := converted + ".ytdlp-jar"
 
 	src, err := os.Open(converted)
@@ -163,3 +277,7 @@ func LogCommand(stage, url string, args []string) {
 		slog.String("argv", strings.Join(quoted, " ")),
 	)
 }
+
+// cookiesConvert is aliased so args.go reads without the import list growing;
+// the conversion itself lives in the cookies package.
+var cookiesConvert = cookies.Convert

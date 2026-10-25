@@ -47,7 +47,7 @@ import {
   serverPortState,
   themeState
 } from '../atoms/settings'
-import CookieStatusPanel from '../components/CookieStatusPanel'
+import DownloadCredentials from '../components/DownloadCredentials'
 import UpdateBinaryButton from '../components/UpdateBinaryButton'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
@@ -384,9 +384,9 @@ export default function Settings() {
         </Grid>
         <Grid sx={{ mr: 1, mt: 2 }}>
           <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
-            Cookies
+            {i18n.t('credentialsAnchor')}
           </Typography>
-          <CookieStatusPanel />
+          <DownloadCredentials />
         </Grid>
         <Grid>
           <Stack direction="row" sx={{ pt: 2 }}>

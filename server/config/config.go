@@ -12,6 +12,7 @@ type Config struct {
 	Server         ServerConfig   `mapstructure:"server"`
 	Logging        LoggingConfig  `mapstructure:"logging"`
 	Paths          PathsConfig    `mapstructure:"paths"`
+	YtDlp          YtDlpConfig    `mapstructure:"ytdlp"`
 	Authentication AuthConfig     `mapstructure:"authentication"`
 	OpenId         OpenIdConfig   `mapstructure:"openid"`
 	Frontend       FrontendConfig `mapstructure:"frontend"`
@@ -46,6 +47,20 @@ type PathsConfig struct {
 	//
 	// Relative paths resolve against the config file's directory.
 	CookiePath string `mapstructure:"cookie_path"`
+}
+
+// YtDlpConfig carries the credentials and network settings every yt-dlp
+// invocation needs. They are grouped because they are the knobs an operator
+// actually turns when a download fails: the cookie export, the PO Token
+// provider, and the egress proxy.
+type YtDlpConfig struct {
+	// PotBaseURL is the bgutil POT provider endpoint, e.g.
+	// http://127.0.0.1:4416. Empty disables the explicit override and yt-dlp
+	// falls back to its own config or to no provider.
+	PotBaseURL string `mapstructure:"pot_base_url"`
+	// Proxy is passed as --proxy. On a host whose route to the video site goes
+	// through a proxy this is the difference between working and timing out.
+	Proxy string `mapstructure:"proxy"`
 }
 
 type AuthConfig struct {
