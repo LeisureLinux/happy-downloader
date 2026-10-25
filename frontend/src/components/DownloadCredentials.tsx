@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Alert,
   Box,
@@ -21,6 +21,7 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import { useAtomValue } from 'jotai'
 import { serverURL } from '../atoms/settings'
 import { useI18n } from '../hooks/useI18n'
 import { useToast } from '../hooks/toast'
@@ -61,7 +62,10 @@ const emptyProfile = (): Profile => ({ name: '', hostSuffix: '', extraArgs: [] }
 const authHeader = () => ({ 'X-Authentication': localStorage.getItem('token') ?? '' })
 
 const DownloadCredentials: React.FC = () => {
-  const serverAddr = serverURL
+  // serverURL is an atom; read its value. Using the atom object
+  // directly stringifies to "[object Object]", so every request 404s and
+  // the status stays null, which re-renders in a loop.
+  const serverAddr = useAtomValue(serverURL)
   const { i18n } = useI18n()
   const { pushMessage } = useToast()
 
@@ -71,6 +75,14 @@ const DownloadCredentials: React.FC = () => {
   const [dirty, setDirty] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [preview, setPreview] = useState<Preview | null>(null)
+
+  // useToast() returns a fresh object every render, so pushMessage is a new
+  // function reference each time. Putting it in a dependency array would
+  // recreate refresh() on every render, and the useEffect below would re-fire
+  // in a loop — each setStat() triggering another render. Hold it in a ref
+  // instead so refresh() is stable.
+  const notifyRef = useRef(pushMessage)
+  notifyRef.current = pushMessage
 
   const refresh = useCallback(async () => {
     setBusy(true)
@@ -85,12 +97,13 @@ const DownloadCredentials: React.FC = () => {
       setStat(s)
       setDirty(false)
     } catch (e) {
-      pushMessage(String(e), 'error')
+      notifyRef.current(String(e), 'error')
     } finally {
       setBusy(false)
     }
-  }, [serverAddr, pushMessage])
+  }, [serverAddr])
 
+  // 只在 serverAddr 变化时拉一次，不在每次渲染后重复请求
   useEffect(() => { void refresh() }, [refresh])
 
   const save = useCallback(async () => {

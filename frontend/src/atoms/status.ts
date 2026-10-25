@@ -27,6 +27,7 @@ export const ytdlpRpcVersionState = atom<Promise<RPCVersion>>(async (get) => awa
   getOrElse(() => pipe(
     {
       rpcVersion: 'unknown version',
+      rpcBuiltAt: '0',
       ytdlpVersion: 'unknown version',
     },
     of

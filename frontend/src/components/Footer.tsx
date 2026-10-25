@@ -8,7 +8,6 @@ import { totalDownloadSpeedState } from '../atoms/ui'
 import { useI18n } from '../hooks/useI18n'
 import { formatSpeedMiB } from '../utils'
 import FreeSpaceIndicator from './FreeSpaceIndicator'
-import VersionIndicator from './VersionIndicator'
 import { useAtomValue } from 'jotai'
 
 const Footer: React.FC = () => {
@@ -34,9 +33,6 @@ const Footer: React.FC = () => {
         fontSize: 14,
         display: 'flex', gap: 1, justifyContent: 'space-between'
       }}>
-        <Suspense fallback={<CircularProgress size={15} />}>
-          <VersionIndicator />
-        </Suspense>
         <div style={{ display: 'flex', gap: 4, 'alignItems': 'center' }}>
           <div style={{
             display: 'flex',

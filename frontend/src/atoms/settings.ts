@@ -115,7 +115,7 @@ export const servedFromReverseProxySubDirState = atomWithStorage<string>(
 
 export const appTitleState = atomWithStorage(
   'appTitle',
-  localStorage.getItem('appTitle') ?? 'yt-dlp Web UI'
+  localStorage.getItem('appTitle') ?? 'Happy Downloader'
 )
 
 export const serverAddressAndPortState = atom((get) => {

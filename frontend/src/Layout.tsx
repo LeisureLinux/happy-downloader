@@ -17,10 +17,11 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import { grey } from '@mui/material/colors'
 import { useAtomValue } from 'jotai'
-import { useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { settingsState } from './atoms/settings'
 import AppBar from './components/AppBar'
+import AppVersion from './components/AppVersion'
 import Drawer from './components/Drawer'
 import Footer from './components/Footer'
 import Logout from './components/Logout'
@@ -81,6 +82,7 @@ export default function Layout() {
               sx={{ flexGrow: 1 }}
             >
               {settings.appTitle}
+              <AppVersion />
             </Typography>
           </Toolbar>
         </AppBar>

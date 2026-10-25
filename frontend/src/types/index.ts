@@ -123,6 +123,7 @@ export type LiveStreamProgress = Record<string, {
 
 export type RPCVersion = {
   rpcVersion: string
+  rpcBuiltAt: string
   ytdlpVersion: string
 }
 

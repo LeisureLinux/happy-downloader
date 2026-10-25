@@ -227,7 +227,7 @@ export default function Settings() {
           </Grid>
           <Grid item xs={12}>
             <Typography variant="h6" color="primary" sx={{ mb: 0.5 }}>
-              Reverse Proxy
+              {i18n.t('reverseProxyAnchor')}
             </Typography>
             <FormControlLabel
               control={
@@ -258,7 +258,7 @@ export default function Settings() {
           </Grid>
         </Grid>
         <Typography variant="h6" color="primary" sx={{ mt: 0.5, mb: 2 }}>
-          Appearance
+          {i18n.t('appearanceAnchor')}
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -287,7 +287,7 @@ export default function Settings() {
               >
                 <MenuItem value="light">{i18n.t('lightThemeButton')}</MenuItem>
                 <MenuItem value="dark">{i18n.t('darkThemeButton')}</MenuItem>
-                <MenuItem value="system">System</MenuItem>
+                <MenuItem value="system">{i18n.t('systemThemeOption')}</MenuItem>
               </Select>
             </FormControl>
           </Grid>

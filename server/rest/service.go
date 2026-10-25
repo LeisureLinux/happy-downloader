@@ -211,11 +211,27 @@ func (s *Service) DeleteTemplate(ctx context.Context, id string) error {
 }
 
 // ServerVersion is the version of this server, injected at build time with
-// -ldflags "-X github.com/marcopiovanello/yt-dlp-web-ui/v4/server.ServerVersion=v4.1.0".
-// It defaults to "dev" so a plain "go build" is visibly not a release build.
+// -ldflags "-X .../server/rest.ServerVersion=4.2.1". It defaults to "dev" so
+// a plain "go build" is visibly not a release build.
+//
+// The value carries no "v" prefix: the UI renders it as "v<version>@<built>",
+// so a tag-shaped value would render as "vv4.2.1".
 var ServerVersion = "dev"
 
-func (s *Service) GetVersion(ctx context.Context) (string, string, error) {
+// ServerBuiltAt is the build timestamp (unix seconds), injected the same way
+// with -X .../server/rest.ServerBuiltAt=$(date +%s). It defaults to "0", which
+// the UI renders as no timestamp rather than a misleading one.
+//
+// Without it the only way to tell a stale binary from a current one is the
+// file mtime, which is exactly the check that gets skipped.
+var ServerBuiltAt = "0"
+
+func (s *Service) GetVersion(ctx context.Context) (string, string, string, error) {
+	// The UI renders "UI v<version>" and "yt-dlp v<version>", so
+	// neither may carry its own "v": a tag-shaped "v4.2.0" injected
+	// into ServerVersion would render as "UI vv4.2.0".
+	serverVersion := strings.TrimPrefix(ServerVersion, "v")
+
 	result := make(chan string, 1)
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
@@ -224,13 +240,16 @@ func (s *Service) GetVersion(ctx context.Context) (string, string, error) {
 	cmd := exec.CommandContext(ctx, config.Instance().Paths.DownloaderPath, "--version")
 	go func() {
 		stdout, _ := cmd.Output()
-		result <- strings.TrimSpace(string(stdout))
+		// yt-dlp prints a bare date; some channels prefix a "v". Strip it
+		// so the footer does not render "yt-dlp vv2026.10.21".
+		v := strings.TrimSpace(string(stdout))
+		result <- strings.TrimPrefix(v, "v")
 	}()
 
 	select {
 	case <-ctx.Done():
-		return ServerVersion, "", errors.New("requesting yt-dlp version took too long")
+		return serverVersion, ServerBuiltAt, "", errors.New("requesting yt-dlp version took too long")
 	case res := <-result:
-		return ServerVersion, res, nil
+		return serverVersion, ServerBuiltAt, res, nil
 	}
 }
