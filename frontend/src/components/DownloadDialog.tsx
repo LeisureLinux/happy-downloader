@@ -15,6 +15,7 @@ import {
   Paper,
   Select,
   SelectChangeEvent,
+  Stack,
   TextField
 } from '@mui/material'
 import AppBar from '@mui/material/AppBar'
@@ -40,12 +41,17 @@ import {
 } from '../atoms/downloadTemplate'
 import { settingsState } from '../atoms/settings'
 import { availableDownloadPathsState, connectedState } from '../atoms/status'
-import FormatsGrid from '../components/FormatsGrid'
+import DownloadOptionsPanel from './DownloadOptionsPanel'
+import {
+  buildDownloadArgs,
+  defaultOptions,
+  renderArgs,
+  type DownloadOptions
+} from '../lib/downloadOptions'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
 import { useRPC } from '../hooks/useRPC'
 import type { DLMetadata } from '../types'
-import { toFormatArgs } from '../utils'
 import CustomArgsTextField from './CustomArgsTextField'
 import ExtraDownloadOptions from './ExtraDownloadOptions'
 import LoadingBackdrop from './LoadingBackdrop'
@@ -74,9 +80,7 @@ const DownloadDialog: FC<Props> = ({ open, onClose, onDownloadStart }) => {
   const cookies = useAtomValue(cookiesTemplateState)
 
   const [downloadFormats, setDownloadFormats] = useState<DLMetadata>()
-  const [pickedVideoFormat, setPickedVideoFormat] = useState('')
-  const [pickedAudioFormat, setPickedAudioFormat] = useState('')
-  const [pickedBestFormat, setPickedBestFormat] = useState('')
+  const [options, setOptions] = useState<DownloadOptions>(defaultOptions)
   const [isFormatsLoading, setIsFormatsLoading] = useState(false)
 
   const [downloadPath, setDownloadPath] = useState('')
@@ -105,19 +109,17 @@ const DownloadDialog: FC<Props> = ({ open, onClose, onDownloadStart }) => {
   */
   const sendUrl = async (immediate?: string) => {
     for (const line of url.split('\n')) {
-      const codes = new Array<string>()
-      if (pickedVideoFormat !== '') codes.push(pickedVideoFormat)
-      if (pickedAudioFormat !== '') codes.push(pickedAudioFormat)
-      if (pickedBestFormat !== '') codes.push(pickedBestFormat)
-
-      const downloadTemplate = `${customArgs} ${cookies}`
+      // Options chosen in the dialog, rendered as the same flags the preview
+      // showed, followed by any custom args from Settings.
+      const optionArgs = renderArgs(buildDownloadArgs(options))
+      const downloadTemplate = `${optionArgs} ${customArgs}`
         .replace(/  +/g, ' ')
         .trim()
 
       await new Promise(r => setTimeout(r, 10))
       client.download({
         url: immediate || line,
-        args: `${toFormatArgs(codes)} ${downloadTemplate}`,
+        args: downloadTemplate,
         pathOverride: downloadPath ?? '',
         renameTo: settings.fileRenaming ? filenameTemplate + (settings.autoFileExtension ? fileExtension : '') : '',
         playlist: isPlaylist,
@@ -137,11 +139,6 @@ const DownloadDialog: FC<Props> = ({ open, onClose, onDownloadStart }) => {
    * Retrive url from input and display the formats selection view
    */
   const sendUrlFormatSelection = () => {
-    setPickedAudioFormat('')
-    setPickedVideoFormat('')
-    setPickedBestFormat('')
-
-
     if (isPlaylist) {
       pushMessage('Format selection on playlist is not supported', 'warning')
       resetInput()
@@ -379,32 +376,43 @@ const DownloadDialog: FC<Props> = ({ open, onClose, onDownloadStart }) => {
               </Paper>
             </Grid>
           </Grid >
-          {/* Format Selection grid */}
-          {downloadFormats && <FormatsGrid
-            downloadFormats={downloadFormats}
-            onBestQualitySelected={(id) => {
-              setPickedBestFormat(id)
-              setPickedVideoFormat('')
-              setPickedAudioFormat('')
-            }}
-            onVideoSelected={(id) => {
-              setPickedVideoFormat(id)
-              setPickedBestFormat('')
-            }}
-            onAudioSelected={(id) => {
-              setPickedAudioFormat(id)
-              setPickedBestFormat('')
-            }}
-            onClear={() => {
-              setPickedAudioFormat('')
-              setPickedVideoFormat('')
-              setPickedBestFormat('')
-            }}
-            onSubmit={sendUrl}
-            pickedBestFormat={pickedBestFormat}
-            pickedVideoFormat={pickedVideoFormat}
-            pickedAudioFormat={pickedAudioFormat}
-          />}
+
+          {/* Metadata, once the URL has been probed */}
+          {downloadFormats && (
+            <Grid container spacing={2} mt={1}>
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                  <Typography variant="h6" pb={1}>
+                    {downloadFormats.title}
+                  </Typography>
+                  {downloadFormats.thumbnail && (
+                    <img
+                      src={downloadFormats.thumbnail}
+                      height={200}
+                      style={{ objectFit: 'cover', borderRadius: 4 }}
+                    />
+                  )}
+
+                  <Box mt={2}>
+                    <DownloadOptionsPanel
+                      metadata={downloadFormats}
+                      value={options}
+                      onChange={setOptions}
+                    />
+                  </Box>
+
+                  <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                    <Button variant="contained" onClick={() => sendUrl()}>
+                      {i18n.t('startButton')}
+                    </Button>
+                    <Button onClick={() => setDownloadFormats(undefined)}>
+                      {i18n.t('clearCompletedButton')}
+                    </Button>
+                  </Stack>
+                </Paper>
+              </Grid>
+            </Grid>
+          )}
         </Container>
       </Box>
     </Dialog>

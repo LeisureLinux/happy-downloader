@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {

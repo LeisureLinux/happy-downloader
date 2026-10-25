@@ -76,6 +76,12 @@ export type DLMetadata = {
   thumbnail: string
   title: string
   entries: Array<DLMetadata>
+  /** seconds; drives the audio-only suggestion and the size estimate */
+  duration?: number
+  /** manually authored caption tracks, keyed by language code */
+  subtitles?: Record<string, unknown>
+  /** generated caption tracks, keyed by language code */
+  automaticCaptions?: Record<string, unknown>
 }
 
 export type DLFormat = {
@@ -87,6 +93,8 @@ export type DLFormat = {
   acodec: string
   filesize_approx: number
   language: string
+  /** container, e.g. mp4 / webm / m4a; decides the merge target */
+  ext?: string
 }
 
 export type DirectoryEntry = {

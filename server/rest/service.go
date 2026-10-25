@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
@@ -20,6 +19,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/livestream"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
 	"github.com/LeisureLinux/happy-downloader/v4/server/playlist"
+	"github.com/google/uuid"
 
 	bolt "go.etcd.io/bbolt"
 )

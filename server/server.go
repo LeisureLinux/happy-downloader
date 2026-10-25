@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/filebrowser"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookiewatch"
@@ -36,6 +34,8 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/task"
 	"github.com/LeisureLinux/happy-downloader/v4/server/twitch"
 	"github.com/LeisureLinux/happy-downloader/v4/server/user"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 
 	bolt "go.etcd.io/bbolt"
 )

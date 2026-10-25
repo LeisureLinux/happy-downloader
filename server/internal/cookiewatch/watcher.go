@@ -30,8 +30,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
+	"github.com/fsnotify/fsnotify"
 )
 
 // Watcher converts SourcePath into TargetPath whenever the source changes.

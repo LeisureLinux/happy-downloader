@@ -13,11 +13,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/pipes"
+	"github.com/google/uuid"
 )
 
 type LiveStreamDownloader struct {

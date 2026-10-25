@@ -11,10 +11,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/google/uuid"
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/google/uuid"
 )
 
 const downloadTemplate = `download:
