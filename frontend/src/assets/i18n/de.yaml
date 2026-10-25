@@ -49,8 +49,6 @@ keys:
   logsTitle: 'Logausgabe'
   awaitingLogs: 'Warte auf Log ...'
   bulkDownload: 'Alles in einem ZIP-Archiv herunterladen'
-  rpcPollingTimeTitle: RPC-Abfragezeit
-  rpcPollingTimeDescription: Ein kürzerer Intervall führt zu einer höheren CPU-Auslastung (Server- und Clientseite)
   templatesReloadInfo: Um eine neue Vorlage zu registrieren, muss die Seite möglicherweise neu geladen werden.
   livestreamURLInput: Livestream URL
   livestreamStatusWaiting: Warte auf Start

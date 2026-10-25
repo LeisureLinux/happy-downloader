@@ -10,7 +10,6 @@ import {
   Paper,
   Select,
   SelectChangeEvent,
-  Slider,
   Stack,
   Switch,
   TextField,
@@ -26,7 +25,6 @@ import {
   map,
   takeWhile
 } from 'rxjs'
-import { rpcPollingTimeState } from '../atoms/rpc'
 import {
   Accent,
   Language,
@@ -67,7 +65,6 @@ export default function Settings() {
   const [serverAddr, setServerAddr] = useAtom(serverAddressState)
   const [serverPort, setServerPort] = useAtom(serverPortState)
 
-  const [pollingTime, setPollingTime] = useAtom(rpcPollingTimeState)
   const [language, setLanguage] = useAtom(languageState)
   const [appTitle, setApptitle] = useAtom(appTitleState)
   const [accent, setAccent] = useAtom(accentState)
@@ -195,34 +192,6 @@ export default function Settings() {
               defaultValue={appTitle}
               onChange={(e) => setApptitle(e.currentTarget.value)}
               error={appTitle === ''}
-            />
-          </Grid>
-          <Grid item xs={12} md={12}>
-            <Typography>
-              {i18n.t('rpcPollingTimeTitle')}
-            </Typography>
-            <Typography variant='caption' sx={{ mb: 0.5 }}>
-              {i18n.t('rpcPollingTimeDescription')}
-            </Typography>
-            <Slider
-              aria-label="rpc polling time"
-              defaultValue={pollingTime}
-              max={2000}
-              getAriaValueText={(v: number) => `${v} ms`}
-              step={null}
-              valueLabelDisplay="off"
-              marks={[
-                { value: 100, label: '100 ms' },
-                { value: 250, label: '250 ms' },
-                { value: 500, label: '500 ms' },
-                { value: 750, label: '750 ms' },
-                { value: 1000, label: '1000 ms' },
-                { value: 2000, label: '2000 ms' },
-              ]}
-              onChange={(_, value) => typeof value === 'number'
-                ? setPollingTime(value)
-                : setPollingTime(1000)
-              }
             />
           </Grid>
           <Grid item xs={12}>

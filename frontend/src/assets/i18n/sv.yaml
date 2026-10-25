@@ -50,8 +50,6 @@ keys:
   logsTitle: 'Loggar'
   awaitingLogs: 'Väntar på loggar...'
   bulkDownload: 'Ladda ner filer i ett zip-arkiv'
-  rpcPollingTimeTitle: Frekvens av RPC-uppdateringar
-  rpcPollingTimeDescription: En högre frekvens kräver mer CPU-resurser för både server och klient
   templatesReloadInfo: För att registrera en ny mall så kan en sidomladdning krävas.
   livestreamURLInput: Livestream URL
   livestreamStatusWaiting: Waiting/Wait start

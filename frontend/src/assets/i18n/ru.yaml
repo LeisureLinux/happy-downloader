@@ -62,8 +62,6 @@ keys:
   livestreamExperimentalWarning: This feature is still experimental. Something might break!
   accentSelect: 'Accent'
   urlBase: URL base, for reverse proxy support (subdir), defaults to empty
-  rpcPollingTimeTitle: RPC polling time
-  rpcPollingTimeDescription: A lower interval results in higher CPU usage (server and client side)
   generalDownloadSettings: 'General Download Settings'
   deleteCookies: Delete Cookies
   noFilesFound: 'No Files Found'

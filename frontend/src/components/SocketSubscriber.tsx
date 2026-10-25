@@ -3,7 +3,6 @@ import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { take, timer } from 'rxjs'
 import { downloadsState } from '../atoms/downloads'
-import { rpcPollingTimeState } from '../atoms/rpc'
 import { serverAddressAndPortState } from '../atoms/settings'
 import { connectedState } from '../atoms/status'
 import { useSubscription } from '../hooks/observable'
@@ -15,12 +14,18 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 
 interface Props extends React.HTMLAttributes<HTMLBaseElement> { }
 
+// How often the running-download list is refreshed, over the existing
+// WebSocket. Two seconds keeps progress smooth without a request storm. The
+// value is fixed rather than configurable: it is not a choice a user would
+// make differently, and the slider it replaced only offered a trade nobody
+// needed to weigh.
+const STATUS_POLL_MS = 2000
+
 const SocketSubscriber: React.FC<Props> = () => {
   const [connected, setIsConnected] = useAtom(connectedState)
   const setDownloads = useSetAtom(downloadsState)
 
   const serverAddressAndPort = useAtomValue(serverAddressAndPortState)
-  const rpcPollingTime = useAtomValue(rpcPollingTimeState)
 
   const { i18n } = useI18n()
   const { client } = useRPC()
@@ -72,10 +77,10 @@ const SocketSubscriber: React.FC<Props> = () => {
 
   useEffect(() => {
     if (connected) {
-      const sub = timer(0, rpcPollingTime).subscribe(() => client.running())
+      const sub = timer(0, STATUS_POLL_MS).subscribe(() => client.running())
       return () => sub.unsubscribe()
     }
-  }, [connected, client, rpcPollingTime])
+  }, [connected, client])
 
   return null
 }

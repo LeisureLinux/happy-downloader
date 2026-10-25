@@ -74,8 +74,6 @@ keys:
   livestreamExperimentalWarning: 实验性功能，可能存在未知Bug，请谨慎使用
   accentSelect: 'Accent'
   urlBase: URL base, for reverse proxy support (subdir), defaults to empty
-  rpcPollingTimeTitle: RPC polling time
-  rpcPollingTimeDescription: A lower interval results in higher CPU usage (server and client side)
   generalDownloadSettings: 'General Download Settings'
   reverseProxyAnchor: '反向代理'
   appearanceAnchor: '外观'

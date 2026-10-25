@@ -60,8 +60,6 @@ keys:
   logsTitle: 'Logs'
   awaitingLogs: 'Awaiting logs...'
   bulkDownload: 'Download files in a zip archive'
-  rpcPollingTimeTitle: RPC polling time
-  rpcPollingTimeDescription: A lower interval results in higher CPU usage (server and client side)
   templatesReloadInfo: To register a new template it might need a page reload.
   livestreamURLInput: Livestream URL
   livestreamStatusWaiting: Waiting/Wait start

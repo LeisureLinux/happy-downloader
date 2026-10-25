@@ -50,8 +50,6 @@ keys:
   logsTitle: 'Logs'
   awaitingLogs: 'Awaiting logs...'
   bulkDownload: 'Scaricare i file in un archivio zip'
-  rpcPollingTimeTitle: Intervallo di polling RPC
-  rpcPollingTimeDescription: Un intervallo più corto implica un maggior utilizzo di CPU (lato client e server)
   templatesReloadInfo: Per registrare un nuovo modello potrebbe essere necessario ricaricare la pagina.
   livestreamURLInput: Livestream URL
   livestreamStatusWaiting: Attesa inizio

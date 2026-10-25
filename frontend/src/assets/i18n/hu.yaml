@@ -50,8 +50,6 @@ keys:
   logsTitle: 'Naplók'
   awaitingLogs: 'Napló letöltése...'
   bulkDownload: 'Fájlok letöltése ZIP archívumként'
-  rpcPollingTimeTitle: RPC lekérdezési időköz
-  rpcPollingTimeDescription: Rövidebb időköz nagyobb processzor terheléssel járhat (mind szerver és böngésző oldalon is)
   templatesReloadInfo: Az új sablon megjelenéséhez újra kell tölteni az oldalt.
   livestreamURLInput: Élő stream URL
   livestreamStatusWaiting: Várakozás a kezdésre
