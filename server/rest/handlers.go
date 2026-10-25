@@ -1,9 +1,7 @@
 package rest
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -109,101 +107,17 @@ func (h *Handler) Running() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) GetCookies() http.HandlerFunc {
+func (h *Handler) CookiesStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		cookies, err := h.service.GetCookies(r.Context())
+		status, err := h.service.CookieStatus()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		res := &internal.SetCookiesRequest{
-			Cookies: string(cookies),
-		}
-
-		if err := json.NewEncoder(w).Encode(res); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-func (h *Handler) SetCookies() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
-		w.Header().Set("Content-Type", "application/json")
-
-		req := new(internal.SetCookiesRequest)
-
-		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if err := h.service.SetCookies(r.Context(), req.Cookies); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if err := json.NewEncoder(w).Encode("ok"); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-// UploadCookies accepts a raw cookie export file in any recognised format
-// and stores the Netscape conversion.
-//
-// The body is the file itself, not a JSON envelope: a browser's file input and
-// curl -F both send the bytes directly. The existing POST /cookies route stays
-// as-is for the text box, which speaks JSON.
-func (h *Handler) UploadCookies() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
-		w.Header().Set("Content-Type", "application/json")
-
-		// A cookie file is a few KB. Cap it well below that so a mistake cannot
-		// exhaust memory.
-		r.Body = http.MaxBytesReader(w, r.Body, 8<<20)
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if len(bytes.TrimSpace(body)) == 0 {
-			http.Error(w, "empty cookie file", http.StatusBadRequest)
-			return
-		}
-
-		if err := h.service.SetCookies(r.Context(), string(body)); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if err := json.NewEncoder(w).Encode("ok"); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-func (h *Handler) DeleteCookies() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		if err := h.service.SetCookies(r.Context(), ""); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if err := json.NewEncoder(w).Encode("ok"); err != nil {
+		if err := json.NewEncoder(w).Encode(status); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

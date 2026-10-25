@@ -30,14 +30,9 @@ func ApplyRouter(args *ContainerArgs) func(chi.Router) {
 		r.Post("/execLivestream", h.ExecLivestream())
 		r.Get("/running", h.Running())
 		r.Get("/version", h.GetVersion())
-		r.Get("/cookies", h.GetCookies())
-		r.Post("/cookies", h.SetCookies())
-		r.Delete("/cookies", h.DeleteCookies())
-		// Upload accepts a browser extension's JSON export and converts it to
-		// Netscape. It exists because the JSON shape carries the httpOnly cookies
-		// that the Netscape text box drops, and because a headless host has no
-		// browser to re-export from.
-		r.Post("/cookies/upload", h.UploadCookies())
+		// Cookies are configured by path (paths.cookie_path) and picked up
+		// automatically, so the UI only needs to report the current state.
+		r.Get("/cookies/status", h.CookiesStatus())
 		r.Post("/template", h.AddTemplate())
 		r.Patch("/template", h.UpdateTemplate())
 		r.Get("/template/all", h.GetTemplates())
