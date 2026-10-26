@@ -235,8 +235,11 @@ func newServer(c serverConfig) *http.Server {
 	})
 
 	r.Use(corsMiddleware.Handler)
-	// use in dev
-	// r.Use(middleware.Logger)
+
+	// One line per request, with the client address: the log is read from a
+	// browser on another machine, and "download started" without knowing which
+	// machine is half an answer.
+	r.Use(middlewares.AccessLog)
 
 	baseUrl := config.Instance().Server.BaseURL
 	r.Mount(baseUrl+"/", http.StripPrefix(baseUrl, http.FileServerFS(c.frontend)))

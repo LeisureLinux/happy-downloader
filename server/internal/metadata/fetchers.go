@@ -13,6 +13,13 @@ import (
 )
 
 func DefaultFetcher(url string) (*common.DownloadMetadata, error) {
+	// The probe for this URL already ran a full extraction; reuse it instead of
+	// making the user wait the same twenty seconds twice.
+	if cached, ok := Recall(url); ok {
+		slog.Info("metadata reused from the earlier probe", slog.String("url", url))
+		return &cached, nil
+	}
+
 	// The metadata stage used to run with a bare "<url> -J", which meant it
 	// resolved without the JS runtime, without cookies and without any of the
 	// options the download stage applies. A URL could therefore fail here while
@@ -57,6 +64,8 @@ func DefaultFetcher(url string) (*common.DownloadMetadata, error) {
 	if err := cmd.Wait(); err != nil {
 		return nil, errors.New(bufferedStderr.String())
 	}
+
+	Remember(url, meta)
 
 	return &meta, nil
 }

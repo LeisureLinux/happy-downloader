@@ -3,7 +3,6 @@ import { Suspense, lazy } from 'react'
 import { createHashRouter } from 'react-router-dom'
 import Layout from './Layout'
 import ErrorBoundary from './components/ErrorBoundary'
-import Terminal from './views/Terminal'
 
 const Home = lazy(() => import('./views/Home'))
 const Settings = lazy(() => import('./views/Settings'))
@@ -33,14 +32,6 @@ export const router = createHashRouter([
         element: (
           <Suspense fallback={<CircularProgress />}>
             <Settings />
-          </Suspense >
-        )
-      },
-      {
-        path: '/log',
-        element: (
-          <Suspense fallback={<CircularProgress />}>
-            <Terminal />
           </Suspense >
         )
       },

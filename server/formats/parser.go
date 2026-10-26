@@ -7,8 +7,11 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/LeisureLinux/happy-downloader/v4/server/common"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/metadata"
 )
 
 func ParseURL(url string) (*Metadata, error) {
@@ -68,6 +71,20 @@ func ParseURL(url string) (*Metadata, error) {
 	}
 
 	info.Best = *best
+
+	// Hand the result to the download stage. Without this, pressing "start"
+	// runs the same extraction again and the user waits twice for one answer.
+	metadata.Remember(url, common.DownloadMetadata{
+		URL:        url,
+		Title:      info.Title,
+		Thumbnail:  info.Thumbnail,
+		Resolution: best.Resolution,
+		Size:       int32(best.Size),
+		VCodec:     best.VCodec,
+		ACodec:     best.ACodec,
+		Extension:  best.Ext,
+		CreatedAt:  time.Now(),
+	})
 
 	return info, nil
 }

@@ -15,14 +15,16 @@ import ListItemText from '@mui/material/ListItemText'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import { grey } from '@mui/material/colors'
-import { useAtomValue } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import { Suspense, useMemo, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { settingsState } from './atoms/settings'
+import { logPanelOpenAtom } from './atoms/ui'
 import AppBar from './components/AppBar'
 import AppVersion from './components/AppVersion'
 import Drawer from './components/Drawer'
 import Footer from './components/Footer'
+import LogPanel from './components/LogPanel'
 import SocketSubscriber from './components/SocketSubscriber'
 import { useI18n } from './hooks/useI18n'
 import Toaster from './providers/ToasterProvider'
@@ -37,6 +39,7 @@ export default function Layout() {
   const [open, setOpen] = useState(false)
 
   const settings = useAtomValue(settingsState)
+  const [logOpen, setLogOpen] = useAtom(logPanelOpenAtom)
 
   const mode = settings.theme
   const theme = useMemo(() =>
@@ -158,6 +161,7 @@ export default function Layout() {
           <Outlet />
         </Box>
       </Box>
+      <LogPanel open={logOpen} onClose={() => setLogOpen(false)} />
       <Footer />
       <Toaster />
     </ThemeProvider>

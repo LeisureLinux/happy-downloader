@@ -3,6 +3,7 @@ package logging
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -30,6 +31,12 @@ func webSocket(logger *ObservableLogger) http.HandlerFunc {
 			return
 		}
 
+		for _, line := range logger.History() {
+			if err := c.WriteJSON(string(line)); err != nil {
+				return
+			}
+		}
+
 		logs := logger.Observe(r.Context())
 
 		for {
@@ -54,6 +61,15 @@ func sse(logger *ObservableLogger) http.HandlerFunc {
 			http.Error(w, "SSE not supported", http.StatusInternalServerError)
 			return
 		}
+
+		// History first, so the panel opens with the lines that explain why it
+		// was opened. Then the live stream continues from there.
+		for _, line := range logger.History() {
+			if _, err := fmt.Fprintf(w, "event: log\ndata: %s\n\n", mustJSON(line)); err != nil {
+				return
+			}
+		}
+		flusher.Flush()
 
 		logs := logger.Observe(r.Context())
 
@@ -87,6 +103,17 @@ func sse(logger *ObservableLogger) http.HandlerFunc {
 			}
 		}
 	}
+}
+
+// mustJSON encodes a history line for the SSE data field. The lines are plain
+// log text, so this is only escaping.
+func mustJSON(line []byte) []byte {
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(string(line))
+	// Encode appends a newline; the SSE frame supplies its own.
+	return bytes.TrimRight(b.Bytes(), "\n")
 }
 
 func ApplyRouter(logger *ObservableLogger) func(chi.Router) {

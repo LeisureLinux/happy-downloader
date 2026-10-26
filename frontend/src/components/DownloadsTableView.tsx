@@ -123,6 +123,26 @@ const DownloadsTableView: React.FC = () => {
     return next
   })
 
+  // A download that has been queued but has not transferred anything yet shows
+  // a 0% bar, which is indistinguishable from a stuck one. Naming the stage
+  // says whether to keep waiting.
+  const statusLabel = (r: RPCResult) => {
+    switch (r.progress.process_status) {
+      case ProcessStatus.PENDING:
+        return i18n.t('statusPending')
+      case ProcessStatus.DOWNLOADING:
+        return r.progress.percentage
+          ? i18n.t('statusDownloading')
+          : i18n.t('statusMetadata')
+      case ProcessStatus.COMPLETED:
+        return i18n.t('statusCompleted')
+      case ProcessStatus.ERRORED:
+        return i18n.t('statusErrored')
+      default:
+        return ''
+    }
+  }
+
   // The list outlives the files: an entry whose file was removed elsewhere has
   // nothing to play or download, and offering the buttons produces a 404.
   const fileOnDisk = (r: RPCResult) => r.output.fileExists === true
@@ -194,9 +214,14 @@ const DownloadsTableView: React.FC = () => {
             : '—'}
         </TableCell>
         <TableCell align="right">
+          {/* 状态文字：点下"开始"到真正开始传数据之间有一段等待（排队、取元数据），
+              只显示一个 0% 的进度条会让人以为没反应。 */}
+          <Typography variant="caption" color="text.secondary" display="block">
+            {statusLabel(download)}
+          </Typography>
           <LinearProgressWithLabel
-            sx={{ height: '16px' }}
-            value={done ? 100 : Number(download.progress.percentage.replace('%', ''))}
+            sx={{ height: '16px', mt: 0.5 }}
+            value={done ? 100 : Number(download.progress.percentage.replace('%', '') || 0)}
             variant={download.progress.process_status === 0 ? 'indeterminate' : 'determinate'}
             color={'primary'}
           />

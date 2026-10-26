@@ -3,14 +3,14 @@ import TerminalIcon from '@mui/icons-material/Terminal'
 import SettingsEthernet from '@mui/icons-material/SettingsEthernet'
 import { AppBar, CircularProgress, Divider, IconButton, Toolbar, Tooltip } from '@mui/material'
 import { Suspense } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { settingsState } from '../atoms/settings'
+import { logPanelOpenAtom } from '../atoms/ui'
 import { connectedState } from '../atoms/status'
 import { totalDownloadSpeedState } from '../atoms/ui'
 import { useI18n } from '../hooks/useI18n'
 import { formatSpeedMiB } from '../utils'
 import FreeSpaceIndicator from './FreeSpaceIndicator'
-import { useAtomValue } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 
 const Footer: React.FC = () => {
   const settings = useAtomValue(settingsState)
@@ -19,7 +19,7 @@ const Footer: React.FC = () => {
 
   const mode = settings.theme
   const { i18n } = useI18n()
-  const navigate = useNavigate()
+  const [logOpen, setLogOpen] = useAtom(logPanelOpenAtom)
 
   return (
     <AppBar position="fixed" color="default" sx={{
@@ -37,12 +37,13 @@ const Footer: React.FC = () => {
         display: 'flex', gap: 1, justifyContent: 'space-between'
       }}>
         <div style={{ display: 'flex', gap: 4, 'alignItems': 'center' }}>
-          {/* 日志入口放在网速左边：它是个诊断工具，不是日常导航 */}
+          {/* 日志入口放在网速左边：它是个诊断工具，不是日常导航。
+              点一下开面板，再点一下关，不离开当前页面。 */}
           <Tooltip title={i18n.t('logsTitle')}>
             <IconButton
               size="small"
-              color="inherit"
-              onClick={() => navigate('/log')}
+              color={logOpen ? 'primary' : 'inherit'}
+              onClick={() => setLogOpen(v => !v)}
             >
               <TerminalIcon fontSize="small" />
             </IconButton>
