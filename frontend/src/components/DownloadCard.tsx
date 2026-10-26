@@ -16,7 +16,7 @@ import {
 import { useAtomValue } from 'jotai'
 import { useCallback } from 'react'
 import { serverURL } from '../atoms/settings'
-import { RPCResult } from '../types'
+import { ProcessStatus, RPCResult } from '../types'
 import { base64URLEncode, ellipsis, formatSize, formatSpeedMiB, mapProcessStatus } from '../utils'
 import ResolutionBadge from './ResolutionBadge'
 import ClearIcon from '@mui/icons-material/Clear'
@@ -33,9 +33,13 @@ type Props = {
 const DownloadCard: React.FC<Props> = ({ download, onStop, onCopy }) => {
   const serverAddr = useAtomValue(serverURL)
 
+  // process_status is the authoritative signal. The percentage was used
+  // before, but a completed download reports "100.0%" while one that never
+  // produced progress reports "" — so the check missed most completed items
+  // and the card kept showing "Stop this download" on a finished download.
   const isCompleted = useCallback(
-    () => download.progress.percentage === '-1',
-    [download.progress.percentage]
+    () => download.progress.process_status === ProcessStatus.COMPLETED,
+    [download.progress.process_status]
   )
 
   const percentageToNumber = useCallback(

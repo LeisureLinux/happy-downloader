@@ -37,7 +37,6 @@ keys:
   settingsButtonLabel: Settings
   themeTogglerLabel: Theme toggler
   loadingLabel: Loading...
-  appTitle: App title
   savedTemplates: Saved templates
   templatesEditor: Templates editor
   templatesEditorNameLabel: Template name

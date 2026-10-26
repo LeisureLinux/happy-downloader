@@ -50,7 +50,6 @@ keys:
   settingsButtonLabel: 设置
   themeTogglerLabel: 主题切换
   loadingLabel: 正在加载…
-  appTitle: App 标题
   savedTemplates: 保存模板
   templatesEditor: 模板编辑器
   templatesEditorNameLabel: 模板名称

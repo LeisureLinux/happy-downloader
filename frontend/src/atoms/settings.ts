@@ -45,7 +45,6 @@ export interface SettingsState {
   enableCustomArgs: boolean
   listView: boolean
   servedFromReverseProxy: boolean
-  appTitle: string
 }
 
 export const languageState = atomWithStorage<Language>(
@@ -111,11 +110,6 @@ export const servedFromReverseProxyState = atomWithStorage(
 export const servedFromReverseProxySubDirState = atomWithStorage<string>(
   'reverseProxySubDir',
   localStorage.getItem('reverseProxySubDir') ?? ''
-)
-
-export const appTitleState = atomWithStorage(
-  'appTitle',
-  localStorage.getItem('appTitle') ?? 'Happy Downloader'
 )
 
 export const serverAddressAndPortState = atom((get) => {
@@ -202,5 +196,4 @@ export const settingsState = atom<SettingsState>((get) => ({
   enableCustomArgs: get(enableCustomArgsState),
   listView: get(listViewState),
   servedFromReverseProxy: get(servedFromReverseProxyState),
-  appTitle: get(appTitleState)
 }))

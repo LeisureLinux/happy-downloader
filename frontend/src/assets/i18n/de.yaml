@@ -39,7 +39,6 @@ keys:
   settingsButtonLabel: Einstellungen
   themeTogglerLabel: Modus Umschalter
   loadingLabel: Lädt...
-  appTitle: App Titel
   savedTemplates: Gespeicherte Vorlage
   templatesEditor: Vorlageneditor
   templatesEditorNameLabel: Vorlagen Name

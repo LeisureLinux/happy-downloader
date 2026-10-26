@@ -37,7 +37,6 @@ keys:
   settingsButtonLabel: Настройки
   themeTogglerLabel: Переключить тему
   loadingLabel: Загрузка...
-  appTitle: Название приложения
   savedTemplates: Сохраненные шаблоны
   templatesEditor: Редактор шаблонов
   templatesEditorNameLabel: Имя шаблона

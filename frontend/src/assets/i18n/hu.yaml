@@ -40,7 +40,6 @@ keys:
   settingsButtonLabel: Beállítások
   themeTogglerLabel: Témaválasztó
   loadingLabel: Betöltés...
-  appTitle: Alkalmazás címe
   savedTemplates: Mentett sablonok
   templatesEditor: Sablonszerkesztő
   templatesEditorNameLabel: Sablon neve

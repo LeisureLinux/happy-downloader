@@ -40,7 +40,6 @@ keys:
   settingsButtonLabel: Configurações
   themeTogglerLabel: Alternador de tema
   loadingLabel: Carregando...
-  appTitle: Título do aplicativo
   savedTemplates: Modelos salvos
   templatesEditor: Editor de modelos
   templatesEditorNameLabel: Nome do modelo

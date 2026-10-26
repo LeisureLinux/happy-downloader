@@ -137,12 +137,18 @@ const DownloadsTableView: React.FC = () => {
     ? client.clear(r.id)
     : client.kill(r.id)
 
+  // process_status is authoritative. percentage === '-1' only matched items
+  // that never reported progress, so completed downloads kept the stop icon
+  // and hid the view/download actions.
+  const isDone = (r: RPCResult) =>
+    r.progress.process_status === ProcessStatus.COMPLETED
+
 
   function rowContent(_index: number, download: RPCResult) {
     return (
       <>
         <TableCell>
-          {download.progress.percentage === '-1'
+          {isDone(download)
             ? <DownloadDoneIcon color="primary" />
             : <DownloadIcon color="primary" />
           }
@@ -153,7 +159,7 @@ const DownloadsTableView: React.FC = () => {
           <LinearProgressWithLabel
             sx={{ height: '16px' }}
             value={
-              download.progress.percentage === '-1'
+              isDone(download)
                 ? 100
                 : Number(download.progress.percentage.replace('%', ''))
             }
@@ -162,7 +168,7 @@ const DownloadsTableView: React.FC = () => {
                 ? 'indeterminate'
                 : 'determinate'
             }
-            color={download.progress.percentage === '-1' ? 'primary' : 'primary'}
+            color={'primary'}
           />
         </TableCell>
         <TableCell align="right">{formatSize(download.info.filesize_approx ?? 0)}</TableCell>
@@ -175,10 +181,10 @@ const DownloadsTableView: React.FC = () => {
               size="small"
               onClick={() => stop(download)}
             >
-              {download.progress.percentage === '-1' ? <DeleteIcon /> : <StopCircleIcon />}
+              {isDone(download) ? <DeleteIcon /> : <StopCircleIcon />}
 
             </IconButton>
-            {download.progress.percentage === '-1' &&
+            {isDone(download) &&
               <>
                 <IconButton
                   size="small"

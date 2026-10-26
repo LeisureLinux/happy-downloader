@@ -29,6 +29,11 @@ import { useI18n } from './hooks/useI18n'
 import Toaster from './providers/ToasterProvider'
 import { getAccentValue } from './utils'
 
+// PRODUCT_NAME is the app name. It used to be a user setting, but renaming the
+// product is not something a user does, and the field only produced a stale
+// localStorage value that overrode the real name.
+const PRODUCT_NAME = 'Happy Downloader'
+
 export default function Layout() {
   const [open, setOpen] = useState(false)
 
@@ -55,7 +60,7 @@ export default function Layout() {
 
   return (
     <ThemeProvider theme={theme}>
-      <title>{settings.appTitle}</title>
+      <title>{PRODUCT_NAME}</title>
       <SocketSubscriber />
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
@@ -80,7 +85,7 @@ export default function Layout() {
               noWrap
               sx={{ flexGrow: 1 }}
             >
-              {settings.appTitle}
+              {PRODUCT_NAME}
               <AppVersion />
             </Typography>
           </Toolbar>

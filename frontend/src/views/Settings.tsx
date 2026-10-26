@@ -31,7 +31,6 @@ import {
   Theme,
   accentState,
   accents,
-  appTitleState,
   enableCustomArgsState,
   fileRenamingState,
   autoFileExtensionState,
@@ -66,7 +65,6 @@ export default function Settings() {
   const [serverPort, setServerPort] = useAtom(serverPortState)
 
   const [language, setLanguage] = useAtom(languageState)
-  const [appTitle, setApptitle] = useAtom(appTitleState)
   const [accent, setAccent] = useAtom(accentState)
 
   const [theme, setTheme] = useAtom(themeState)
@@ -183,15 +181,6 @@ export default function Settings() {
               defaultValue={serverPort}
               onChange={(e) => serverPort$.next(e.currentTarget.value)}
               error={isNaN(Number(serverPort)) || Number(serverPort) > 65535}
-            />
-          </Grid>
-          <Grid item xs={12} md={12}>
-            <TextField
-              fullWidth
-              label={i18n.t('appTitle')}
-              defaultValue={appTitle}
-              onChange={(e) => setApptitle(e.currentTarget.value)}
-              error={appTitle === ''}
             />
           </Grid>
           <Grid item xs={12}>
