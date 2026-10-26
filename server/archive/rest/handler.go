@@ -6,11 +6,8 @@ import (
 	"strconv"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/archive/domain"
-	"github.com/LeisureLinux/happy-downloader/v4/server/config"
-	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
-	"github.com/go-chi/chi/v5"
+		"github.com/go-chi/chi/v5"
 
-	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
 )
 
 type Handler struct {
@@ -146,12 +143,6 @@ func (h *Handler) GetCursor() http.HandlerFunc {
 // ApplyRouter implements domain.RestHandler.
 func (h *Handler) ApplyRouter() func(chi.Router) {
 	return func(r chi.Router) {
-		if config.Instance().Authentication.RequireAuth {
-			r.Use(middlewares.Authenticated)
-		}
-		if config.Instance().OpenId.UseOpenId {
-			r.Use(openid.Middleware)
-		}
 
 		r.Get("/", h.List())
 		r.Get("/cursor/{id}", h.GetCursor())

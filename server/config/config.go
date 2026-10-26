@@ -15,8 +15,6 @@ type Config struct {
 	Logging        LoggingConfig  `mapstructure:"logging"`
 	Paths          PathsConfig    `mapstructure:"paths"`
 	YtDlp          YtDlpConfig    `mapstructure:"ytdlp"`
-	Authentication AuthConfig     `mapstructure:"authentication"`
-	OpenId         OpenIdConfig   `mapstructure:"openid"`
 	Frontend       FrontendConfig `mapstructure:"frontend"`
 	AutoArchive    bool           `mapstructure:"auto_archive"`
 	Twitch         TwitchConfig   `mapstructure:"twitch"`
@@ -63,21 +61,6 @@ type YtDlpConfig struct {
 	// Proxy is passed as --proxy. On a host whose route to the video site goes
 	// through a proxy this is the difference between working and timing out.
 	Proxy string `mapstructure:"proxy"`
-}
-
-type AuthConfig struct {
-	RequireAuth  bool   `mapstructure:"require_auth"`
-	Username     string `mapstructure:"username"`
-	PasswordHash string `mapstructure:"password_hash"`
-}
-
-type OpenIdConfig struct {
-	UseOpenId      bool     `mapstructure:"use_openid"`
-	ProviderURL    string   `mapstructure:"provider_url"`
-	ClientId       string   `mapstructure:"client_id"`
-	ClientSecret   string   `mapstructure:"client_secret"`
-	RedirectURL    string   `mapstructure:"redirect_url"`
-	EmailWhitelist []string `mapstructure:"email_whitelist"`
 }
 
 type FrontendConfig struct {

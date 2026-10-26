@@ -15,15 +15,11 @@ export class RPCClient {
   private seq: number
   private httpEndpoint: string
   private readonly _socket$: WebSocketSubject<any>
-  private readonly token?: string
 
-  constructor(httpEndpoint: string, webSocketEndpoint: string, token?: string) {
+  constructor(httpEndpoint: string, webSocketEndpoint: string) {
     this.seq = 0
     this.httpEndpoint = httpEndpoint
-    this._socket$ = webSocket<any>({
-      url: token ? `${webSocketEndpoint}?token=${token}` : webSocketEndpoint
-    })
-    this.token = token
+    this._socket$ = webSocket<any>({ url: webSocketEndpoint })
   }
 
   public get socket$(): Observable<RPCResponse<RPCResult[]>> {
@@ -54,7 +50,7 @@ export class RPCClient {
     const res = await fetch(this.httpEndpoint, {
       method: 'POST',
       headers: {
-        'X-Authentication': this.token ?? ''
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         ...req,

@@ -4,8 +4,6 @@ import * as E from 'fp-ts/Either'
 import { pipe } from 'fp-ts/lib/function'
 
 async function fetcher(url: string, opt?: RequestInit, controller?: AbortController): Promise<string> {
-  const jwt = localStorage.getItem('token')
-
   if (opt && !opt.headers) {
     opt.headers = {
       'Content-Type': 'application/json',
@@ -14,10 +12,6 @@ async function fetcher(url: string, opt?: RequestInit, controller?: AbortControl
 
   const res = await fetch(url, {
     ...opt,
-    headers: {
-      ...opt?.headers,
-      'X-Authentication': jwt ?? ''
-    },
     signal: controller?.signal
   })
 

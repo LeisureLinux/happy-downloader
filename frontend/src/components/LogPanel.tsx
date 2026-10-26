@@ -27,7 +27,7 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
   useEffect(() => {
     if (!open) return
 
-    const es = new EventSource(`${serverAddr}/log/sse?token=${localStorage.getItem('token') ?? ''}`)
+    const es = new EventSource(`${serverAddr}/log/sse`)
 
     es.onopen = () => setConnected(true)
     es.onerror = () => setConnected(false)

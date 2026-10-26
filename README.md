@@ -175,11 +175,13 @@ file without any extra machinery.
 Per-site overrides — a different proxy, a different cookie file, extra
 arguments — live in Settings and are stored in the local database, not here.
 
-### A note on `authentication`
+### Access control
 
-The server still honours `authentication.require_auth` and the OpenID settings,
-but the login screen was removed from the frontend. Turning either on will lock
-the web UI out. If you need access control, terminate it at the reverse proxy.
+There is none. The login screen, the JWT middleware and the OpenID integration
+were removed: this is meant to sit on a home network, and a half-wired login —
+one that is easy to leave off and hard to configure — is worse than none. Keep
+it off the public internet with the reverse proxy and, if you need it, put
+authentication there.
 
 ## Building
 

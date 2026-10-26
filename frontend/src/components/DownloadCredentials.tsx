@@ -59,8 +59,6 @@ type Preview = {
 
 const emptyProfile = (): Profile => ({ name: '', hostSuffix: '', extraArgs: [] })
 
-const authHeader = () => ({ 'X-Authentication': localStorage.getItem('token') ?? '' })
-
 const DownloadCredentials: React.FC = () => {
   // serverURL is an atom; read its value. Using the atom object
   // directly stringifies to "[object Object]", so every request 404s and
@@ -88,9 +86,9 @@ const DownloadCredentials: React.FC = () => {
     setBusy(true)
     try {
       const [p, s] = await Promise.all([
-        fetch(`${serverAddr}/api/v1/profiles/`, { headers: authHeader() })
+        fetch(`${serverAddr}/api/v1/profiles/`)
           .then(r => r.ok ? r.json() : []),
-        fetch(`${serverAddr}/api/v1/cookies/status`, { headers: authHeader() })
+        fetch(`${serverAddr}/api/v1/cookies/status`)
           .then(r => r.ok ? r.json() : null)
       ])
       setProfiles(p)
@@ -111,7 +109,7 @@ const DownloadCredentials: React.FC = () => {
     try {
       const res = await fetch(`${serverAddr}/api/v1/profiles/`, {
         method: 'PUT',
-        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profiles)
       })
       if (!res.ok) {
@@ -132,8 +130,7 @@ const DownloadCredentials: React.FC = () => {
     if (!u.trim()) { setPreview(null); return }
     try {
       const res = await fetch(
-        `${serverAddr}/api/v1/profiles/preview?url=${encodeURIComponent(u)}`,
-        { headers: authHeader() })
+        `${serverAddr}/api/v1/profiles/preview?url=${encodeURIComponent(u)}`)
       if (res.ok) setPreview(await res.json())
     } catch {
       setPreview(null)

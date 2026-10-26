@@ -5,7 +5,6 @@ import { rpcHTTPEndpoint, rpcWebSocketEndpoint } from './settings'
 export const rpcClientState = atom((get) =>
   new RPCClient(
     get(rpcHTTPEndpoint),
-    get(rpcWebSocketEndpoint),
-    localStorage.getItem('token') ?? ''
+    get(rpcWebSocketEndpoint)
   ),
 )

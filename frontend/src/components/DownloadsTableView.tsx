@@ -161,12 +161,12 @@ const DownloadsTableView: React.FC = () => {
 
   const viewFile = (path: string) => {
     const encoded = base64URLEncode(path)
-    window.open(`${serverAddr}/filebrowser/v/${encoded}?token=${localStorage.getItem('token')}`)
+    window.open(`${serverAddr}/filebrowser/v/${encoded}`)
   }
 
   const downloadFile = (path: string) => {
     const encoded = base64URLEncode(path)
-    window.open(`${serverAddr}/filebrowser/d/${encoded}?token=${localStorage.getItem('token')}`)
+    window.open(`${serverAddr}/filebrowser/d/${encoded}`)
   }
 
   // 重新入队。服务端复用原来的参数，所以重试的是同一次请求，

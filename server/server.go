@@ -26,14 +26,12 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
 	"github.com/LeisureLinux/happy-downloader/v4/server/logging"
 	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
-	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
 	"github.com/LeisureLinux/happy-downloader/v4/server/rest"
 	ytdlpRPC "github.com/LeisureLinux/happy-downloader/v4/server/rpc"
 	"github.com/LeisureLinux/happy-downloader/v4/server/status"
 	"github.com/LeisureLinux/happy-downloader/v4/server/subscription"
 	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/task"
 	"github.com/LeisureLinux/happy-downloader/v4/server/twitch"
-	"github.com/LeisureLinux/happy-downloader/v4/server/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 
@@ -249,7 +247,6 @@ func newServer(c serverConfig) *http.Server {
 
 	// Filebrowser routes
 	r.Route("/filebrowser", func(r chi.Router) {
-		r.Use(middlewares.ApplyAuthenticationByConfig)
 		r.Post("/downloaded", filebrowser.ListDownloaded)
 		r.Post("/delete", filebrowser.DeleteFile)
 		r.Get("/d/{id}", filebrowser.DownloadFile)
@@ -259,18 +256,6 @@ func newServer(c serverConfig) *http.Server {
 
 	// Archive routes
 	// r.Route("/archive", archive.ApplyRouter(c.db))
-
-	// Authentication routes
-	r.Route("/auth", func(r chi.Router) {
-		r.Post("/login", user.Login)
-		r.Get("/logout", user.Logout)
-
-		r.Route("/openid", func(r chi.Router) {
-			r.Get("/login", openid.Login)
-			r.Get("/signin", openid.SingIn)
-			r.Get("/logout", openid.Logout)
-		})
-	})
 
 	// RPC handlers
 	r.Route("/rpc", ytdlpRPC.ApplyRouter())
@@ -296,7 +281,6 @@ func newServer(c serverConfig) *http.Server {
 
 	// Twitch
 	r.Route("/twitch", func(r chi.Router) {
-		r.Use(middlewares.ApplyAuthenticationByConfig)
 		r.Get("/users", twitch.GetMonitoredUsers(c.twitchMonitor))
 		r.Post("/user", twitch.MonitorUserHandler(c.twitchMonitor))
 		r.Delete("/user/{user}", twitch.DeleteUser(c.twitchMonitor))
@@ -305,7 +289,6 @@ func newServer(c serverConfig) *http.Server {
 	// Pipelines
 	r.Route("/pipelines", func(r chi.Router) {
 		h := pipeline.NewRestHandler(c.db)
-		r.Use(middlewares.ApplyAuthenticationByConfig)
 		r.Get("/id/{id}", h.GetPipeline)
 		r.Get("/all", h.GetAllPipelines)
 		r.Post("/", h.SavePipeline)

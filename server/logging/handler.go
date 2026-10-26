@@ -8,10 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/LeisureLinux/happy-downloader/v4/server/config"
-	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
-	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
-	"github.com/go-chi/chi/v5"
+		"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 )
 
@@ -122,12 +119,6 @@ func mustJSON(line []byte) []byte {
 
 func ApplyRouter(logger *ObservableLogger) func(chi.Router) {
 	return func(r chi.Router) {
-		if config.Instance().Authentication.RequireAuth {
-			r.Use(middlewares.Authenticated)
-		}
-		if config.Instance().OpenId.UseOpenId {
-			r.Use(openid.Middleware)
-		}
 		r.Get("/ws", webSocket(logger))
 		r.Get("/sse", sse(logger))
 	}

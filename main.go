@@ -14,7 +14,6 @@ import (
 
 	"github.com/LeisureLinux/happy-downloader/v4/server"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
-	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
 
 	"github.com/spf13/viper"
 )
@@ -45,7 +44,6 @@ func main() {
 	v.SetDefault("paths.local_database_path", ".")
 	v.SetDefault("logging.log_path", "happy-downloader.log")
 	v.SetDefault("logging.enable_file_logging", false)
-	v.SetDefault("authentication.require_auth", false)
 
 	// Env binding
 	v.SetEnvPrefix("APP")
@@ -76,8 +74,6 @@ func main() {
 		}
 		appFS = sub
 	}
-
-	openid.Configure()
 
 	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

@@ -39,7 +39,7 @@ type Row = DirectoryEntry & { selected: boolean }
 
 const fileAction = (serverAddr: string, path: string, kind: 'view' | 'download') => {
   const encoded = base64URLEncode(path)
-  window.open(`${serverAddr}/filebrowser/${kind === 'view' ? 'v' : 'd'}/${encoded}?token=${localStorage.getItem('token')}`)
+  window.open(`${serverAddr}/filebrowser/${kind === 'view' ? 'v' : 'd'}/${encoded}`)
 }
 
 export default function Filebrowser() {

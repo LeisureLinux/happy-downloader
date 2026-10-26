@@ -1,10 +1,7 @@
 package rest
 
 import (
-	"github.com/LeisureLinux/happy-downloader/v4/server/config"
-	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
-	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
-	"github.com/go-chi/chi/v5"
+		"github.com/go-chi/chi/v5"
 )
 
 func Container(args *ContainerArgs) *Handler {
@@ -19,12 +16,6 @@ func ApplyRouter(args *ContainerArgs) func(chi.Router) {
 	h := Container(args)
 
 	return func(r chi.Router) {
-		if config.Instance().Authentication.RequireAuth {
-			r.Use(middlewares.Authenticated)
-		}
-		if config.Instance().OpenId.UseOpenId {
-			r.Use(openid.Middleware)
-		}
 		r.Post("/exec", h.Exec())
 		r.Post("/execPlaylist", h.ExecPlaylist())
 		r.Post("/execLivestream", h.ExecLivestream())
