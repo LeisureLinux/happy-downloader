@@ -33,3 +33,7 @@ twitch-monitor.dat
 Dockerfile
 *.log
 *.log.gz
+
+# converted cookie artifacts
+cookies-*.txt
+cookies-*.txt.ytdlp-jar

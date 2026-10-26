@@ -116,10 +116,16 @@ func Instance() *Config {
 // function. When they derived it independently they disagreed, and the file
 // the download read was the one nobody refreshed.
 func CookiesPath(source string) string {
-	return filepath.Join(
-		Instance().Paths.LocalDatabasePath,
-		"cookies-"+SourceKey(source)+".txt",
-	)
+	dir := Instance().Paths.LocalDatabasePath
+	if dir == "" {
+		// No state directory configured (tests, or a partial startup). Fall
+		// back to the OS temp dir rather than the working directory: writing
+		// converted cookies next to the source tree leaves credential files
+		// where nobody expects them and pollutes the repository.
+		dir = os.TempDir()
+	}
+
+	return filepath.Join(dir, "cookies-"+SourceKey(source)+".txt")
 }
 
 // SourceKey derives a short stable key from an export path. A hash rather than
