@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Box,
   Button,
@@ -22,7 +22,21 @@ import {
   type DownloadOptions
 } from '../lib/downloadOptions'
 import type { DLMetadata } from '../types'
-import { useAtomValue } from 'jotai'
+import { atom, useAtom, useAtomValue } from 'jotai'
+
+// The form's state lives outside the component. Navigating to the log page and
+// back used to unmount this component and discard the URL, the metadata and
+// every option chosen — and the metadata takes twenty seconds to arrive, so
+// looking at the log while waiting is the obvious thing to do, and it lost the
+// work. Module atoms survive the unmount.
+const urlAtom = atom('')
+const metaAtom = atom<DLMetadata | undefined>(undefined)
+const optionsAtom = atom<DownloadOptions>(defaultOptions)
+const playlistAtom = atom(false)
+const filenameAtom = atom('')
+// Deliberately not persisted: a probe in flight belongs to this tab, and
+// restoring a stuck spinner after a reload would be worse than starting over.
+const probingAtom = atom(false)
 
 // The download flow, inline on the page: paste a URL, see what the source
 // actually offers, choose what to keep, download.
@@ -38,12 +52,30 @@ const DownloadForm: React.FC = () => {
   const settings = useAtomValue(settingsState)
   const customArgs = useAtomValue(customArgsState)
 
-  const [url, setUrl] = useState('')
-  const [meta, setMeta] = useState<DLMetadata>()
-  const [options, setOptions] = useState<DownloadOptions>(defaultOptions)
-  const [probing, setProbing] = useState(false)
-  const [asPlaylist, setAsPlaylist] = useState(false)
-  const [filename, setFilename] = useState('')
+  const [url, setUrl] = useAtom(urlAtom)
+  const [meta, setMeta] = useAtom(metaAtom)
+  const [options, setOptions] = useAtom(optionsAtom)
+  const [probing, setProbing] = useAtom(probingAtom)
+  const [asPlaylist, setAsPlaylist] = useAtom(playlistAtom)
+  const [filename, setFilename] = useAtom(filenameAtom)
+
+  // Elapsed seconds while probing. Twenty seconds of a disabled button and no
+  // other change reads as a hang, and the fix is to show that time is passing.
+  const [elapsed, setElapsed] = useState(0)
+  const startedAt = useRef(0)
+
+  useEffect(() => {
+    if (!probing) {
+      setElapsed(0)
+      return
+    }
+    startedAt.current = Date.now()
+    const t = setInterval(
+      () => setElapsed(Math.floor((Date.now() - startedAt.current) / 1000)),
+      1000
+    )
+    return () => clearInterval(t)
+  }, [probing])
 
   const probe = async () => {
     const trimmed = url.trim()
@@ -121,7 +153,7 @@ const DownloadForm: React.FC = () => {
             disabled={!url.trim() || probing}
             onClick={() => void probe()}
           >
-            {probing ? i18n.t('probing') : i18n.t('selectFormatButton')}
+            {probing ? `${i18n.t('probing')} ${elapsed}s` : i18n.t('selectFormatButton')}
           </Button>
         </Stack>
 
