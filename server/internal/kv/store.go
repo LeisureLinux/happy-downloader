@@ -111,6 +111,11 @@ func (m *Store) All() *[]internal.ProcessSnapshot {
 		// Fill in what only the filesystem knows. The metadata estimate is
 		// what the source offered at its best, which is not what was written
 		// once a resolution cap or audio-only choice applied.
+		// Assign both fields on every pass rather than only on success: they
+		// are persisted with the snapshot, so a value written while the file
+		// existed survives its deletion unless it is cleared here.
+		snap.Output.FileExists = false
+		snap.Output.FileSize = 0
 		if snap.Output.SavedFilePath != "" {
 			if info, err := os.Stat(snap.Output.SavedFilePath); err == nil && !info.IsDir() {
 				snap.Output.FileSize = info.Size()
