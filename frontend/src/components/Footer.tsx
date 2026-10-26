@@ -1,7 +1,9 @@
 import DownloadIcon from '@mui/icons-material/Download'
+import TerminalIcon from '@mui/icons-material/Terminal'
 import SettingsEthernet from '@mui/icons-material/SettingsEthernet'
-import { AppBar, CircularProgress, Divider, Toolbar } from '@mui/material'
+import { AppBar, CircularProgress, Divider, IconButton, Toolbar, Tooltip } from '@mui/material'
 import { Suspense } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { settingsState } from '../atoms/settings'
 import { connectedState } from '../atoms/status'
 import { totalDownloadSpeedState } from '../atoms/ui'
@@ -17,6 +19,7 @@ const Footer: React.FC = () => {
 
   const mode = settings.theme
   const { i18n } = useI18n()
+  const navigate = useNavigate()
 
   return (
     <AppBar position="fixed" color="default" sx={{
@@ -34,6 +37,16 @@ const Footer: React.FC = () => {
         display: 'flex', gap: 1, justifyContent: 'space-between'
       }}>
         <div style={{ display: 'flex', gap: 4, 'alignItems': 'center' }}>
+          {/* 日志入口放在网速左边：它是个诊断工具，不是日常导航 */}
+          <Tooltip title={i18n.t('logsTitle')}>
+            <IconButton
+              size="small"
+              color="inherit"
+              onClick={() => navigate('/log')}
+            >
+              <TerminalIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <div style={{
             display: 'flex',
             alignItems: 'center',

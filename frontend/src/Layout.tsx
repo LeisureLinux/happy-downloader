@@ -4,7 +4,6 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 import Dashboard from '@mui/icons-material/Dashboard'
 import Menu from '@mui/icons-material/Menu'
 import SettingsIcon from '@mui/icons-material/Settings'
-import TerminalIcon from '@mui/icons-material/Terminal'
 import { Box, createTheme } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
 import Divider from '@mui/material/Divider'
@@ -113,7 +112,7 @@ export default function Layout() {
             }>
               <ListItemButton>
                 <ListItemIcon>
-                  <Dashboard />
+                  <CloudDownloadIcon />
                 </ListItemIcon>
                 <ListItemText primary={i18n.t('downloadsButtonLabel')} />
               </ListItemButton>
@@ -127,22 +126,9 @@ export default function Layout() {
             }>
               <ListItemButton>
                 <ListItemIcon>
-                  <CloudDownloadIcon />
+                  <Dashboard />
                 </ListItemIcon>
                 <ListItemText primary={i18n.t('browseButtonLabel')} />
-              </ListItemButton>
-            </Link>
-            <Link to={'/log'} style={
-              {
-                textDecoration: 'none',
-                color: mode === 'dark' ? '#ffffff' : '#000000DE'
-              }
-            }>
-              <ListItemButton>
-                <ListItemIcon>
-                  <TerminalIcon />
-                </ListItemIcon>
-                <ListItemText primary={i18n.t('logsTitle')} />
               </ListItemButton>
             </Link>
             <Link to={'/settings'} style={
