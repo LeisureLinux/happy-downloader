@@ -13,6 +13,7 @@ import {
   Typography
 } from '@mui/material'
 import type { DLMetadata } from '../types'
+import { useI18n } from '../hooks/useI18n'
 import {
   availableSubtitleLangs,
   buildDownloadArgs,
@@ -39,6 +40,8 @@ type Props = {
 // receives, and reading the resolved line is the only way to know what was
 // actually asked for. It is the same string the downloader will run.
 const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) => {
+  const { i18n } = useI18n()
+
   const set = <K extends keyof DownloadOptions>(k: K, v: DownloadOptions[K]) =>
     onChange({ ...value, [k]: v })
 
@@ -78,20 +81,20 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
           }}
         >
           <ToggleButton value="video" disabled={!canVideo}>
-            视频+音频
+            {i18n.t('mediaVideoAudio')}
           </ToggleButton>
           <ToggleButton value="audio" disabled={!canAudio}>
-            仅音频
+            {i18n.t('mediaAudioOnly')}
           </ToggleButton>
           <ToggleButton value="videoOnly" disabled={!canVideo}>
-            仅视频
+            {i18n.t('mediaVideoOnly')}
           </ToggleButton>
         </ToggleButtonGroup>
 
         <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel>分辨率上限</InputLabel>
+          <InputLabel>{i18n.t('maxHeightLabel')}</InputLabel>
           <Select
-            label="分辨率上限"
+            label={i18n.t('maxHeightLabel')}
             value={String(value.maxHeight)}
             onChange={e => set('maxHeight', Number(e.target.value))}
           >
@@ -104,15 +107,15 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
         </FormControl>
 
         <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel>{value.media === 'audio' ? '音频格式' : '容器格式'}</InputLabel>
+          <InputLabel>{value.media === 'audio' ? i18n.t('audioFormatLabel') : i18n.t('containerFormatLabel')}</InputLabel>
           <Select
-            label={value.media === 'audio' ? '音频格式' : '容器格式'}
+            label={value.media === 'audio' ? i18n.t('audioFormatLabel') : i18n.t('containerFormatLabel')}
             value={value.container}
             onChange={e => set('container', e.target.value)}
           >
             {containersFor(value.media).map(c => (
               <MenuItem key={c || 'auto'} value={c}>
-                {c || '自动'}
+                {c || i18n.t('autoOption')}
               </MenuItem>
             ))}
           </Select>
@@ -122,18 +125,18 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
       {/* ── 字幕 ───────────────────────────────────────────── */}
       <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
         <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>字幕</InputLabel>
+          <InputLabel>{i18n.t('subtitlesLabel')}</InputLabel>
           <Select
-            label="字幕"
+            label={i18n.t('subtitlesLabel')}
             value={value.subtitleMode}
             onChange={e => set('subtitleMode', e.target.value as DownloadOptions['subtitleMode'])}
           >
-            <MenuItem value="none">不下载</MenuItem>
+            <MenuItem value="none">{i18n.t('subtitlesNone')}</MenuItem>
             <MenuItem value="manual" disabled={manual.length === 0}>
-              人工字幕{manual.length > 0 ? ` (${manual.length})` : ''}
+              {i18n.t('subtitlesManual')}{manual.length > 0 ? ` (${manual.length})` : ''}
             </MenuItem>
             <MenuItem value="auto" disabled={auto.length === 0}>
-              自动生成{auto.length > 0 ? ` (${auto.length})` : ''}
+              {i18n.t('subtitlesAuto')}{auto.length > 0 ? ` (${auto.length})` : ''}
             </MenuItem>
           </Select>
         </FormControl>
@@ -141,10 +144,10 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
         {value.subtitleMode !== 'none' && (
           <>
             <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel>字幕语言</InputLabel>
+              <InputLabel>{i18n.t('subtitleLangsLabel')}</InputLabel>
               <Select
                 multiple
-                label="字幕语言"
+                label={i18n.t('subtitleLangsLabel')}
                 value={value.subtitleLangs}
                 onChange={e => set('subtitleLangs', e.target.value as string[])}
                 renderValue={v => (v as string[]).join(', ')}
@@ -153,7 +156,7 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
                   <MenuItem key={l} value={l}>
                     {l}
                     {manual.includes(l) && (
-                      <Chip size="small" label="人工" sx={{ ml: 1, height: 18 }} />
+                      <Chip size="small" label={i18n.t('manualBadge')} sx={{ ml: 1, height: 18 }} />
                     )}
                   </MenuItem>
                 ))}
@@ -166,7 +169,7 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
               selected={value.embedSubtitles}
               onChange={() => set('embedSubtitles', !value.embedSubtitles)}
             >
-              嵌入视频
+              {i18n.t('embedSubtitlesLabel')}
             </ToggleButton>
           </>
         )}
@@ -175,7 +178,7 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
       {/* ── 实际参数 ───────────────────────────────────────── */}
       <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
         <Typography variant="caption" color="text.secondary">
-          将传给 yt-dlp 的参数
+          {i18n.t('argsPreviewLabel')}
         </Typography>
         <Box
           component="pre"
@@ -184,7 +187,7 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
             whiteSpace: 'pre-wrap', wordBreak: 'break-all'
           }}
         >
-          {renderArgs(args) || '(无附加参数)'}
+          {renderArgs(args) || i18n.t('argsPreviewEmpty')}
         </Box>
       </Paper>
     </Stack>

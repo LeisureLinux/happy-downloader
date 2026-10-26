@@ -36,6 +36,7 @@ import {
   autoFileExtensionState,
   formatSelectionState,
   languageState,
+  languageNames,
   languages,
   pathOverridingState,
   servedFromReverseProxyState,
@@ -194,9 +195,9 @@ export default function Settings() {
                 label={i18n.t('languageSelect')}
                 onChange={handleLanguageChange}
               >
-                {languages.toSorted((a, b) => a.localeCompare(b)).map(l => (
+                {languages.toSorted((a, b) => languageNames[a].localeCompare(languageNames[b])).map(l => (
                   <MenuItem value={l} key={l}>
-                    {capitalize(l)}
+                    {languageNames[l]}
                   </MenuItem>
                 ))}
               </Select>

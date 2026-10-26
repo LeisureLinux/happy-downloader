@@ -1,0 +1,122 @@
+keys:
+  appName: '歡喜下載'
+  autoFileExtension: '副檔名'
+  notConnectedText: '未連線'
+  cookieLoaded: 'Cookie 檔案已載入'
+  cookieNotLoaded: 'Cookie 檔案未載入'
+  cookieCount: 'Cookie 數量'
+  cookieExpired: '已過期'
+  cookieMissingLogin: '缺少 YouTube 登入態 Cookie'
+  cookieRefreshStatus: '重新整理狀態'
+  clearCompletedButton: '清除已完成'
+  probing: '讀取中...'
+  downloadQueued: '已加入下載佇列'
+  playlistDetected: '這是一個播放列表，所有條目都會加入佇列'
+  browseButtonLabel: '瀏覽'
+  downloadsButtonLabel: '下載'
+  urlInput: 影片 URL
+  selectFormatButton: 選擇格式
+  startButton: 開始
+  darkThemeButton: 黑暗主題
+  lightThemeButton: 明亮主題
+  settingsAnchor: 設定
+  serverAddressTitle: 伺服器地址
+  serverPortTitle: 埠
+  retrying: '重試中'
+  connectionLostTitle: '無法連線到伺服器'
+  connectionLostHint: '伺服器可能正在重啟，即將返回下載頁...'
+  goHome: '返回下載頁'
+  toastConnected: '已連線到 '
+  formatSelectionEnabler: 啟用影片/音訊格式選擇
+  themeSelect: '主題'
+  languageSelect: '語言'
+  overridesAnchor: 覆蓋
+  pathOverrideOption: 啟用輸出路徑覆蓋
+  filenameOverrideOption: 啟用輸出檔名覆蓋
+  autoFileExtensionOption: 自動副檔名
+  customFilename: 自定義檔名（留空使用預設值）
+  customPath: 自定義路徑
+  customArgs: 啟用自定義 yt-dlp 引數（能力越大 = 責任越大）
+  customArgsInput: 自定義 yt-dlp 引數
+  connectionError: 無法連線到伺服器
+  splashText: 沒有正在進行的下載
+  playlistCheckbox: 下載播放列表（可能需要一段時間，提交後可以關閉頁面等待）
+  restartAppMessage: 需要重新整理頁面才能生效
+  servedFromReverseProxyCheckbox: 處於反向代理的子目錄後
+  settingsButtonLabel: 設定
+  loadingLabel: 正在載入…
+  savedTemplates: 儲存模板
+  logsTitle: '日誌'
+  awaitingLogs: '正在等待日誌…'
+  accentSelect: '主題色'
+  urlBase: 'URL 基礎路徑（用於反向代理子目錄），留空表示不使用'
+  generalDownloadSettings: '通用下載設定'
+  reverseProxyAnchor: '反向代理'
+  appearanceAnchor: '外觀'
+  systemThemeOption: 跟隨系統
+  credentialsAnchor: '下載憑證與站點配置'
+  profilesHint: '每個站點一組引數。按主機名匹配，最長字尾優先，主機名留空則匹配所有未命中的地址。新增站點只需加一行，無需重啟。'
+  profileName: '名稱'
+  profileHost: '主機名'
+  profileCookie: 'Cookie 檔案'
+  profilePot: 'POT 地址'
+  profileProxy: '代理'
+  profileExtraArgs: '附加引數（每行一個）'
+  profileAdd: '新增站點'
+  profilesSave: '儲存配置'
+  profilesSaved: '配置已儲存'
+  profilesUnsaved: '有未儲存的修改'
+  previewAnchor: '引數預覽'
+  previewHint: '貼上一個地址，即可看到實際會傳給 yt-dlp 的完整引數（含預設引數）。這也是日誌中記錄的命令列。'
+  profileFallbackNote: '主機名留空 = 兜底，匹配所有未命中的地址'
+  profilesIgnoreConfigNote: '服務端會傳入 --ignore-config，因此本機 yt-dlp 的配置檔案不會影響下載，只使用本表中的設定。'
+  cookieSourcePath: 'Cookie 原始檔'
+  cookieCreatedAt: '建立時間'
+  cookieModifiedAt: '最後修改'
+  close: '關閉'
+  statusPending: '準備中'
+  statusMetadata: '讀取後設資料'
+  statusDownloading: '下載中'
+  statusCompleted: '已完成'
+  statusErrored: '失敗'
+  downloadQueue: '下載佇列'
+  queueHint: '還沒下完的會留在這裡，下完的會自動出現在檔案瀏覽裡'
+  queueEmpty: '佇列是空的'
+  resumeDownload: '重新下載'
+  removeFromQueue: '從佇列移除'
+  clearFailedButton: '清除失敗的'
+  colFile: '檔案'
+  colFileFormat: '檔案格式'
+  colResolution: '解析度'
+  colProgress: '進度'
+  colAddedOn: '加入時間'
+  colActions: '操作'
+  fileMissing: '檔案已丟失'
+  stopDownload: '停止'
+  colFileName: '影片檔案'
+  colDownloadTime: '下載時間'
+  colFileSize: '檔案大小'
+  downloadSelected: '下載'
+  playSelected: '播放'
+  deleteSelected: '刪除'
+  confirmDeleteFiles: '確定刪除選中的檔案？此操作無法撤銷。'
+  goUp: '返回上一級'
+  noFilesFound: '沒有檔案'
+  mediaVideoAudio: '影片+音訊'
+  mediaAudioOnly: '僅音訊'
+  mediaVideoOnly: '僅影片'
+  maxHeightLabel: '解析度上限'
+  containerFormatLabel: '容器格式'
+  audioFormatLabel: '音訊格式'
+  autoOption: '自動'
+  subtitlesLabel: '字幕'
+  subtitlesNone: '不下載'
+  subtitlesManual: '人工字幕'
+  subtitlesAuto: '自動生成'
+  subtitleLangsLabel: '字幕語言'
+  manualBadge: '人工'
+  embedSubtitlesLabel: '嵌入影片'
+  argsPreviewLabel: '將傳給 yt-dlp 的引數'
+  argsPreviewEmpty: '(無附加引數)'
+  viewLogs: '檢視日誌'
+  closeLogs: '關閉日誌'

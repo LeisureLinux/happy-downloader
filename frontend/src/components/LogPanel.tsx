@@ -140,8 +140,11 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
 // The button lives in the corner rather than the footer: it is a diagnostic
 // tool, not part of the status bar, and the corner is where it stays reachable
 // without competing with the numbers you actually watch.
-export const LogToggle: React.FC<{ open: boolean; onToggle: () => void }> = ({ open, onToggle }) => (
-  <Tooltip title={open ? '关闭日志' : '查看日志'} placement="left">
+export const LogToggle: React.FC<{ open: boolean; onToggle: () => void }> = ({ open, onToggle }) => {
+  const { i18n } = useI18n()
+
+  return (
+  <Tooltip title={open ? i18n.t('closeLogs') : i18n.t('viewLogs')} placement="left">
     <Fab
       size="small"
       color={open ? 'primary' : 'default'}
@@ -149,8 +152,9 @@ export const LogToggle: React.FC<{ open: boolean; onToggle: () => void }> = ({ o
       sx={{ position: 'fixed', right: 16, bottom: 64, zIndex: 1400 }}
     >
       {open ? <CloseIcon fontSize="small" /> : <TerminalIcon fontSize="small" />}
-    </Fab>
-  </Tooltip>
-)
+      </Fab>
+    </Tooltip>
+  )
+}
 
 export default LogPanel

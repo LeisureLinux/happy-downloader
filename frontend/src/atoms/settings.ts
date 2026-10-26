@@ -8,6 +8,7 @@ import { atom } from 'jotai'
 export const languages = [
   'catalan',
   'chinese',
+  'chinese-traditional',
   'english',
   'french',
   'german',
@@ -24,6 +25,28 @@ export const languages = [
 ] as const
 
 export type Language = (typeof languages)[number]
+
+// Each language named in itself. A user looking for their own language scans
+// for the word they recognise, not for its English name — "Deutsch" is findable
+// to a German speaker, "German" less so.
+export const languageNames: Record<Language, string> = {
+  catalan: 'Català',
+  chinese: '简体中文',
+  'chinese-traditional': '繁體中文',
+  english: 'English',
+  french: 'Français',
+  german: 'Deutsch',
+  hungarian: 'Magyar',
+  italian: 'Italiano',
+  japanese: '日本語',
+  korean: '한국어',
+  polish: 'Polski',
+  'portuguese-br': 'Português (BR)',
+  russian: 'Русский',
+  spanish: 'Español',
+  swedish: 'Svenska',
+  ukrainian: 'Українська',
+}
 
 export type Theme = 'light' | 'dark' | 'system'
 export type ThemeNarrowed = 'light' | 'dark'
