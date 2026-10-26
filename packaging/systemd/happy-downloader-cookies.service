@@ -5,9 +5,12 @@ Documentation=file:%h/github/happy-downloader/scripts/refresh-cookies.sh
 [Service]
 Type=oneshot
 # EDIT these two paths.
+# EDIT these paths. --deploy copies the result to the machine that serves the
+# downloads: a headless host has no browser and cannot refresh its own cookies.
 ExecStart=%h/github/happy-downloader/scripts/refresh-cookies.sh \
     --output %h/.config/happy-downloader/youtube-cookie.json \
-    --browser chrome
+    --browser chrome \
+    --deploy axu@wpad.lan:/home/axu/.config/happy-downloader/youtube-cookie.json
 
 # The script exits 1 when the export could not be refreshed. That is worth
 # knowing but not worth restarting over: the next run will try again.

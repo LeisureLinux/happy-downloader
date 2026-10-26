@@ -15,7 +15,13 @@
 #
 # Usage:
 #   refresh-cookies.sh --output <path> [--check-url <url>] [--browser chrome]
-#                      [--keyring gnomekeyring] [--check-only] [--dry-run]
+#                      [--keyring gnomekeyring] [--deploy user@host:path]
+#                      [--check-only] [--dry-run]
+#
+# --deploy copies the export to another host after writing it, which is what a
+# headless server needs: it has no browser and cannot refresh its own cookies.
+# The copy is atomic on the far side — written to a temp name and renamed — so
+# the watcher there never reads a half-written file.
 #
 # --keyring defaults to gnomekeyring, and that default is load-bearing: yt-dlp
 # infers the backend from XDG_CURRENT_DESKTOP and gives up when it does not
@@ -53,6 +59,7 @@ BROWSER="chrome"
 KEYRING="${COOKIE_KEYRING:-gnomekeyring}"
 FORCE=1
 DRY_RUN=0
+DEPLOY=""
 YTDLP="${YTDLP:-yt-dlp}"
 
 log() { printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
@@ -65,6 +72,7 @@ while [ $# -gt 0 ]; do
     --browser)   BROWSER="${2:-}"; shift 2 ;;
     --keyring)   KEYRING="${2:-}"; shift 2 ;;
     --check-only) FORCE=0; shift ;;
+    --deploy)     DEPLOY="${2:-}"; shift 2 ;;
     --dry-run)   DRY_RUN=1; shift ;;
     -h|--help)   sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)           die "unknown argument: $1" ;;
@@ -203,6 +211,30 @@ log "wrote $COUNT cookies to $OUTPUT"
 if [ "$(grep -vc '^#' "$OUTPUT" || true)" -lt 5 ]; then
   log "ERROR: the written file has suspiciously few cookies" >&2
   exit 1
+fi
+
+if [ -n "$DEPLOY" ]; then
+  host="${DEPLOY%%:*}"
+  dest="${DEPLOY#*:}"
+  if [ "$host" = "$dest" ]; then
+    log "ERROR: --deploy wants user@host:/path" >&2
+    exit 1
+  fi
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    log "dry run: would copy to $DEPLOY"
+    exit 0
+  fi
+
+  # Write to a temporary name and rename, so the watcher on the far side never
+  # sees a partial file and converts half a jar.
+  if scp -q -o BatchMode=yes "$OUTPUT" "$host:$dest.tmp" &&
+     ssh -o BatchMode=yes "$host" "mv '$dest.tmp' '$dest' && chmod 600 '$dest'"; then
+    log "copied to $DEPLOY"
+  else
+    log "ERROR: could not copy to $DEPLOY" >&2
+    exit 1
+  fi
 fi
 
 log "done"

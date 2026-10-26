@@ -1,11 +1,13 @@
 [Unit]
-Description=Check the YouTube cookie export hourly
+Description=Refresh the YouTube cookie export every ten minutes
 
 [Timer]
-# Hourly is enough: a YouTube session lasts far longer than an hour, and a
-# tighter interval just makes the checks that find nothing more frequent.
-OnBootSec=10min
-OnUnitActiveSec=1h
+# Ten minutes, not an hour. A YouTube session's rolling token is rotated far
+# more often than the cookie's own expiry suggests: an export that is 45 minutes
+# old is already rejected with a bot wall, and the failure looks like a download
+# problem rather than a stale credential. Refreshing costs about fifteen seconds.
+OnBootSec=2min
+OnUnitActiveSec=10min
 # Catch up after the machine was asleep rather than skipping the run.
 Persistent=true
 
