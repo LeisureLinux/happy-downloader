@@ -147,20 +147,9 @@ export function SettingsContent() {
   }
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Paper
-        sx={{
-          p: 2.5,
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 240,
-        }}
-      >
-        <Typography pb={2} variant="h6" color="primary">
-          {i18n.t('settingsAnchor')}
-        </Typography>
+    <Box sx={{ p: 2.5 }}>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={11}>
+          <Grid item xs={12} md={9}>
             <TextField
               fullWidth
               label={i18n.t('serverAddressTitle')}
@@ -172,7 +161,7 @@ export function SettingsContent() {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={1}>
+          <Grid item xs={12} md={3}>
             <TextField
               disabled={reverseProxy}
               fullWidth
@@ -187,7 +176,7 @@ export function SettingsContent() {
           {i18n.t('appearanceAnchor')}
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12}>
+          <Grid item xs={12} md={4}>
             <FormControl fullWidth>
               <InputLabel>{i18n.t('languageSelect')}</InputLabel>
               <Select
@@ -203,7 +192,7 @@ export function SettingsContent() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <FormControl fullWidth>
               <InputLabel>{i18n.t('themeSelect')}</InputLabel>
               <Select
@@ -217,7 +206,7 @@ export function SettingsContent() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <FormControl fullWidth>
               <InputLabel>{i18n.t('accentSelect')}</InputLabel>
               <Select
@@ -347,8 +336,7 @@ export function SettingsContent() {
               sx={{ mb: 2 }}
             />
           </Grid>
-        </Grid>
-      </Paper>
+      </Grid>
     </Box>
   )
 }

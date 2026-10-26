@@ -27,10 +27,11 @@ const SettingsPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open,
       elevation={12}
       sx={{
         position: 'fixed',
-        right: 16,
         top: 76,
         bottom: 72,
-        width: 'min(680px, calc(100vw - 32px))',
+        width: '80vw',
+        left: '50%',
+        transform: 'translateX(-50%)',
         zIndex: 1300,
         display: 'flex',
         flexDirection: 'column',
