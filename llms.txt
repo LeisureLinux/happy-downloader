@@ -55,6 +55,59 @@ itself, logs it in full, and runs it.
 - [scripts/refresh-cookies.sh](scripts/refresh-cookies.sh): read a browser
   profile, filter to chosen sites, push the export to the server.
 
+
+## Installing it for someone
+
+This is a Go binary that shells out to four other things. The binary is the easy
+part; the four are where installations fail. Order matters.
+
+1. **yt-dlp in its own venv**, not `apt install yt-dlp` (stale for months) and
+   not `pip install --user` (collides with distribution packages).
+   `python3 -m venv .../venv && .../venv/bin/pip install -U yt-dlp`.
+2. **A JavaScript runtime, node 20+.** yt-dlp needs it to solve YouTube's `n`
+   challenge. Without it YouTube returns images only, and the error
+   (`Requested format is not available`) does not mention the runtime at all.
+3. **A PO Token provider — both halves.** `pip install -U
+   bgutil-ytdlp-pot-provider` installs the yt-dlp plugin; the token generator is
+   a separate Node server cloned from
+   github.com/Brainicism/bgutil-ytdlp-pot-provider, built with `npm install &&
+   npx tsc`, run as `node build/main.js --host 127.0.0.1 --port 4416`. Installing
+   only the plugin produces "Sign in to confirm you're not a bot" with no hint
+   that a second process is missing.
+4. **A cookie export from a machine with a browser.** The server cannot log in
+   and cannot read a browser profile. Accepts a JSON export or a Netscape
+   cookies.txt; the format is detected. The file is watched, so replacing it
+   refreshes the session without a restart.
+5. **Then the binary**, with every path in config absolute — a user service
+   starts in the home directory, so relative paths land somewhere unexpected.
+
+Verify with the full argument line, not one flag at a time. Without a PO Token
+provider, yt-dlp now fails on most YouTube videos with "Only images are
+available" or "Requested format is not available" — errors that name none of
+the missing pieces, so a partial command fails on a working installation and
+sends you hunting a fault that is not there. The complete line (cookies, js
+runtimes, extractor-args, remote-components) passes only when all four parts
+are in place, which is the question being asked:
+
+    yt-dlp --cookies <file> --js-runtimes node:/usr/bin/node \
+      --extractor-args 'youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416' \
+      --remote-components ejs:github --print '%(title)s | %(ext)s' <url>
+
+Then `curl /api/v1/version` and a `Service.Exec` call through `/rpc/http`.
+
+Two traps that pass a superficial check:
+
+- A guest cookie export still contains `LOGIN_INFO`, so "the file has cookies"
+  is not evidence of a session. Verify by resolving a title.
+- `--browser chrome` alone can silently fail to decrypt v11 cookies when the
+  keyring backend is unrecognised; the export still looks plausible but holds
+  ~170 cookies instead of a few thousand. Pass `chrome+gnomekeyring`.
+
+Failure messages map one-to-one to causes: "not a bot" means cookies; "format
+not available" or "only images" means PO Token or JS runtime; "n challenge
+solving failed" means the runtime is missing or older than 20; timeouts mean the
+host cannot reach YouTube and needs `ytdlp.proxy`.
+
 ## Configuration
 
 Top-level keys of the config file, all optional:
@@ -75,10 +128,20 @@ state. Plain endpoints: `/api/v1/version`, `/api/v1/cookies/status`,
 `/api/v1/profiles`, `/filebrowser/{downloaded,delete,d/{id},v/{id},bulk}`,
 `/log/sse`, `/log/ws`, `/status`. OpenAPI is served at `/openapi`.
 
-## Optional
+## Dependencies
 
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp): required; the binary shells out to
-  it and does not bundle it.
-- [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider):
-  needed when YouTube demands a PO Token.
-- ffmpeg: needed for merged video and audio conversion.
+The binary bundles the frontend and nothing else. It shells out for all
+downloading, so these live on the host and are updated independently:
+
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — required; not bundled, because
+  YouTube breaks old versions and the fix should not require rebuilding this.
+- node 20+ — required for YouTube; yt-dlp uses it for the `n` challenge.
+- [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider)
+  — required for YouTube now; two halves (a venv plugin and a Node server).
+- ffmpeg — required unless every download is a single stream.
+
+On a network where YouTube is unreachable directly (poisoned DNS, blocked range),
+set `ytdlp.proxy`. The server passes `--proxy` on every invocation and carries
+the same value into the PO Token provider's extractor-args, which has no proxy
+flag of its own. Test with `curl -sI https://www.youtube.com`; `000` or a reset
+means a proxy is not optional.

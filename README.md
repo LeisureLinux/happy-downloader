@@ -57,8 +57,15 @@ its own script in the language menu.
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) on `PATH`, or an absolute path in
   the config
 - `ffmpeg`, if you want merged video or audio conversion
-- A JavaScript runtime (`node` or `deno`) for YouTube's challenge solving
-- Optional: a PO Token provider, if YouTube asks you to prove you are not a bot
+- A JavaScript runtime (`node` 20+) — YouTube's challenge solving fails without
+  it, and the failure looks like missing formats rather than a missing runtime
+- A PO Token provider — YouTube now requires one for most content; see
+  [Installing for an AI agent](#installing-for-an-ai-agent) for the setup
+
+Requirements are the part people underestimate. If you are installing this for
+someone, read that section instead of this list: it covers the four external
+components in the order they have to be set up, and the checks that tell you
+each one works before moving on.
 
 ## Install
 
@@ -137,6 +144,252 @@ scripts/refresh-cookies.sh \
 
 A matching systemd timer is in [`packaging/systemd/`](packaging/systemd/); the
 notes there explain the keyring requirement.
+
+## Installing for an AI agent
+
+> **If you are an agent installing this on a user's machine, read this whole
+> section before running anything.** It is written to be followed directly:
+> every command is complete, every version is one that was tested together, and
+> the order matters. Happy Downloader is the smallest part — it is a single
+> static binary. The work is the four things it shells out to.
+
+### What has to be present
+
+| Component | Why | Required |
+|---|---|---|
+| `yt-dlp` | Does the actual downloading | Yes |
+| A JavaScript runtime (`node`) | Solves YouTube's challenge (`n` parameter); without it YouTube returns images only, or nothing | Yes, for YouTube |
+| `ffmpeg` | Merges separate video and audio streams; converts audio formats | Yes, unless every download is a single stream |
+| A PO Token provider | Proves the session is not a bot. YouTube now requires it for most content; without it downloads fail with "Sign in to confirm you're not a bot" | Yes, for YouTube |
+| A cookie export | Carries the logged-in session. Required for age-gated, members-only or region-locked content, and increasingly for ordinary videos | Practically yes |
+| Happy Downloader | The web UI | Yes |
+
+`yt-dlp` ships a release roughly monthly and YouTube breaks older versions
+regularly. Install it where it can be updated without rebuilding this project —
+the binary reads the path from config and does not bundle it.
+
+### Step 1 — system packages
+
+Debian/Ubuntu. Substitute the equivalent for the distribution in front of you;
+`node` must be 20 or newer, `ffmpeg` any recent build.
+
+```sh
+sudo apt update
+sudo apt install -y ffmpeg python3 python3-venv curl
+# Node 20+ — the distribution's nodejs may be too old
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+node --version    # must print v20 or newer
+```
+
+### Step 2 — yt-dlp in its own virtualenv
+
+Not `apt install yt-dlp` and not `pip install --user`: a distribution package
+goes stale for months, and a system-wide pip install conflicts with the
+distribution's own Python packages. A venv is disposable and updatable.
+
+```sh
+python3 -m venv ~/.local/share/happy-downloader/venv
+~/.local/share/happy-downloader/venv/bin/pip install -U pip
+~/.local/share/happy-downloader/venv/bin/pip install -U yt-dlp
+~/.local/share/happy-downloader/venv/bin/yt-dlp --version
+```
+
+Updating later is `pip install -U yt-dlp` in the same venv. When downloads
+start failing across the board, do that first — it fixes most of them.
+
+### Step 3 — the PO Token provider
+
+This is the step most installations get wrong, and the one whose absence
+produces the most confusing error. `bgutil-ytdlp-pot-provider` has two halves:
+a **yt-dlp plugin** (installed into the venv, so yt-dlp knows how to ask) and a
+**server** (a Node process that actually generates the token).
+
+```sh
+# the plugin, into the same venv as yt-dlp
+~/.local/share/happy-downloader/venv/bin/pip install -U bgutil-ytdlp-pot-provider
+
+# the server
+cd ~/.local/share/happy-downloader
+git clone --depth 1 https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git
+cd bgutil-ytdlp-pot-provider/server
+npm install
+npx tsc          # produces build/main.js
+```
+
+Check it works before wiring it up. It takes a few seconds per token:
+
+```sh
+node build/main.js --host 127.0.0.1 --port 4416 &
+curl -s -X POST http://127.0.0.1:4416/get_pot \
+  -H 'Content-Type: application/json' \
+  -d '{"content_binding":"dQw4w9WgXcQ"}' | head -c 200
+```
+
+A JSON object with a `poToken` field means it works. An empty response or a
+timeout means it cannot reach YouTube — see the proxy note below.
+
+Run it as a service so it survives reboots. `~/.config/systemd/user/bgutil-pot.service`:
+
+```ini
+[Unit]
+Description=bgutil PO Token provider
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/happy-downloader/bgutil-ytdlp-pot-provider/server
+ExecStart=/usr/bin/node build/main.js --host 127.0.0.1 --port 4416
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+```
+
+```sh
+systemctl --user daemon-reload
+systemctl --user enable --now bgutil-pot.service
+```
+
+### Step 4 — the cookie export
+
+The server has no browser. It cannot log in, and it cannot extract cookies from
+a profile. The export has to be produced on a machine that has one and copied
+over.
+
+**Produce it on the machine with the browser.** Either use a cookie-export
+extension (the "Get cookies.txt LOCALLY" family — check that it is the local
+variant, which does not upload anything) and save as JSON or Netscape format,
+or use the script in this repository, which reads the profile directly:
+
+```sh
+scripts/refresh-cookies.sh --output ~/youtube-cookie.json --browser chrome
+```
+
+The script needs the login keyring, so it only works inside a desktop session.
+That is why it is a *user* unit and not a system one.
+
+**Copy it to the server** and point `paths.cookie_path` at it:
+
+```sh
+scp ~/youtube-cookie.json user@server:/home/user/.config/happy-downloader/youtube-cookie.json
+```
+
+The server watches that file. Replacing it refreshes the session with no
+restart — which is why the export is pushed rather than configured once.
+
+Two failure modes worth knowing:
+
+- **A guest export still contains `LOGIN_INFO`**, so "the file has cookies" is
+  not evidence that it has a *session*. Verify with
+  `~/.local/share/happy-downloader/venv/bin/yt-dlp --cookies <file> --print title <url>`
+  and check that the title resolves.
+- **`chrome` alone may silently fail to decrypt v11 cookies** when yt-dlp cannot
+  identify the keyring backend. Pass `chrome+gnomekeyring` (or `+kwallet`)
+  explicitly. The export will still look plausible — it will contain roughly
+  170 cookies instead of a few thousand.
+
+### Step 5 — Happy Downloader itself
+
+```sh
+mkdir -p ~/.local/share/happy-downloader/bin ~/.config/happy-downloader
+curl -L -o ~/.local/share/happy-downloader/bin/happy-downloader \
+  https://github.com/LeisureLinux/happy-downloader/releases/latest/download/happy-downloader_linux-amd64
+chmod +x ~/.local/share/happy-downloader/bin/happy-downloader
+```
+
+Use `linux-arm64` on a Raspberry Pi or other ARM host. Then write
+`~/.config/happy-downloader/config.yml` — every path below is absolute, because
+a user service starts in the home directory and relative paths would land
+somewhere unexpected:
+
+```yaml
+server:
+  host: 127.0.0.1
+  port: 3033
+
+paths:
+  download_path: /home/USER/media/downloads
+  downloader_path: /home/USER/.local/share/happy-downloader/venv/bin/yt-dlp
+  local_database_path: /home/USER/.local/share/happy-downloader/data
+  js_runtime_path: /usr/bin/node
+  cookie_path: /home/USER/.config/happy-downloader/youtube-cookie.json
+
+ytdlp:
+  pot_base_url: http://127.0.0.1:4416
+  # proxy: http://127.0.0.1:8888   # only if the host needs one to reach YouTube
+```
+
+Install the user unit from [Running it as a user service](#running-it-as-a-user-service)
+and start it. Note `loginctl enable-linger` — without it the service stops when
+the last session closes, which looks like a crash.
+
+### Step 6 — verify
+
+The useful test is the whole line at once, because that is what the server runs:
+
+```sh
+~/.local/share/happy-downloader/venv/bin/yt-dlp \
+  --cookies ~/.config/happy-downloader/youtube-cookie.json \
+  --js-runtimes node:/usr/bin/node \
+  --extractor-args 'youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416' \
+  --remote-components ejs:github \
+  --print '%(title)s | %(ext)s' 'https://youtu.be/dQw4w9WgXcQ'
+```
+
+A title and a format means the four components are wired together correctly.
+
+**Do not shorten it to test one part at a time.** yt-dlp without a PO Token
+provider now fails on most YouTube videos with `Only images are available` or
+`Requested format is not available` — an error that names none of the missing
+pieces. A partial command therefore fails on a working installation, which
+sends you looking for a fault that is not there. The all-at-once line only
+passes when everything is in place, which is exactly the question being asked.
+
+Then confirm the server sees the same thing:
+
+```sh
+# the server is up and can find yt-dlp
+curl -s http://127.0.0.1:3033/api/v1/version
+
+# end to end, through the app
+curl -s -X POST http://127.0.0.1:3033/rpc/http \
+  -H 'Content-Type: application/json' \
+  -d '{"method":"Service.Exec","params":[{"url":"https://youtu.be/dQw4w9WgXcQ","params":[]}],"id":1}'
+```
+
+The last call returns an id. Open the web UI, press the log button in the top
+bar, and check that the `msg="yt-dlp exec"` line carries the full argument list.
+That line is the ground truth for everything the server does — if a download
+behaves differently from the command above, the difference is visible there.
+
+### When it does not work
+
+The failure messages are specific and each maps to one cause:
+
+| Message | Cause |
+|---|---|
+| `Sign in to confirm you're not a bot` | No cookie file, or a guest export, or an expired session. Re-export. |
+| `Requested format is not available` / `Only images are available` | No PO Token provider, or the JavaScript runtime is missing. Check steps 2 and 3. |
+| `n challenge solving failed` | The JS runtime is missing or too old. `node --version` must be 20+. |
+| `HTTP Error 429` on subtitles | YouTube rate-limits captions. The server passes `--ignore-errors` so the video still downloads; this is expected. |
+| Everything times out | The host cannot reach YouTube. Check whether it needs a proxy and set `ytdlp.proxy`. |
+| The service stops when you log out | `loginctl enable-linger` was not run. |
+
+Every one of these is visible in the log panel with the full command line, which
+is what makes them diagnosable rather than mysterious.
+
+### If the host needs a proxy
+
+On a network where YouTube is unreachable directly — a poisoned DNS resolver, a
+blocked range — set `ytdlp.proxy` and the server passes `--proxy` on every
+invocation. The PO Token provider needs the same egress but has no `--proxy`
+flag of its own; the server carries the proxy into its extractor-args value, so
+setting it once is enough for both.
+
+Check the host before assuming: if `curl -sI https://www.youtube.com` returns
+`000` or a reset, direct access is not available and a proxy is not optional.
 
 ## Configuration
 
