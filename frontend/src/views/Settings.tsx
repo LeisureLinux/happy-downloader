@@ -1,6 +1,6 @@
 import {
+  Box,
   Checkbox,
-  Container,
   FormControl,
   FormControlLabel,
   Grid,
@@ -52,7 +52,7 @@ import Translator from '../lib/i18n'
 import { validateDomain, validateIP } from '../utils'
 
 // NEED ABSOLUTELY TO BE SPLIT IN MULTIPLE COMPONENTS
-export default function Settings() {
+export function SettingsContent() {
   const [reverseProxy, setReverseProxy] = useAtom(servedFromReverseProxyState)
   const [baseURL, setBaseURL] = useAtom(servedFromReverseProxySubDirState)
 
@@ -147,7 +147,7 @@ export default function Settings() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 8 }}>
+    <Box sx={{ p: 2 }}>
       <Paper
         sx={{
           p: 2.5,
@@ -349,6 +349,6 @@ export default function Settings() {
           </Grid>
         </Grid>
       </Paper>
-    </Container>
+    </Box>
   )
 }

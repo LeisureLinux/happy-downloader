@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Box, Fab, IconButton, Paper, Tooltip, Typography } from '@mui/material'
+import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import TerminalIcon from '@mui/icons-material/Terminal'
 import { serverURL } from '../atoms/settings'
@@ -56,9 +56,9 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
       sx={{
         position: 'fixed',
         right: 16,
-        bottom: 136,
+        top: 76,
+        bottom: 72,
         width: 'min(760px, calc(100vw - 32px))',
-        height: 'min(60vh, 520px)',
         zIndex: 1300,
         display: 'flex',
         flexDirection: 'column',
@@ -71,7 +71,7 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
           px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider',
         }}
       >
-        <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
+        <Typography variant="h6" color="primary" sx={{ flexGrow: 1 }}>
           {i18n.t('logsTitle')}
         </Typography>
         {/* 一个在跳的圆点：日志不动的时候，至少能看出连接还活着。 */}
@@ -134,26 +134,6 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
         ))}
       </Box>
     </Paper>
-  )
-}
-
-// The button lives in the corner rather than the footer: it is a diagnostic
-// tool, not part of the status bar, and the corner is where it stays reachable
-// without competing with the numbers you actually watch.
-export const LogToggle: React.FC<{ open: boolean; onToggle: () => void }> = ({ open, onToggle }) => {
-  const { i18n } = useI18n()
-
-  return (
-  <Tooltip title={open ? i18n.t('closeLogs') : i18n.t('viewLogs')} placement="left">
-    <Fab
-      size="small"
-      color={open ? 'primary' : 'default'}
-      onClick={onToggle}
-      sx={{ position: 'fixed', right: 16, bottom: 64, zIndex: 1400 }}
-    >
-      {open ? <CloseIcon fontSize="small" /> : <TerminalIcon fontSize="small" />}
-      </Fab>
-    </Tooltip>
   )
 }
 

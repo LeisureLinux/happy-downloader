@@ -2,20 +2,22 @@ import { ThemeProvider } from '@emotion/react'
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 import Dashboard from '@mui/icons-material/Dashboard'
 import SettingsIcon from '@mui/icons-material/Settings'
-import { Box, Button, Fab, Tooltip, createTheme } from '@mui/material'
+import TerminalIcon from '@mui/icons-material/Terminal'
+import { Box, Button, createTheme } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import { grey } from '@mui/material/colors'
 import { useAtom, useAtomValue } from 'jotai'
 import { useMemo } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { settingsState } from './atoms/settings'
-import { logPanelOpenAtom } from './atoms/ui'
+import { logPanelOpenAtom, settingsPanelOpenAtom } from './atoms/ui'
 import AppBar from './components/AppBar'
 import AppVersion from './components/AppVersion'
 import Footer from './components/Footer'
-import LogPanel, { LogToggle } from './components/LogPanel'
+import LogPanel from './components/LogPanel'
+import SettingsPanel from './components/SettingsPanel'
 import SocketSubscriber from './components/SocketSubscriber'
 import { useI18n } from './hooks/useI18n'
 import Toaster from './providers/ToasterProvider'
@@ -27,6 +29,7 @@ import { getAccentValue } from './utils'
 export default function Layout() {
   const settings = useAtomValue(settingsState)
   const [logOpen, setLogOpen] = useAtom(logPanelOpenAtom)
+  const [settingsOpen, setSettingsOpen] = useAtom(settingsPanelOpenAtom)
 
   const mode = settings.theme
   const theme = useMemo(() =>
@@ -44,17 +47,38 @@ export default function Layout() {
   )
 
   const { i18n } = useI18n()
-  const navigate = useNavigate()
   const { pathname } = useLocation()
 
   const productName = i18n.t('appName')
 
-  // Two destinations and one setting. The drawer that used to hold them was a
+  // Two panels and two destinations. The drawer that used to hold them was a
   // permanent 240px column for three links, and it cost the page that width on
   // every screen.
+  //
+  // Logs and settings are toggles rather than destinations: both are things you
+  // consult while watching the page underneath, so they overlay it instead of
+  // replacing it. Only Browse and Downloads are places you go.
+  const toggles = [
+    {
+      key: 'log',
+      label: i18n.t('logsTitle'),
+      icon: <TerminalIcon fontSize="small" />,
+      open: logOpen,
+      // Both panels occupy the same corner, so opening one closes the other.
+      onToggle: () => { setLogOpen(v => !v); setSettingsOpen(false) },
+    },
+    {
+      key: 'settings',
+      label: i18n.t('settingsButtonLabel'),
+      icon: <SettingsIcon fontSize="small" />,
+      open: settingsOpen,
+      onToggle: () => { setSettingsOpen(v => !v); setLogOpen(false) },
+    },
+  ]
+
   const destinations = [
-    { to: '/', label: i18n.t('downloadsButtonLabel'), icon: <CloudDownloadIcon fontSize="small" /> },
     { to: '/filebrowser', label: i18n.t('browseButtonLabel'), icon: <Dashboard fontSize="small" /> },
+    { to: '/', label: i18n.t('downloadsButtonLabel'), icon: <CloudDownloadIcon fontSize="small" /> },
   ]
 
   return (
@@ -70,7 +94,26 @@ export default function Layout() {
               <AppVersion />
             </Typography>
 
-            {/* 下载 / 浏览 放到右上角：两个目的地，够用不上侧边栏。 */}
+            {/* 顺序：日志 | 设置 | 浏览 | 下载。
+                前两个是开关，后两个是目的地。 */}
+            {toggles.map(t => (
+              <Button
+                key={t.key}
+                color="inherit"
+                size="small"
+                onClick={t.onToggle}
+                startIcon={t.icon}
+                aria-pressed={t.open}
+                sx={{
+                  opacity: t.open ? 1 : 0.72,
+                  fontWeight: t.open ? 600 : 400,
+                  '&:hover': { opacity: 1 },
+                }}
+              >
+                {t.label}
+              </Button>
+            ))}
+
             {destinations.map(d => (
               <Button
                 key={d.to}
@@ -103,21 +146,9 @@ export default function Layout() {
         </Box>
       </Box>
 
-      {/* 设置放左下角，和右下角的日志按钮对称；两者都抬到底部状态条之上，
-          否则会压在速度和剩余空间上。 */}
-      <Tooltip title={i18n.t('settingsButtonLabel')} placement="right">
-        <Fab
-          size="small"
-          color={pathname === '/settings' ? 'primary' : 'default'}
-          onClick={() => navigate('/settings')}
-          sx={{ position: 'fixed', left: 16, bottom: 64, zIndex: 1400 }}
-        >
-          <SettingsIcon fontSize="small" />
-        </Fab>
-      </Tooltip>
 
       <LogPanel open={logOpen} onClose={() => setLogOpen(false)} />
-      <LogToggle open={logOpen} onToggle={() => setLogOpen(v => !v)} />
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <Footer />
       <Toaster />
     </ThemeProvider>

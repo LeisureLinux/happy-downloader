@@ -5,7 +5,6 @@ import Layout from './Layout'
 import ErrorBoundary from './components/ErrorBoundary'
 
 const Home = lazy(() => import('./views/Home'))
-const Settings = lazy(() => import('./views/Settings'))
 const Filebrowser = lazy(() => import('./views/Filebrowser'))
 
 
@@ -24,14 +23,6 @@ export const router = createHashRouter([
         errorElement: (
           <Suspense fallback={<CircularProgress />}>
             <ErrorBoundary />
-          </Suspense >
-        )
-      },
-      {
-        path: '/settings',
-        element: (
-          <Suspense fallback={<CircularProgress />}>
-            <Settings />
           </Suspense >
         )
       },
