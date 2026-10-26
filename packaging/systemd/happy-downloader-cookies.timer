@@ -1,0 +1,13 @@
+[Unit]
+Description=Check the YouTube cookie export hourly
+
+[Timer]
+# Hourly is enough: a YouTube session lasts far longer than an hour, and a
+# tighter interval just makes the checks that find nothing more frequent.
+OnBootSec=10min
+OnUnitActiveSec=1h
+# Catch up after the machine was asleep rather than skipping the run.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

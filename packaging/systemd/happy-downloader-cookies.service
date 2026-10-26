@@ -1,0 +1,19 @@
+[Unit]
+Description=Refresh the YouTube cookie export when it stops working
+Documentation=file:%h/github/happy-downloader/scripts/refresh-cookies.sh
+
+[Service]
+Type=oneshot
+# EDIT these two paths.
+ExecStart=%h/github/happy-downloader/scripts/refresh-cookies.sh \
+    --output %h/.config/happy-downloader/youtube-cookie.json \
+    --browser chrome
+
+# The script exits 1 when the export could not be refreshed. That is worth
+# knowing but not worth restarting over: the next run will try again.
+SuccessExitStatus=0 1
+TimeoutStartSec=5min
+
+# The keyring is what makes --cookies-from-browser work, and it lives in the
+# session bus. Without these the service cannot decrypt anything.
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
