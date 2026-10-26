@@ -38,6 +38,19 @@ Set up an SSH key for that first, or the timer will block on a password prompt.
 
 Alternatively, point `--output` at a directory the Pi mounts over NFS or SMB.
 
+## Why it refreshes every run instead of checking first
+
+Detecting an expired session from outside is not reliable. yt-dlp does not
+validate a cookie file — it silently falls back to a guest session — so a probe
+against a public video answers the same whether the credential is good, rotated
+or missing entirely. The only dependable test is a request that requires
+authentication, which means depending on a specific video staying gated.
+
+Reading the browser's cookies takes about fifteen seconds and the browser is
+the source of truth, so the script copies it on every run and stops guessing.
+`--check-only` opts back into probing, for the case where the browser lives on
+another machine.
+
 ## Testing without waiting for the timer
 
 ```bash

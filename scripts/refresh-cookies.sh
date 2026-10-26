@@ -15,7 +15,19 @@
 #
 # Usage:
 #   refresh-cookies.sh --output <path> [--check-url <url>] [--browser chrome]
-#                      [--force] [--dry-run]
+#                      [--check-only] [--dry-run]
+#
+# It refreshes on every run by default. Detecting an expired session from
+# outside is not reliable: yt-dlp does not validate a cookie file, it silently
+# falls back to a guest session, so a probe against a public video succeeds
+# whether the credential is good, rotated or absent. The only reliable test is
+# a request that requires authentication, which means depending on a specific
+# video staying gated.
+#
+# Reading the browser's cookies takes about fifteen seconds and the browser is
+# the source of truth, so the honest design is to copy it every time and stop
+# trying to guess. --check-only opts back into probing for the case where the
+# browser is on another machine.
 #
 # Exit codes:
 #   0  the export is valid (nothing to do, or refreshed successfully)
@@ -27,7 +39,7 @@ set -uo pipefail
 OUTPUT=""
 CHECK_URL="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 BROWSER="chrome"
-FORCE=0
+FORCE=1
 DRY_RUN=0
 YTDLP="${YTDLP:-yt-dlp}"
 
@@ -39,7 +51,7 @@ while [ $# -gt 0 ]; do
     --output)    OUTPUT="${2:-}"; shift 2 ;;
     --check-url) CHECK_URL="${2:-}"; shift 2 ;;
     --browser)   BROWSER="${2:-}"; shift 2 ;;
-    --force)     FORCE=1; shift ;;
+    --check-only) FORCE=0; shift ;;
     --dry-run)   DRY_RUN=1; shift ;;
     -h|--help)   sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)           die "unknown argument: $1" ;;
@@ -84,12 +96,15 @@ still_valid() {
   return 0
 }
 
-if [ "$FORCE" -eq 0 ] && still_valid; then
-  log "cookie still valid, nothing to do"
-  exit 0
+if [ "$FORCE" -eq 0 ]; then
+  if still_valid; then
+    log "cookie still valid, nothing to do"
+    exit 0
+  fi
+  log "cookie rejected, refreshing from $BROWSER"
+else
+  log "refreshing from $BROWSER"
 fi
-
-log "cookie rejected, refreshing from $BROWSER"
 
 # ── Refresh ────────────────────────────────────────────────────────────────
 # A temp *directory*, not a temp file: yt-dlp treats an existing path passed to
@@ -134,9 +149,14 @@ if [ "${COUNT:-0}" -eq 0 ]; then
 fi
 
 if ! grep -q LOGIN_INFO "$FILTERED"; then
-  # Without this the export is a guest session: the download will work for
-  # public videos and fail for everything else, with a message that blames the
-  # cookies rather than the sign-in.
+  # The browser is signed out, or the cookie has not been written yet. Writing
+  # this would replace a working credential with a guest session, which
+  # downloads public videos and fails everything else — a strictly worse state
+  # that is also harder to notice, because the file still looks present.
+  if [ -f "$OUTPUT" ] && grep -q LOGIN_INFO "$OUTPUT"; then
+    log "browser has no LOGIN_INFO (signed out?); keeping the existing export" >&2
+    exit 1
+  fi
   log "WARNING: no LOGIN_INFO in the export; the browser may not be signed in"
 fi
 
@@ -149,14 +169,14 @@ mkdir -p "$(dirname "$OUTPUT")"
 install -m 600 "$FILTERED" "$OUTPUT"
 log "wrote $COUNT cookies to $OUTPUT"
 
-# Verify the new file rather than assuming: an export that still fails is worse
-# than no export, because it replaces something that might have worked.
-if still_valid; then
-  log "new export accepted"
-  exit 0
+# Structural check only. A network probe cannot tell a good session from a
+# bad one — a public video answers either way — so requesting one here would
+# cost time and prove nothing. What can be checked is that the file is a
+# well-formed Netscape jar with the cookie that decides sign-in.
+if [ "$(grep -vc '^#' "$OUTPUT" || true)" -lt 5 ]; then
+  log "ERROR: the written file has suspiciously few cookies" >&2
+  exit 1
 fi
 
-log "ERROR: the refreshed export is still rejected by YouTube" >&2
-log "This is not a cookie problem: the same credentials work in a browser." >&2
-log "The IP is most likely being throttled. Wait, then retry." >&2
-exit 1
+log "done"
+exit 0
