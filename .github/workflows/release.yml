@@ -1,0 +1,136 @@
+name: Release
+
+# Tag-driven. Pushing a tag that looks like a version builds both
+# architectures on GitHub's runners and publishes the result; nothing is
+# compiled on a laptop and uploaded by hand.
+#
+#   git tag v4.6.0 && git push origin v4.6.0
+#
+# The alternative — cross-compiling locally and attaching the files — makes the
+# artefact depend on whoever's machine happened to build it, and there is no
+# record of how. Here the build is the workflow, and it can be re-run.
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  # Lets a tag be rebuilt without deleting it, when a runner was broken.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build and publish'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - goarch: amd64
+            suffix: linux-amd64
+          - goarch: arm64
+            suffix: linux-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      # The frontend is embedded into the binary with go:embed, so it has to
+      # exist before the Go build. This ordering is the whole reason the
+      # workflow has more than one step.
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        env:
+          GOARCH: ${{ matrix.goarch }}
+          GOOS: linux
+          CGO_ENABLED: '0'
+        run: |
+          set -eu
+          # Strip the leading v so the binary reports "4.6.0", matching the tag
+          # without the decoration.
+          version="${GITHUB_REF_NAME#v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.tag }}"
+            version="${version#v}"
+          fi
+
+          go build -trimpath \
+            -ldflags "-s -w \
+              -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerVersion=${version} \
+              -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerBuiltAt=$(date +%s)" \
+            -o happy-downloader_${{ matrix.suffix }} main.go
+
+          # A binary that embedded no frontend still compiles, so check the
+          # artefact is plausible rather than trusting the exit code.
+          test -x "happy-downloader_${{ matrix.suffix }}"
+          size=$(stat -c %s "happy-downloader_${{ matrix.suffix }}")
+          echo "built ${{ matrix.suffix }}: ${size} bytes"
+          if [ "$size" -lt 8000000 ]; then
+            echo "binary is too small — the frontend was probably not embedded" >&2
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: happy-downloader_${{ matrix.suffix }}
+          path: happy-downloader_${{ matrix.suffix }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum happy-downloader_* > SHA256SUMS
+
+      - name: Verify checksums
+        working-directory: dist
+        run: |
+          set -eu
+          # A published SHA256SUMS that does not match the files is worse than
+          # none, so the file is checked against itself before it ships.
+          sha256sum -c SHA256SUMS
+          ls -l
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          files: |
+            dist/happy-downloader_linux-amd64
+            dist/happy-downloader_linux-arm64
+            dist/SHA256SUMS
+          generate_release_notes: true
+          fail_on_unmatched_files: true

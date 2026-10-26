@@ -1,0 +1,85 @@
+name: Test
+
+# Runs on every push, so a broken commit is visible before a tag is cut. The
+# release workflow repeats these checks, but by then the tag already exists and
+# a failed build is a failed release.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The frontend is embedded with go:embed, so the package cannot even be
+      # type-checked until dist/ exists.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: gofmt
+        run: |
+          set -eu
+          # Reported rather than auto-fixed: a formatting failure in CI should
+          # be fixed where it was written, not silently rewritten here.
+          unformatted=$(gofmt -l server main.go)
+          if [ -n "$unformatted" ]; then
+            echo "not gofmt'd:" >&2
+            echo "$unformatted" >&2
+            exit 1
+          fi
+
+      - run: go vet ./...
+      - run: go build ./...
+      - run: go test ./...
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        working-directory: frontend
+        run: pnpm exec tsc --noEmit
+
+      # Includes the translation-parity check: a missing key falls back to
+      # English silently, so it has to be a test rather than something noticed
+      # later.
+      - name: Unit tests
+        working-directory: frontend
+        run: pnpm exec vitest run
