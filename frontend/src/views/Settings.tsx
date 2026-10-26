@@ -183,37 +183,6 @@ export default function Settings() {
               error={isNaN(Number(serverPort)) || Number(serverPort) > 65535}
             />
           </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h6" color="primary" sx={{ mb: 0.5 }}>
-              {i18n.t('reverseProxyAnchor')}
-            </Typography>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  defaultChecked={reverseProxy}
-                  onChange={() => setReverseProxy(state => !state)}
-                />
-              }
-              label={i18n.t('servedFromReverseProxyCheckbox')}
-              sx={{ mb: 1 }}
-            />
-            <TextField
-              fullWidth
-              label={i18n.t('urlBase')}
-              defaultValue={baseURL}
-              onChange={(e) => {
-                let value = e.currentTarget.value
-                if (value.startsWith('/')) {
-                  value = value.substring(1)
-                }
-                if (value.endsWith('/')) {
-                  value = value.substring(0, value.length - 1)
-                }
-                baseURL$.next(value)
-              }}
-              sx={{ mb: 2 }}
-            />
-          </Grid>
         </Grid>
         <Typography variant="h6" color="primary" sx={{ mt: 0.5, mb: 2 }}>
           {i18n.t('appearanceAnchor')}
@@ -344,6 +313,41 @@ export default function Settings() {
             {i18n.t('credentialsAnchor')}
           </Typography>
           <DownloadCredentials />
+        </Grid>
+
+        {/* 反向代理放最后：部署时配置一次，之后基本不动 */}
+        <Grid container spacing={2} sx={{ mt: 2 }}>
+          <Grid item xs={12}>
+            <Typography variant="h6" color="primary" sx={{ mb: 0.5 }}>
+              {i18n.t('reverseProxyAnchor')}
+            </Typography>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  defaultChecked={reverseProxy}
+                  onChange={() => setReverseProxy(state => !state)}
+                />
+              }
+              label={i18n.t('servedFromReverseProxyCheckbox')}
+              sx={{ mb: 1 }}
+            />
+            <TextField
+              fullWidth
+              label={i18n.t('urlBase')}
+              defaultValue={baseURL}
+              onChange={(e) => {
+                let value = e.currentTarget.value
+                if (value.startsWith('/')) {
+                  value = value.substring(1)
+                }
+                if (value.endsWith('/')) {
+                  value = value.substring(0, value.length - 1)
+                }
+                baseURL$.next(value)
+              }}
+              sx={{ mb: 2 }}
+            />
+          </Grid>
         </Grid>
       </Paper>
     </Container>
