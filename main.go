@@ -22,9 +22,6 @@ import (
 //go:embed frontend/dist/assets/*
 var frontend embed.FS
 
-//go:embed openapi/*
-var swagger embed.FS
-
 func main() {
 	// Parse optional config path from flag
 	var configFile string
@@ -88,8 +85,7 @@ func main() {
 	)
 
 	if err := server.Run(ctx, &server.RunConfig{
-		App:     appFS,
-		Swagger: swagger,
+		App: appFS,
 	}); err != nil {
 		slog.Error("server stopped with error", "error", err)
 		os.Exit(1)

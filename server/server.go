@@ -39,13 +39,11 @@ import (
 )
 
 type RunConfig struct {
-	App     fs.FS
-	Swagger fs.FS
+	App fs.FS
 }
 
 type serverConfig struct {
 	frontend      fs.FS
-	swagger       fs.FS
 	mdb           *kv.Store
 	db            *bolt.DB
 	mq            *queue.MessageQueue
@@ -171,7 +169,6 @@ func Run(ctx context.Context, rc *RunConfig) error {
 
 	scfg := serverConfig{
 		frontend:      rc.App,
-		swagger:       rc.Swagger,
 		mdb:           mdb,
 		db:            boltdb,
 		mq:            mq,
@@ -241,9 +238,6 @@ func newServer(c serverConfig) *http.Server {
 
 	baseUrl := config.Instance().Server.BaseURL
 	r.Mount(baseUrl+"/", http.StripPrefix(baseUrl, http.FileServerFS(c.frontend)))
-
-	// swagger
-	r.Mount("/openapi", http.FileServerFS(c.swagger))
 
 	// Filebrowser routes
 	r.Route("/filebrowser", func(r chi.Router) {

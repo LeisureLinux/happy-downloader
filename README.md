@@ -472,7 +472,6 @@ The frontend talks to the backend over JSON-RPC at `POST /rpc/http` (and
 Probing a URL for its streams is the JSON-RPC method `Service.Formats`; the
 frontend calls it through `/rpc/http` like everything else.
 
-The full OpenAPI document is served at `/openapi`.
 
 ## License
 

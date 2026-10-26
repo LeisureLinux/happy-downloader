@@ -4,7 +4,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/livestream"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
-		"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 )
 
 // Dependency injection container.

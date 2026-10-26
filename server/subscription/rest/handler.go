@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-		"github.com/LeisureLinux/happy-downloader/v4/server/subscription/domain"
+	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/domain"
 	"github.com/go-chi/chi/v5"
 )
 

@@ -1,7 +1,7 @@
 package rest
 
 import (
-		"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 )
 
 func Container(args *ContainerArgs) *Handler {

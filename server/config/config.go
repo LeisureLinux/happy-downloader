@@ -11,14 +11,14 @@ import (
 )
 
 type Config struct {
-	Server         ServerConfig   `mapstructure:"server"`
-	Logging        LoggingConfig  `mapstructure:"logging"`
-	Paths          PathsConfig    `mapstructure:"paths"`
-	YtDlp          YtDlpConfig    `mapstructure:"ytdlp"`
-	Frontend       FrontendConfig `mapstructure:"frontend"`
-	AutoArchive    bool           `mapstructure:"auto_archive"`
-	Twitch         TwitchConfig   `mapstructure:"twitch"`
-	path           string
+	Server      ServerConfig   `mapstructure:"server"`
+	Logging     LoggingConfig  `mapstructure:"logging"`
+	Paths       PathsConfig    `mapstructure:"paths"`
+	YtDlp       YtDlpConfig    `mapstructure:"ytdlp"`
+	Frontend    FrontendConfig `mapstructure:"frontend"`
+	AutoArchive bool           `mapstructure:"auto_archive"`
+	Twitch      TwitchConfig   `mapstructure:"twitch"`
+	path        string
 }
 
 type ServerConfig struct {

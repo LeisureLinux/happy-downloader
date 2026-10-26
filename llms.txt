@@ -126,7 +126,7 @@ in the local database and edited from the Settings page, not in this file.
 JSON-RPC at `POST /rpc/http` carries most operations; `/rpc/ws` streams live
 state. Plain endpoints: `/api/v1/version`, `/api/v1/cookies/status`,
 `/api/v1/profiles`, `/filebrowser/{downloaded,delete,d/{id},v/{id},bulk}`,
-`/log/sse`, `/log/ws`, `/status`. OpenAPI is served at `/openapi`.
+`/log/sse`, `/log/ws`, `/status`.
 
 ## Dependencies
 

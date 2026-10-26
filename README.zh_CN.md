@@ -392,7 +392,6 @@ CGO_ENABLED=0 go build -trimpath \
 
 探测链接可用格式是 JSON-RPC 方法 `Service.Formats`，和其他调用一样走 `/rpc/http`。
 
-完整 OpenAPI 文档在 `/openapi`。
 
 ## 许可
 
