@@ -1,4 +1,5 @@
 keys:
+  appName: 'Baixador Feliz'
   urlInput: URL do vídeo (uma por linha)
   selectFormatButton: Selecionar formato
   startButton: Iniciar

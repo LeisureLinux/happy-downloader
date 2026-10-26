@@ -1,4 +1,5 @@
 keys:
+  appName: 'Glad Nedladdare'
   urlInput: Videolänk (en per rad)
   selectFormatButton: Välj format
   startButton: Start

@@ -1,4 +1,5 @@
 keys:
+  appName: 'ハッピーダウンローダー'
   urlInput: YouTubeまたはサポート済み動画のURL
   selectFormatButton: フォーマット選択
   startButton: 開始

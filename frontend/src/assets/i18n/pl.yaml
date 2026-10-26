@@ -1,4 +1,5 @@
 keys:
+  appName: 'Wesoły Pobieracz'
   urlInput: Adres URL YouTube lub innej obsługiwanej usługi
   startButton: Początek
   darkThemeButton: Ciemny motyw

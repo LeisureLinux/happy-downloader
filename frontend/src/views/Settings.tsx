@@ -79,8 +79,6 @@ export default function Settings() {
   const serverAddr$ = useMemo(() => new Subject<string>(), [])
   const serverPort$ = useMemo(() => new Subject<string>(), [])
 
-  const [, updateState] = useState({})
-  const forceUpdate = useCallback(() => updateState({}), [])
 
   useEffect(() => {
     const sub = baseURL$
@@ -134,10 +132,10 @@ export default function Settings() {
   const handleLanguageChange = (event: SelectChangeEvent<Language>) => {
     setLanguage(event.target.value as Language)
 
+    // Synchronous now, so the re-render triggered by the atom above already
+    // reads the new strings. The old 100 ms forceUpdate existed only to paper
+    // over the dynamic import.
     Translator.instance.setLanguage(event.target.value)
-    setTimeout(() => {
-      forceUpdate()
-    }, 100)
   }
 
   /**

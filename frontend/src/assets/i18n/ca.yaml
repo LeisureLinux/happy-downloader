@@ -1,4 +1,5 @@
 keys:
+  appName: 'Descarregador Feliç'
   urlInput: URL de YouTube o d'un altre servei compatible
   startButton: Iniciar
   darkThemeButton: Tema fosc

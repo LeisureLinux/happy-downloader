@@ -56,7 +56,7 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
       sx={{
         position: 'fixed',
         right: 16,
-        bottom: 88,
+        bottom: 136,
         width: 'min(760px, calc(100vw - 32px))',
         height: 'min(60vh, 520px)',
         zIndex: 1300,
@@ -146,7 +146,7 @@ export const LogToggle: React.FC<{ open: boolean; onToggle: () => void }> = ({ o
       size="small"
       color={open ? 'primary' : 'default'}
       onClick={onToggle}
-      sx={{ position: 'fixed', right: 16, bottom: 16, zIndex: 1400 }}
+      sx={{ position: 'fixed', right: 16, bottom: 64, zIndex: 1400 }}
     >
       {open ? <CloseIcon fontSize="small" /> : <TerminalIcon fontSize="small" />}
     </Fab>

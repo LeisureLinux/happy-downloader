@@ -1,4 +1,5 @@
 keys:
+  appName: 'Vidám Letöltő'
   urlInput: Video URL (soronként egy)
   selectFormatButton: Válassz formátumot
   startButton: Indítás

@@ -1,4 +1,5 @@
 keys:
+  appName: 'Downloader Felice'
   urlInput: URL Video (uno per linea)
   selectFormatButton: Seziona formato
   startButton: Inizia

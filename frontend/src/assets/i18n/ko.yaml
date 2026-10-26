@@ -1,4 +1,5 @@
 keys:
+  appName: '해피 다운로더'
   urlInput: YouTube나 다른 지원되는 사이트의 URL
   startButton: 시작
   darkThemeButton: 다크 모드

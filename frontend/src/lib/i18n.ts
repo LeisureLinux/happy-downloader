@@ -3,11 +3,33 @@ import i18n from '../assets/i18n.yaml'
 //@ts-ignore
 import fallback from '../assets/i18n/en_US.yaml'
 
+// Every translation file is bundled eagerly, and the lookup is synchronous.
+//
+// It used to be a dynamic import: setLanguage() returned before the file had
+// loaded, so the first render after a reload drew English from the fallback,
+// and when the import finally resolved nothing re-rendered. The visible effect
+// was a language that applied only once some unrelated state change happened
+// to re-render the tree — the title could be Chinese while the headings were
+// still English.
+//
+// The files total well under a hundred kilobytes and this is a LAN app; a
+// language that is always correct is worth more than a lazy chunk.
+const modules = import.meta.glob<{ default: { keys: Record<string, string> } }>(
+  '../assets/i18n/*.yaml',
+  { eager: true }
+)
+
+function loadKeys(file: string): Record<string, string> | null {
+  const wanted = `../assets/i18n/${file.replace(/\.yaml$/, '')}.yaml`
+  const found = modules[wanted]
+  return found?.default?.keys ?? null
+}
+
 export default class Translator {
   static #instance: Translator
 
   private language: string
-  private current: string[] = []
+  private current: Record<string, string> = {}
 
   constructor() {
     this.language = localStorage.getItem('language')?.replaceAll('"', '') ?? 'english'
@@ -18,29 +40,19 @@ export default class Translator {
     return this.language
   }
 
-  async setLanguage(language: string): Promise<void> {
+  setLanguage(language: string): void {
     this.language = language
 
-    let isoCodeFile: string = i18n.languages[language]
-
-    // extension needs to be in source code to help vite bundle all yaml files
-    if (isoCodeFile.endsWith('.yaml')) {
-      isoCodeFile = isoCodeFile.replaceAll('.yaml', '')
+    const isoCodeFile: string | undefined = i18n.languages[language]
+    if (!isoCodeFile) {
+      return
     }
 
-    if (isoCodeFile) {
-      const { default: translations } = await import(`../assets/i18n/${isoCodeFile}.yaml`)
-
-      this.current = translations.keys
-    }
+    this.current = loadKeys(isoCodeFile) ?? {}
   }
 
   t(key: string): string {
-    if (this.current) {
-      //@ts-ignore
-      return this.current[key] ?? fallback.keys[key] ?? 'caption not defined'
-    }
-    return 'caption not defined'
+    return this.current[key] ?? fallback.keys[key] ?? key
   }
 
   public static get instance(): Translator {
