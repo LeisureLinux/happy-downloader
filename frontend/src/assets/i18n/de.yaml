@@ -27,7 +27,6 @@ keys:
   customPath: Benutzerdefinierter Pfad
   customArgs: Benutzerdefinierte yt-dlp Argumente aktivieren (Auf viel Macht folgt große Verantwortung)
   customArgsInput: Benutzerdefinierte yt-dlp Argumente
-  rpcConnErr: Fehler beim Verbinden mit RPC Server
   splashText: Keine aktiven Downloads
   archiveTitle: Archiv
   clipboardAction: URL in Zwischenablage kopiert
@@ -38,7 +37,6 @@ keys:
   homeButtonLabel: Home
   archiveButtonLabel: Archiv
   settingsButtonLabel: Einstellungen
-  rpcAuthenticationLabel: RPC Authentifizierung
   themeTogglerLabel: Modus Umschalter
   loadingLabel: Lädt...
   appTitle: App Titel
@@ -49,18 +47,12 @@ keys:
   logsTitle: 'Logausgabe'
   awaitingLogs: 'Warte auf Log ...'
   bulkDownload: 'Alles in einem ZIP-Archiv herunterladen'
-  templatesReloadInfo: Um eine neue Vorlage zu registrieren, muss die Seite möglicherweise neu geladen werden.
   livestreamURLInput: Livestream URL
   livestreamStatusWaiting: Warte auf Start
   livestreamStatusDownloading: Herunterladen
   livestreamStatusCompleted: Abgeschlossen
   livestreamStatusErrored: Fehlerhaft
   livestreamStatusUnknown: Status unbekannt
-  livestreamNoMonitoring: Aktuell wird kein Livestream überwacht
-  livestreamDownloadInfo: |
-    Damit wird der noch nicht gestartete Livestream überwacht. Jeder Prozess wird mit --wait-for-video 10 ausgeführt.
-    Wenn ein bereits gestarteter Livestream vorhanden ist, wird er zwar heruntergeladen, aber sein Fortschritt wird nicht verfolgt.
-    Sobald der Livestream gestartet ist, wird er auf der Download-Seite angezeigt.
   livestreamExperimentalWarning: Dieses Feature ist aktuell noch experimentell, sei vorsichtig, denn es könnte sein, dass etwas nicht genau funktioniert!
   accentSelect: 'Farbtöne'
   urlBase: URL-Basis für Reverse-Proxy-Unterstützung (Unterverzeichnis), standardmäßig leer
@@ -69,12 +61,3 @@ keys:
   noFilesFound: 'Keine Dateien gefunden'
   tableView: 'Tabellenansicht'
   deleteSelected: 'Ausgewählte löschen'
-  subscriptionsButtonLabel: 'Subscriptions'
-  subscriptionsEmptyLabel: 'No subscriptions'
-  subscriptionsURLInput: 'Channel URL'
-  subscriptionsInfo: |
-    Subscribes to a defined channel. Only the last video will be downloaded.
-    The monitor job will be scheduled/triggered by a defined cron expression (defaults to every 5 minutes if left blank).
-  cronExpressionLabel: 'Cron expression'
-  editButtonLabel: 'Edit'
-  newSubscriptionButton: New subscription

@@ -27,7 +27,6 @@ keys:
   customPath: Percorso personalizzato
   customArgs: Abilita argomenti yt-dlp personalizzati (grande potere = grandi responsabilità)
   customArgsInput: Argomenti yt-dlp personalizzati
-  rpcConnErr: Errore nella connessione al server RPC
   splashText: Nessun download attivo
   archiveTitle: Archivio
   clipboardAction: URL copiato negli appunti
@@ -39,7 +38,6 @@ keys:
   homeButtonLabel: Home
   archiveButtonLabel: Archivio
   settingsButtonLabel: Impostazioni
-  rpcAuthenticationLabel: Autenticazione RPC
   themeTogglerLabel: Selettore Tema
   loadingLabel: Caricamento...
   appTitle: Titolo applicazione
@@ -50,18 +48,12 @@ keys:
   logsTitle: 'Logs'
   awaitingLogs: 'Awaiting logs...'
   bulkDownload: 'Scaricare i file in un archivio zip'
-  templatesReloadInfo: Per registrare un nuovo modello potrebbe essere necessario ricaricare la pagina.
   livestreamURLInput: Livestream URL
   livestreamStatusWaiting: Attesa inizio
   livestreamStatusDownloading: Downloading
   livestreamStatusCompleted: Completato
   livestreamStatusErrored: Errore
   livestreamStatusUnknown: Sconosciuto
-  livestreamNoMonitoring: Nessun livestream monitorato
-  livestreamDownloadInfo: |
-    Questo monitorerà il livestream ancora da avviare. Ogni processo verrà eseguito con --wait-for-video 10.
-    Se viene fornito un livestream già avviato, questo verrà comunque scaricato, ma il suo progresso non verrà monitorato.
-    Una volta avviato, il livestream verrà migrato nella pagina dei download.
   livestreamExperimentalWarning: Questa funzione è ancora sperimentale. Qualcosa potrebbe rompersi!
   accentSelect: 'Accent'
   generalDownloadSettings: 'Impostazioni generali di download'
@@ -69,12 +61,3 @@ keys:
   noFilesFound: 'Nessun file trovato'
   tableView: 'Vista Tabella'
   deleteSelected: 'Elimina selezionati'
-  subscriptionsButtonLabel: 'Abbonamenti'
-  subscriptionsEmptyLabel: 'Nessuna iscrizione'
-  subscriptionsURLInput: 'URL Canale'
-  subscriptionsInfo: |
-    Iscrive a un canale definito. Verrà scaricato solo l'ultimo video.
-    Il lavoro di monitoraggio sarà programmato/attivato da un'espressione cron definita (se lasciata vuota, l'impostazione predefinita è ogni 5 minuti).
-  cronExpressionLabel: 'Espressione Cron'
-  editButtonLabel: 'Modifica'
-  newSubscriptionButton: Nuova iscrizione

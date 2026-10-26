@@ -27,7 +27,6 @@ keys:
   customPath: Egyedi útvonal
   customArgs: Egyedi yt-dlp argumentumok (Nagy hatalommal nagy felelősség jár.)
   customArgsInput: Egyedi yt-dlp argumentumok
-  rpcConnErr: Hiba történt az RPC szerver történő kapcsolódáskor
   splashText: Nincs aktív letöltés
   archiveTitle: Archívum
   clipboardAction: URL a vágólapra másolva.
@@ -39,7 +38,6 @@ keys:
   homeButtonLabel: Kezdőlap
   archiveButtonLabel: Archívum
   settingsButtonLabel: Beállítások
-  rpcAuthenticationLabel: RPC bejelentkezés
   themeTogglerLabel: Témaválasztó
   loadingLabel: Betöltés...
   appTitle: Alkalmazás címe
@@ -50,18 +48,12 @@ keys:
   logsTitle: 'Naplók'
   awaitingLogs: 'Napló letöltése...'
   bulkDownload: 'Fájlok letöltése ZIP archívumként'
-  templatesReloadInfo: Az új sablon megjelenéséhez újra kell tölteni az oldalt.
   livestreamURLInput: Élő stream URL
   livestreamStatusWaiting: Várakozás a kezdésre
   livestreamStatusDownloading: Letöltés
   livestreamStatusCompleted: Letöltve
   livestreamStatusErrored: Hiba
   livestreamStatusUnknown: Ismeretlen
-  livestreamNoMonitoring: Nincsenek figyelt élő adások
-  livestreamDownloadInfo: |
-    Ez figyelni fog egy még el nem indított élő közvetítést. Minden folyamat a --wait-for-video 10 paraméterrel lesz végrehajtva.
-    Ha egy már elindított élő közvetítés van megadva, az továbbra is letöltésre kerül, de a folyamatát nem követi nyomon.
-    Amint elindul, az élő közvetítés átkerül a letöltések oldalra..
   livestreamExperimentalWarning: Ez a funkció még kísérleti. Nem garantált a hibamentes működés.
   accentSelect: 'Kiemelt szín'
   generalDownloadSettings: 'Általános letöltési beállítások'
@@ -69,12 +61,3 @@ keys:
   noFilesFound: 'Nem található fájlok'
   tableView: 'Táblázatos Nézet'
   deleteSelected: 'Kiválasztottak törlése'
-  subscriptionsButtonLabel: 'Subscriptions'
-  subscriptionsEmptyLabel: 'No subscriptions'
-  subscriptionsURLInput: 'Channel URL'
-  subscriptionsInfo: |
-    Subscribes to a defined channel. Only the last video will be downloaded.
-    The monitor job will be scheduled/triggered by a defined cron expression (defaults to every 5 minutes if left blank).
-  cronExpressionLabel: 'Cron expression'
-  editButtonLabel: 'Edit'
-  newSubscriptionButton: New subscription

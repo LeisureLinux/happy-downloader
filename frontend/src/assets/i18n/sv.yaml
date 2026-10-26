@@ -27,7 +27,6 @@ keys:
   customPath: Egen filsökväg
   customArgs: Tillåt egna yt-dlp-argument (frihet under ansvar!)
   customArgsInput: Egna yt-dlp-argument
-  rpcConnErr: Ett fel inträffade vid anslutning till RPC-server
   splashText: Inga pågående nedladdningar
   archiveTitle: Arkiv
   clipboardAction: Kopierade länken
@@ -39,7 +38,6 @@ keys:
   homeButtonLabel: Hem
   archiveButtonLabel: Arkiv
   settingsButtonLabel: Inställningar
-  rpcAuthenticationLabel: RPC-Autentisering
   themeTogglerLabel: Tema-knapp
   loadingLabel: Laddar...
   appTitle: Apptitel
@@ -50,18 +48,12 @@ keys:
   logsTitle: 'Loggar'
   awaitingLogs: 'Väntar på loggar...'
   bulkDownload: 'Ladda ner filer i ett zip-arkiv'
-  templatesReloadInfo: För att registrera en ny mall så kan en sidomladdning krävas.
   livestreamURLInput: Livestream URL
   livestreamStatusWaiting: Waiting/Wait start
   livestreamStatusDownloading: Downloading
   livestreamStatusCompleted: Completed
   livestreamStatusErrored: Errored
   livestreamStatusUnknown: Unknown
-  livestreamNoMonitoring: No livestreams monitored
-  livestreamDownloadInfo: |
-    This will monitor yet to start livestream. Each process will be executed with --wait-for-video 10.
-    If an already started livestream is provided it will be still downloaded but its progress will not be tracked.
-    Once started the livestream will be migrated to the downloads page.
   livestreamExperimentalWarning: This feature is still experimental. Something might break!
   accentSelect: 'Accent'
   generalDownloadSettings: 'General Download Settings'
@@ -69,12 +61,3 @@ keys:
   noFilesFound: 'No Files Found'
   tableView: 'Table View'
   deleteSelected: 'Delete selected'
-  subscriptionsButtonLabel: 'Subscriptions'
-  subscriptionsEmptyLabel: 'No subscriptions'
-  subscriptionsURLInput: 'Channel URL'
-  subscriptionsInfo: |
-    Subscribes to a defined channel. Only the last video will be downloaded.
-    The monitor job will be scheduled/triggered by a defined cron expression (defaults to every 5 minutes if left blank).
-  cronExpressionLabel: 'Cron expression'
-  editButtonLabel: 'Edit'
-  newSubscriptionButton: New subscription

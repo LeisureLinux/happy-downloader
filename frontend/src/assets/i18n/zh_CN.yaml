@@ -37,7 +37,7 @@ keys:
   customPath: 自定义路径
   customArgs: 启用自定义 yt-dlp 参数（能力越大 = 责任越大）
   customArgsInput: 自定义 yt-dlp 参数
-  rpcConnErr: 连接 RPC 服务器发生错误
+  connectionError: 无法连接到服务器
   splashText: 没有正在进行的下载
   archiveTitle: 归档
   clipboardAction: 复制 URL 到剪贴板
@@ -48,7 +48,6 @@ keys:
   homeButtonLabel: 主页
   archiveButtonLabel: 归档
   settingsButtonLabel: 设置
-  rpcAuthenticationLabel: RPC 身份验证
   themeTogglerLabel: 主题切换
   loadingLabel: 正在加载…
   appTitle: App 标题
@@ -59,22 +58,16 @@ keys:
   logsTitle: '日志'
   awaitingLogs: '正在等待日志…'
   bulkDownload: '下载 zip 压缩包中的文件'
-  templatesReloadInfo: To register a new template it might need a page reload.
   livestreamURLInput: 直播 URL
   livestreamStatusWaiting: 等待直播开始
   livestreamStatusDownloading: 下载中
   livestreamStatusCompleted: 已完成
   livestreamStatusErrored: 发生错误
   livestreamStatusUnknown: 未知
-  livestreamNoMonitoring: No livestreams monitored
-  livestreamDownloadInfo: |
-    本功能将会监控即将开始的直播流，每个进程都会传入参数：--wait-for-video 10 （重试间隔10秒）
-    如果直播已经开始，那么依然可以下载，但是不会记录下载进度。
-    直播开始后，将会转移到下载页面
   livestreamExperimentalWarning: 实验性功能，可能存在未知Bug，请谨慎使用
-  accentSelect: 'Accent'
-  urlBase: URL base, for reverse proxy support (subdir), defaults to empty
-  generalDownloadSettings: 'General Download Settings'
+  accentSelect: '主题色'
+  urlBase: 'URL 基础路径（用于反向代理子目录），留空表示不使用'
+  generalDownloadSettings: '通用下载设置'
   reverseProxyAnchor: '反向代理'
   appearanceAnchor: '外观'
   systemThemeOption: 跟随系统
@@ -97,15 +90,6 @@ keys:
   cookieSourcePath: 'Cookie 源文件'
   cookieCreatedAt: '创建时间'
   cookieModifiedAt: '最后修改'
-  noFilesFound: 'No Files Found'
-  tableView: 'Table View'
-  deleteSelected: 'Delete selected'
-  subscriptionsButtonLabel: 'Subscriptions'
-  subscriptionsEmptyLabel: 'No subscriptions'
-  subscriptionsURLInput: 'Channel URL'
-  subscriptionsInfo: |
-    Subscribes to a defined channel. Only the last video will be downloaded.
-    The monitor job will be scheduled/triggered by a defined cron expression (defaults to every 5 minutes if left blank).
-  cronExpressionLabel: 'Cron expression'
-  editButtonLabel: 'Edit'
-  newSubscriptionButton: New subscription
+  noFilesFound: '没有文件'
+  tableView: '表格视图'
+  deleteSelected: '删除所选'

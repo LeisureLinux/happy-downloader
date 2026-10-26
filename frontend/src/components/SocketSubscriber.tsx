@@ -68,7 +68,7 @@ const SocketSubscriber: React.FC<Props> = () => {
     err => {
       console.error(err)
       pushMessage(
-        `${i18n.t('rpcConnErr')} (${serverAddressAndPort})`,
+        `${i18n.t('connectionError')} (${serverAddressAndPort})`,
         "error"
       ),
         navigate(`/error`)
