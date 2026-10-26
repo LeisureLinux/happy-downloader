@@ -28,7 +28,7 @@ export type Language = (typeof languages)[number]
 export type Theme = 'light' | 'dark' | 'system'
 export type ThemeNarrowed = 'light' | 'dark'
 
-export const accents = ['default', 'red'] as const
+export const accents = ['default', 'red', 'purple', 'orange'] as const
 export type Accent = (typeof accents)[number]
 
 export interface SettingsState {

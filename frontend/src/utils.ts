@@ -1,4 +1,4 @@
-import { blue, red } from '@mui/material/colors'
+import { blue, deepOrange, deepPurple, red } from '@mui/material/colors'
 import { pipe } from 'fp-ts/lib/function'
 import { Accent, ThemeNarrowed } from './atoms/settings'
 import type { RPCResponse } from "./types"
@@ -89,6 +89,14 @@ export const getAccentValue = (accent: Accent, mode: ThemeNarrowed) => {
       return mode === 'light' ? blue[700] : blue[300]
     case 'red':
       return mode === 'light' ? red[600] : red[400]
+    case 'purple':
+      // 600/300 rather than 700/200: deepPurple leans blue at the light end and
+      // stops reading as purple against a dark background.
+      return mode === 'light' ? deepPurple[600] : deepPurple[300]
+    case 'orange':
+      // deepOrange, not orange: plain orange at 600 fails contrast against white
+      // text in light mode, and the deep variant still reads as orange.
+      return mode === 'light' ? deepOrange[700] : deepOrange[400]
     default:
       return mode === 'light' ? blue[700] : blue[300]
   }
