@@ -9,9 +9,9 @@ import (
 	"slices"
 	"time"
 
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/google/uuid"
-	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"golang.org/x/oauth2"
 )
 

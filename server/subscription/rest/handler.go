@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
 	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
 	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/domain"
+	"github.com/go-chi/chi/v5"
 )
 
 type RestHandler struct {

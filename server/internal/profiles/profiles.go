@@ -30,6 +30,9 @@ type Profile struct {
 	// Name is a short label for the UI, e.g. "YouTube".
 	Name string `json:"name"`
 	// HostSuffix matches the URL host by suffix, e.g. "youtube.com".
+	// Several domains may share one profile, comma-separated, because a site
+	// commonly serves the same content from more than one: YouTube answers on
+	// youtube.com and youtu.be, and pasting a short link is the normal case.
 	// Empty matches every URL that no other profile matched.
 	HostSuffix string `json:"hostSuffix"`
 	// CookiePath points at a cookie export (JSON or Netscape) to convert.
@@ -55,7 +58,7 @@ type table []Profile
 var defaultTable = table{
 	{
 		Name:       "YouTube",
-		HostSuffix: "youtube.com",
+		HostSuffix: "youtube.com,youtu.be",
 		// Filled from the global config at seed time, see Seed().
 	},
 	{
@@ -88,12 +91,13 @@ func (t table) match(rawURL string) (Profile, bool) {
 	bestLen := -1
 
 	for i, p := range t {
-		if p.HostSuffix == "" {
-			continue
-		}
-		if host == p.HostSuffix || strings.HasSuffix(host, "."+p.HostSuffix) {
-			if len(p.HostSuffix) > bestLen {
-				best, bestLen = i, len(p.HostSuffix)
+		for _, suffix := range p.suffixes() {
+			if host == suffix || strings.HasSuffix(host, "."+suffix) {
+				// The longest matching suffix wins, so a more specific entry
+				// beats a broader one even when both match.
+				if len(suffix) > bestLen {
+					best, bestLen = i, len(suffix)
+				}
 			}
 		}
 	}
@@ -110,6 +114,26 @@ func (t table) match(rawURL string) (Profile, bool) {
 	}
 
 	return Profile{}, false
+}
+
+// suffixes splits a profile's host list, trimming blanks.
+func (p Profile) suffixes() []string {
+	if strings.TrimSpace(p.HostSuffix) == "" {
+		return nil
+	}
+
+	parts := strings.Split(p.HostSuffix, ",")
+	out := make([]string, 0, len(parts))
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		part = strings.TrimPrefix(part, "www.")
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+
+	return out
 }
 
 // hostOf extracts the hostname, tolerating input that is not a full URL.

@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"os"
 
-	"github.com/google/uuid"
 	"github.com/LeisureLinux/happy-downloader/v4/server/archive/data"
 	"github.com/LeisureLinux/happy-downloader/v4/server/archive/domain"
+	"github.com/google/uuid"
 )
 
 type Repository struct {

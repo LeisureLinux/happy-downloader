@@ -19,6 +19,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography
 } from "@mui/material"
 import { forwardRef, useMemo, useState } from 'react'
@@ -40,31 +41,31 @@ const columns = [
   },
   {
     width: 420,
-    label: 'File',
+    labelKey: 'colFile',
     dataKey: 'file',
     numeric: false,
   },
   {
     width: 130,
-    label: 'Resolution',
+    labelKey: 'colResolution',
     dataKey: 'resolution',
     numeric: true,
   },
   {
     width: 160,
-    label: 'Progress',
+    labelKey: 'colProgress',
     dataKey: 'progress',
     numeric: true,
   },
   {
     width: 160,
-    label: 'Added on',
+    labelKey: 'colAddedOn',
     dataKey: 'addedon',
     numeric: true,
   },
   {
     width: 150,
-    label: 'Actions',
+    labelKey: 'colActions',
     dataKey: 'actions',
     numeric: true,
   },
@@ -122,6 +123,14 @@ const DownloadsTableView: React.FC = () => {
     return next
   })
 
+  // The list outlives the files: an entry whose file was removed elsewhere has
+  // nothing to play or download, and offering the buttons produces a 404.
+  const fileOnDisk = (r: RPCResult) => r.output.fileExists === true
+  const actualSize = (r: RPCResult) =>
+    r.output.fileSize && r.output.fileSize > 0
+      ? r.output.fileSize
+      : (r.info.filesize_approx ?? 0)
+
   const allSelected = doneDownloads.length > 0 && doneDownloads.every(d => selected.has(d.id))
 
   const toggleAll = () => setSelected(
@@ -169,10 +178,21 @@ const DownloadsTableView: React.FC = () => {
             {download.info.title}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {formatSize(download.info.filesize_approx ?? 0)}
+            {/* 用磁盘上的真实大小。元数据里的 filesize_approx 是源站最佳格式的
+                估算，加了分辨率上限或只下音频之后与实际文件差很远。 */}
+            {formatSize(actualSize(download))}
+            {!fileOnDisk(download) && done && (
+              <Box component="span" sx={{ ml: 1, color: 'error.main' }}>
+                ({i18n.t('fileMissing')})
+              </Box>
+            )}
           </Typography>
         </TableCell>
-        <TableCell align="right">{download.info.resolution || '—'}</TableCell>
+        <TableCell align="right">
+          {download.output.height
+            ? `${download.output.width ?? ''}x${download.output.height}`
+            : '—'}
+        </TableCell>
         <TableCell align="right">
           <LinearProgressWithLabel
             sx={{ height: '16px' }}
@@ -188,20 +208,33 @@ const DownloadsTableView: React.FC = () => {
           <ButtonGroup size="small">
             {done ? (
               <>
-                <IconButton size="small" onClick={() => viewFile(download.output.savedFilePath)}>
-                  <SmartDisplayIcon />
-                </IconButton>
-                <IconButton size="small" onClick={() => downloadFile(download.output.savedFilePath)}>
-                  <FileDownloadIcon />
-                </IconButton>
-                <IconButton size="small" onClick={() => stop(download)}>
-                  <DeleteIcon />
-                </IconButton>
+                {/* 文件已被删除时只给移除记录的按钮：播放和下载会 404 */}
+                {fileOnDisk(download) && (
+                  <>
+                    <Tooltip title={i18n.t('playSelected')}>
+                      <IconButton size="small" onClick={() => viewFile(download.output.savedFilePath)}>
+                        <SmartDisplayIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={i18n.t('downloadSelected')}>
+                      <IconButton size="small" onClick={() => downloadFile(download.output.savedFilePath)}>
+                        <FileDownloadIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </>
+                )}
+                <Tooltip title={i18n.t('deleteSelected')}>
+                  <IconButton size="small" onClick={() => stop(download)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               </>
             ) : (
-              <IconButton size="small" onClick={() => stop(download)}>
-                <StopCircleIcon />
-              </IconButton>
+              <Tooltip title={i18n.t('stopDownload')}>
+                <IconButton size="small" onClick={() => stop(download)}>
+                  <StopCircleIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             )}
           </ButtonGroup>
         </TableCell>
@@ -215,7 +248,7 @@ const DownloadsTableView: React.FC = () => {
     <Box sx={{ width: '100%' }}>
       {/* 批量操作：作用于勾选的已完成下载 */}
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-        <Typography variant="h6">{i18n.t('downloadsButtonLabel')}</Typography>
+        <Typography variant="h6">{i18n.t('downloadHistory')}</Typography>
         <Box flexGrow={1} />
         <Button
           size="small"
@@ -266,7 +299,7 @@ const DownloadsTableView: React.FC = () => {
                   align={column.numeric || false ? 'right' : 'left'}
                   style={{ width: column.width }}
                 >
-                  {column.label}
+                  {'labelKey' in column ? i18n.t(column.labelKey) : ''}
                 </TableCell>
               ))}
             </TableRow>

@@ -3,8 +3,8 @@ package archive
 import (
 	"database/sql"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/LeisureLinux/happy-downloader/v4/server/archive/domain"
+	"github.com/go-chi/chi/v5"
 )
 
 // alias type

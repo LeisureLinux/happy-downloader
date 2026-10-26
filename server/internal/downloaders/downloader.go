@@ -18,6 +18,7 @@ type Downloader interface {
 	IsCompleted() bool
 
 	UpdateSavedFilePath(path string)
+	UpdateOutputDimensions(width, height float64)
 
 	RestoreFromSnapshot(*internal.ProcessSnapshot) error
 

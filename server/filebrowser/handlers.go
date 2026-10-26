@@ -16,10 +16,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
+	"github.com/go-chi/chi/v5"
 )
 
 /*

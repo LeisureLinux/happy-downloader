@@ -1,13 +1,13 @@
 package rpc
 
 import (
-	"github.com/go-chi/chi/v5"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/livestream"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
 	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
 	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
+	"github.com/go-chi/chi/v5"
 )
 
 // Dependency injection container.

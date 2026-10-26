@@ -50,7 +50,9 @@ func NewStore(db *bolt.DB, seed Profile) (*Store, error) {
 		// entry and the fallback, so an existing deployment keeps working.
 		if seed.CookiePath != "" || seed.PotBaseURL != "" || seed.Proxy != "" {
 			for i := range t {
-				if t[i].HostSuffix == "youtube.com" || t[i].HostSuffix == "" {
+				// YouTube by name, plus the fallback: a URL no profile names
+				// should still get the credentials the operator configured.
+				if strings.Contains(t[i].HostSuffix, "youtube.com") || t[i].HostSuffix == "" {
 					if seed.CookiePath != "" {
 						t[i].CookiePath = seed.CookiePath
 					}

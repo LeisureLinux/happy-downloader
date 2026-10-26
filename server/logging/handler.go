@@ -7,11 +7,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/websocket"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
 	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{

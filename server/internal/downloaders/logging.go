@@ -44,6 +44,9 @@ func (j *JSONLogConsumer) ParseLogEntry(entry []byte, d Downloader) {
 
 	if err := json.Unmarshal(entry, &postprocess); err == nil {
 		d.UpdateSavedFilePath(postprocess.FilePath)
+		if postprocess.Width > 0 && postprocess.Height > 0 {
+			d.UpdateOutputDimensions(postprocess.Width, postprocess.Height)
+		}
 	}
 }
 

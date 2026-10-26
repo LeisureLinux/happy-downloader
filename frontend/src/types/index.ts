@@ -61,6 +61,13 @@ export type RPCResult = Readonly<{
   info: DownloadInfo
   output: {
     savedFilePath: string
+    /** actual bytes on disk; 0 when the file is gone */
+    fileSize?: number
+    /** whether the saved file still exists */
+    fileExists?: boolean
+    /** dimensions actually written, captured at postprocess */
+    width?: number
+    height?: number
   }
 }>
 

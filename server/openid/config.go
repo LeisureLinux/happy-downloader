@@ -3,8 +3,8 @@ package openid
 import (
 	"context"
 
-	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
 

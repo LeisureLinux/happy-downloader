@@ -35,15 +35,25 @@ func TestStoreSeedsDefaults(t *testing.T) {
 		t.Fatalf("seeded %d profiles, want at least 4", len(tbl))
 	}
 
-	hosts := make(map[string]bool)
-	for _, p := range tbl {
-		hosts[p.HostSuffix] = true
-	}
-
-	for _, want := range []string{"youtube.com", "bilibili.com", "x.com", "twitter.com", ""} {
-		if !hosts[want] {
+	// A profile may name several domains, comma-separated, so check that each
+	// wanted host appears in some entry rather than matching a whole field.
+	for _, want := range []string{"youtube.com", "youtu.be", "bilibili.com", "x.com", "twitter.com"} {
+		found := false
+		for _, p := range tbl {
+			for _, suffix := range p.suffixes() {
+				if suffix == want {
+					found = true
+				}
+			}
+		}
+		if !found {
 			t.Errorf("no seeded profile for %q", want)
 		}
+	}
+
+	// Exactly one fallback, and it is last.
+	if tbl[len(tbl)-1].HostSuffix != "" {
+		t.Errorf("fallback not last: %+v", tbl[len(tbl)-1])
 	}
 
 	// The fallback must be last so match() finds it deterministically.

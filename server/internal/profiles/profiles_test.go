@@ -142,3 +142,50 @@ func TestSortedCopyKeepsFallbackLast(t *testing.T) {
 		t.Errorf("fallback not last: %+v", out)
 	}
 }
+
+// A site commonly serves the same content from several domains. YouTube
+// answers on youtube.com and youtu.be, and pasting a short link is the normal
+// case, so one profile has to cover both.
+func TestMatchCoversSeveralDomainsPerProfile(t *testing.T) {
+	tab := table{
+		{Name: "YouTube", HostSuffix: "youtube.com,youtu.be"},
+		{Name: "Fallback"},
+	}
+
+	for _, u := range []string{
+		"https://www.youtube.com/watch?v=x",
+		"https://youtube.com/watch?v=x",
+		"https://m.youtube.com/watch?v=x",
+		"https://youtu.be/x",
+		"https://youtu.be/x?si=abc",
+	} {
+		if p, _ := tab.match(u); p.Name != "YouTube" {
+			t.Errorf("%s matched %q, want YouTube", u, p.Name)
+		}
+	}
+
+	// A host that merely ends in the same letters must not match.
+	if p, _ := tab.match("https://notyoutube.com/x"); p.Name != "Fallback" {
+		t.Errorf("notyoutube.com matched %q, want Fallback", p.Name)
+	}
+}
+
+func TestSuffixesTrimsAndSplits(t *testing.T) {
+	p := Profile{HostSuffix: " youtube.com , youtu.be , , www.m.youtube.com "}
+
+	got := p.suffixes()
+	want := []string{"youtube.com", "youtu.be", "m.youtube.com"}
+
+	if len(got) != len(want) {
+		t.Fatalf("suffixes = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("suffixes[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+
+	if (Profile{}).suffixes() != nil {
+		t.Error("empty HostSuffix should yield no suffixes")
+	}
+}

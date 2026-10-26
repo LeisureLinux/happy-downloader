@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/data"
 	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/domain"
+	"github.com/google/uuid"
 	bolt "go.etcd.io/bbolt"
 )
 

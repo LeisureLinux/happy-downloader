@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/LeisureLinux/happy-downloader/v4/server/archive/domain"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/openid"
+	"github.com/go-chi/chi/v5"
 
 	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
 )

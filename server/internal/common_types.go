@@ -13,7 +13,9 @@ type ProgressTemplate struct {
 }
 
 type PostprocessTemplate struct {
-	FilePath string `json:"filepath"`
+	FilePath string  `json:"filepath"`
+	Width    float64 `json:"width"`
+	Height   float64 `json:"height"`
 }
 
 // Defines where and how the download needs to be saved
@@ -21,6 +23,22 @@ type DownloadOutput struct {
 	Path          string
 	Filename      string
 	SavedFilePath string `json:"savedFilePath"`
+	// FileSize is the size of the file actually written, not the estimate the
+	// metadata carried for the best available format. Those differ whenever a
+	// resolution cap or an audio-only choice is applied, and showing the
+	// estimate next to a file that is a tenth of the size is worse than
+	// showing nothing.
+	FileSize int64 `json:"fileSize,omitempty"`
+	// FileExists reports whether the saved file is still on disk. The list
+	// outlives the files: an entry whose file was removed by hand would
+	// otherwise offer play and download buttons that 404.
+	FileExists bool `json:"fileExists"`
+	// Width and Height are the dimensions actually written, captured at
+	// postprocess. The metadata's resolution describes the best format the
+	// source offers, which is not what a capped or audio-only download
+	// produced.
+	Width  float64 `json:"width,omitempty"`
+	Height float64 `json:"height,omitempty"`
 }
 
 // Progress for the Running call

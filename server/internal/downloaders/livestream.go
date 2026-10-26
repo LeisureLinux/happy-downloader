@@ -169,6 +169,8 @@ func (l *LiveStreamDownloader) Status() internal.ProcessSnapshot {
 
 func (l *LiveStreamDownloader) UpdateSavedFilePath(p string) {}
 
+func (l *LiveStreamDownloader) UpdateOutputDimensions(width, height float64) {}
+
 func (l *LiveStreamDownloader) SetOutput(o internal.DownloadOutput)     {}
 func (l *LiveStreamDownloader) SetProgress(p internal.DownloadProgress) { l.progress = p }
 

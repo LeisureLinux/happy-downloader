@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 

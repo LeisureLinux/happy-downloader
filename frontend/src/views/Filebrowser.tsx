@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Box,
   Button,
+  ButtonGroup,
   Checkbox,
   CircularProgress,
   Container,
+  IconButton,
   Paper,
   Stack,
   Table,
@@ -17,9 +19,9 @@ import {
   Typography
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import DownloadIcon from '@mui/icons-material/Download'
+import FileDownloadIcon from '@mui/icons-material/FileDownload'
+import SmartDisplayIcon from '@mui/icons-material/SmartDisplay'
 import FolderIcon from '@mui/icons-material/Folder'
-import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import { matchW } from 'fp-ts/lib/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
 import { serverURL } from '../atoms/settings'
@@ -121,43 +123,42 @@ export default function Filebrowser() {
           <Typography variant="h6">{i18n.t('browseButtonLabel')}</Typography>
           <Box flexGrow={1} />
           {/* 批量操作：只对选中的文件生效 */}
-          <Tooltip title={i18n.t('downloadSelected')}>
-            <span>
-              <Button
-                size="small"
-                startIcon={<DownloadIcon />}
-                disabled={selectedFiles.length === 0}
-                onClick={() => selectedFiles.forEach(f => fileAction(serverAddr, f.path, 'download'))}
-              >
-                {i18n.t('downloadSelected')}
-              </Button>
-            </span>
-          </Tooltip>
-          <Tooltip title={i18n.t('playSelected')}>
-            <span>
-              <Button
-                size="small"
-                startIcon={<PlayArrowIcon />}
-                disabled={selectedFiles.length === 0}
-                onClick={() => selectedFiles.forEach(f => fileAction(serverAddr, f.path, 'view'))}
-              >
-                {i18n.t('playSelected')}
-              </Button>
-            </span>
-          </Tooltip>
-          <Tooltip title={i18n.t('deleteSelected')}>
-            <span>
-              <Button
-                size="small"
-                color="error"
-                startIcon={<DeleteIcon />}
-                disabled={selectedFiles.length === 0}
-                onClick={() => remove(selectedFiles.map(f => f.path))}
-              >
-                {i18n.t('deleteSelected')}
-              </Button>
-            </span>
-          </Tooltip>
+          <ButtonGroup size="small">
+            <Tooltip title={i18n.t('playSelected')}>
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={selectedFiles.length === 0}
+                  onClick={() => selectedFiles.forEach(f => fileAction(serverAddr, f.path, 'view'))}
+                >
+                  <SmartDisplayIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={i18n.t('downloadSelected')}>
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={selectedFiles.length === 0}
+                  onClick={() => selectedFiles.forEach(f => fileAction(serverAddr, f.path, 'download'))}
+                >
+                  <FileDownloadIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={i18n.t('deleteSelected')}>
+              <span>
+                <IconButton
+                  size="small"
+                  color="error"
+                  disabled={selectedFiles.length === 0}
+                  onClick={() => remove(selectedFiles.map(f => f.path))}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </ButtonGroup>
         </Stack>
 
         {subdir !== '' && (
@@ -220,15 +221,24 @@ export default function Filebrowser() {
                     </TableCell>
                     <TableCell align="right">{formatSize(f.size)}</TableCell>
                     <TableCell align="right">
-                      <Button size="small" onClick={() => fileAction(serverAddr, f.path, 'view')}>
-                        {i18n.t('playSelected')}
-                      </Button>
-                      <Button size="small" onClick={() => fileAction(serverAddr, f.path, 'download')}>
-                        {i18n.t('downloadSelected')}
-                      </Button>
-                      <Button size="small" color="error" onClick={() => remove([f.path])}>
-                        {i18n.t('deleteSelected')}
-                      </Button>
+                      {/* 与下载历史用同一组图标按钮：同一类操作在两处长得一样 */}
+                      <ButtonGroup size="small">
+                        <Tooltip title={i18n.t('playSelected')}>
+                          <IconButton size="small" onClick={() => fileAction(serverAddr, f.path, 'view')}>
+                            <SmartDisplayIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title={i18n.t('downloadSelected')}>
+                          <IconButton size="small" onClick={() => fileAction(serverAddr, f.path, 'download')}>
+                            <FileDownloadIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title={i18n.t('deleteSelected')}>
+                          <IconButton size="small" onClick={() => remove([f.path])}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </ButtonGroup>
                     </TableCell>
                   </TableRow>
                 ))}

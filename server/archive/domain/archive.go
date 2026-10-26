@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/LeisureLinux/happy-downloader/v4/server/archive/data"
+	"github.com/go-chi/chi/v5"
 )
 
 type ArchiveEntry struct {

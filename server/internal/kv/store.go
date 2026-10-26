@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"os"
 	"runtime"
 	"sync"
 	"time"
@@ -106,7 +107,17 @@ func (m *Store) All() *[]internal.ProcessSnapshot {
 
 	m.mu.RLock()
 	for _, v := range m.table {
-		running = append(running, v.Status())
+		snap := v.Status()
+		// Fill in what only the filesystem knows. The metadata estimate is
+		// what the source offered at its best, which is not what was written
+		// once a resolution cap or audio-only choice applied.
+		if snap.Output.SavedFilePath != "" {
+			if info, err := os.Stat(snap.Output.SavedFilePath); err == nil && !info.IsDir() {
+				snap.Output.FileSize = info.Size()
+				snap.Output.FileExists = true
+			}
+		}
+		running = append(running, snap)
 	}
 	m.mu.RUnlock()
 

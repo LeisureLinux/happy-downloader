@@ -27,7 +27,9 @@ const downloadTemplate = `download:
 // filename not returning the correct extension after postprocess
 const postprocessTemplate = `postprocess:
 {
-	"filepath":"%(info.filepath)s"
+	"filepath":"%(info.filepath)s",
+	"width":%(info.width)s,
+	"height":%(info.height)s
 }
 `
 
@@ -218,6 +220,11 @@ func (g *GenericDownloader) Status() internal.ProcessSnapshot {
 }
 
 func (g *GenericDownloader) UpdateSavedFilePath(p string) { g.output.SavedFilePath = p }
+
+func (g *GenericDownloader) UpdateOutputDimensions(width, height float64) {
+	g.output.Width = width
+	g.output.Height = height
+}
 
 func (g *GenericDownloader) SetOutput(o internal.DownloadOutput)     { g.output = o }
 func (g *GenericDownloader) SetProgress(p internal.DownloadProgress) { g.progress = p }
