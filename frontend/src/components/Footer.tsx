@@ -1,6 +1,6 @@
 import DownloadIcon from '@mui/icons-material/Download'
 import SettingsEthernet from '@mui/icons-material/SettingsEthernet'
-import { AppBar, CircularProgress, Divider, IconButton, Toolbar, Tooltip } from '@mui/material'
+import { AppBar, Box, Divider, IconButton, Toolbar, Tooltip } from '@mui/material'
 import { Suspense } from 'react'
 import { settingsState } from '../atoms/settings'
 import { connectedState } from '../atoms/status'
@@ -41,15 +41,15 @@ const Footer: React.FC = () => {
             marginRight: 'px',
             gap: 3,
           }}>
-            <DownloadIcon />
-            <span>
+            <DownloadIcon sx={{ color: 'primary.main' }} />
+            <Box component="span" sx={{ color: 'primary.main' }}>
               {formatSpeedMiB(totalDownloadSpeed)}
-            </span>
+            </Box>
             <Divider orientation="vertical" flexItem />
-            <SettingsEthernet />
-            <span>
+            <SettingsEthernet sx={{ color: 'primary.main' }} />
+            <Box component="span" sx={{ color: 'primary.main' }}>
               {isConnected ? settings.serverAddr : i18n.t('notConnectedText')}
-            </span>
+            </Box>
           </div>
           <Divider orientation="vertical" flexItem />
           <Suspense fallback={i18n.t('loadingLabel')}>

@@ -13,8 +13,7 @@ import {
   Stack,
   Switch,
   TextField,
-  Typography,
-  capitalize
+  Typography
 } from '@mui/material'
 import { useAtom } from 'jotai'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
@@ -72,7 +71,7 @@ export function SettingsContent() {
 
   const [invalidIP, setInvalidIP] = useState(false)
 
-  const { i18n } = useI18n()
+  const { i18n, tSub } = useI18n()
 
   const { pushMessage } = useToast()
 
@@ -216,7 +215,7 @@ export function SettingsContent() {
               >
                 {accents.map((accent) => (
                   <MenuItem key={accent} value={accent}>
-                    {capitalize(accent)}
+                    {tSub('accentNames', accent)}
                   </MenuItem>
                 ))}
               </Select>

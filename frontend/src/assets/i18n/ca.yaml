@@ -120,3 +120,8 @@ keys:
   subtitlesNone: 'Cap'
   systemThemeOption: 'Sistema'
   viewLogs: 'Mostra el registre'
+  accentNames:
+    default: 'Per defecte'
+    red: 'Vermell'
+    purple: 'Lila'
+    orange: 'Taronja'

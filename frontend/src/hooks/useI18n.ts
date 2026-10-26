@@ -13,6 +13,7 @@ export const useI18n = () => {
 
   return {
     i18n: instance,
-    t: instance.t.bind(instance)
+    t: instance.t.bind(instance),
+    tSub: instance.tSub.bind(instance)
   }
 }

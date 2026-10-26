@@ -120,3 +120,8 @@ keys:
   subtitlesNone: 'Aucun'
   systemThemeOption: 'Système'
   viewLogs: 'Voir le journal'
+  accentNames:
+    default: 'Par défaut'
+    red: 'Rouge'
+    purple: 'Violet'
+    orange: 'Orange'

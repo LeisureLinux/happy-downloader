@@ -89,22 +89,32 @@ export default function Layout() {
         <CssBaseline />
         <AppBar position="absolute">
           <Toolbar sx={{ pr: 2, gap: 1 }}>
-            <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1 }}>
+            <Typography
+              component="h1"
+              variant="h6"
+              noWrap
+              sx={{ flexGrow: 1, color: 'primary.main' }}
+            >
               {productName}
               <AppVersion />
             </Typography>
 
             {/* 顺序：日志 | 设置 | 浏览 | 下载。
-                前两个是开关，后两个是目的地。 */}
+                前两个是开关，后两个是目的地。
+
+                color="inherit" would render these in the app bar's own
+                contrast colour, which is white in dark mode — the accent
+                would never reach them. They use the accent explicitly, dimmed
+                when inactive, so the chosen colour shows on the controls too. */}
             {toggles.map(t => (
               <Button
                 key={t.key}
-                color="inherit"
                 size="small"
                 onClick={t.onToggle}
                 startIcon={t.icon}
                 aria-pressed={t.open}
                 sx={{
+                  color: 'primary.main',
                   opacity: t.open ? 1 : 0.72,
                   fontWeight: t.open ? 600 : 400,
                   '&:hover': { opacity: 1 },
@@ -119,10 +129,10 @@ export default function Layout() {
                 key={d.to}
                 component={Link}
                 to={d.to}
-                color="inherit"
                 size="small"
                 startIcon={d.icon}
                 sx={{
+                  color: 'primary.main',
                   opacity: pathname === d.to ? 1 : 0.72,
                   fontWeight: pathname === d.to ? 600 : 400,
                   '&:hover': { opacity: 1 },

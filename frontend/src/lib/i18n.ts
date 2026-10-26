@@ -55,6 +55,22 @@ export default class Translator {
     return this.current[key] ?? fallback.keys[key] ?? key
   }
 
+  // For values that are a map rather than a string, like the accent colour
+  // names. A dotted key would work, but it hides that these are a group and
+  // makes a typo look like a missing key instead of a bug.
+  tSub(group: string, key: string): string {
+    const g = this.current[group] ?? fallback.keys[group]
+
+    if (g && typeof g === 'object') {
+      const hit = (g as Record<string, unknown>)[key]
+      if (typeof hit === 'string') {
+        return hit
+      }
+    }
+
+    return key
+  }
+
   public static get instance(): Translator {
     if (!Translator.#instance) {
       Translator.#instance = new Translator()

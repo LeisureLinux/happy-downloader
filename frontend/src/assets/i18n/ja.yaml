@@ -120,3 +120,8 @@ keys:
   subtitlesNone: 'なし'
   systemThemeOption: 'システム'
   viewLogs: 'ログを見る'
+  accentNames:
+    default: '既定'
+    red: '赤'
+    purple: '紫'
+    orange: 'オレンジ'

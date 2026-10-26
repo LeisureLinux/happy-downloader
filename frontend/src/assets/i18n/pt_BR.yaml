@@ -120,3 +120,8 @@ keys:
   subtitlesNone: 'Nenhuma'
   systemThemeOption: 'Sistema'
   viewLogs: 'Ver o log'
+  accentNames:
+    default: 'Padrão'
+    red: 'Vermelho'
+    purple: 'Roxo'
+    orange: 'Laranja'

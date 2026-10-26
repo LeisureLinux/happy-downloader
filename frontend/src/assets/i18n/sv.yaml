@@ -120,3 +120,8 @@ keys:
   subtitlesNone: 'Inga'
   systemThemeOption: 'System'
   viewLogs: 'Visa loggen'
+  accentNames:
+    default: 'Standard'
+    red: 'Röd'
+    purple: 'Lila'
+    orange: 'Orange'

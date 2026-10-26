@@ -120,3 +120,8 @@ keys:
   subtitlesNone: 'Keine'
   systemThemeOption: 'System'
   viewLogs: 'Protokoll anzeigen'
+  accentNames:
+    default: 'Standard'
+    red: 'Rot'
+    purple: 'Violett'
+    orange: 'Orange'

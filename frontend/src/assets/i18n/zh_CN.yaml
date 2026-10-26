@@ -120,3 +120,8 @@ keys:
   argsPreviewEmpty: '(无附加参数)'
   viewLogs: '查看日志'
   closeLogs: '关闭日志'
+  accentNames:
+    default: '默认'
+    red: '红色'
+    purple: '紫色'
+    orange: '橙色'

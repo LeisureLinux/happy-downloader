@@ -206,10 +206,12 @@ export default function Filebrowser() {
                       inputProps={{ 'aria-label': 'select all' }}
                     />
                   </TableCell>
-                  <TableCell>{i18n.t('colFileName')}</TableCell>
-                  <TableCell align="right">{i18n.t('colDownloadTime')}</TableCell>
-                  <TableCell align="right">{i18n.t('colFileSize')}</TableCell>
-                  <TableCell align="right">{i18n.t('colActions')}</TableCell>
+                  {/* 表头用主题色：这些是列名，和标题一样是该被强调的东西，
+                      默认灰色让表格和页面其他部分的配色脱节。 */}
+                  <TableCell sx={{ color: 'primary.main' }}>{i18n.t('colFileName')}</TableCell>
+                  <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colDownloadTime')}</TableCell>
+                  <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colFileSize')}</TableCell>
+                  <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colActions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

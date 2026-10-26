@@ -120,3 +120,8 @@ keys:
   subtitlesNone: '없음'
   systemThemeOption: '시스템'
   viewLogs: '로그 보기'
+  accentNames:
+    default: '기본'
+    red: '빨강'
+    purple: '보라'
+    orange: '주황'

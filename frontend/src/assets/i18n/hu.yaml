@@ -120,3 +120,8 @@ keys:
   subtitlesNone: 'Nincs'
   systemThemeOption: 'Rendszer'
   viewLogs: 'Napló megtekintése'
+  accentNames:
+    default: 'Alapértelmezett'
+    red: 'Piros'
+    purple: 'Lila'
+    orange: 'Narancs'

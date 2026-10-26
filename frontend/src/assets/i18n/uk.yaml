@@ -120,3 +120,8 @@ keys:
   subtitlesNone: 'Немає'
   systemThemeOption: 'Системна'
   viewLogs: 'Відкрити журнал'
+  accentNames:
+    default: 'Типове'
+    red: 'Червоний'
+    purple: 'Фіолетовий'
+    orange: 'Помаранчевий'
