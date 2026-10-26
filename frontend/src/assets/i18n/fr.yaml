@@ -1,5 +1,6 @@
 keys:
   appName: 'Téléchargeur Joyeux'
+  sourceCode: 'Code source'
   urlInput: URL vidéo de YouTube ou d'un autre service pris en charge
   selectFormatButton: 'Choisir le format'
   startButton: Démarrer

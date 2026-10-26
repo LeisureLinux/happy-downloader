@@ -1,5 +1,6 @@
 keys:
   appName: 'Весёлый Загрузчик'
+  sourceCode: 'Исходный код'
   urlInput: URL-адрес YouTube или любого другого поддерживаемого сервиса
   startButton: Начать
   darkThemeButton: Темная тема

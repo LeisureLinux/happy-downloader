@@ -1,5 +1,6 @@
 keys:
   appName: 'Happy Downloader'
+  sourceCode: 'Source code'
   autoFileExtension: 'Extension'
   notConnectedText: 'Not connected'
   cookieLoaded: 'Cookie file loaded'

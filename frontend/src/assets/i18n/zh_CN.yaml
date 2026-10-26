@@ -1,5 +1,6 @@
 keys:
   appName: '欢喜下载'
+  sourceCode: '源代码'
   autoFileExtension: '扩展名'
   notConnectedText: '未连接'
   cookieLoaded: 'Cookie 文件已加载'

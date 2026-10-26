@@ -1,5 +1,6 @@
 keys:
   appName: '歡喜下載'
+  sourceCode: '原始碼'
   autoFileExtension: '副檔名'
   notConnectedText: '未連線'
   cookieLoaded: 'Cookie 檔案已載入'

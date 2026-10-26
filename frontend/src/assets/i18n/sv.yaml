@@ -1,5 +1,6 @@
 keys:
   appName: 'Glad Nedladdare'
+  sourceCode: 'Källkod'
   urlInput: Videolänk (en per rad)
   selectFormatButton: 'Välj format'
   startButton: 'Starta'

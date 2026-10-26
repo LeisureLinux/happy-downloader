@@ -1,5 +1,6 @@
 keys:
   appName: 'Fröhlicher Downloader'
+  sourceCode: 'Quelltext'
   urlInput: Video URL
   selectFormatButton: 'Format wählen'
   startButton: 'Starten'

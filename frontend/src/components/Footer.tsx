@@ -1,4 +1,5 @@
 import DownloadIcon from '@mui/icons-material/Download'
+import GitHubIcon from '@mui/icons-material/GitHub'
 import SettingsEthernet from '@mui/icons-material/SettingsEthernet'
 import { AppBar, Box, Divider, IconButton, Toolbar, Tooltip } from '@mui/material'
 import { Suspense } from 'react'
@@ -28,12 +29,30 @@ const Footer: React.FC = () => {
         ? '1px solid rgba(0, 0, 0, 0.12)'
         : '1px solid rgba(255, 255, 255, 0.12)',
     }}>
+      {/* paddingBottom made the toolbar 64px tall inside a 48px bar, so the
+          row overflowed the viewport and the icons were clipped at the bottom
+          edge. The bar centres its own content; nothing needs to be pushed. */}
       <Toolbar sx={{
-        paddingBottom: 2,
+        minHeight: '48px !important',
         fontSize: 14,
         display: 'flex', gap: 1, justifyContent: 'space-between'
       }}>
         <div style={{ display: 'flex', gap: 4, 'alignItems': 'center' }}>
+          {/* 仓库入口放在最左下角：它是"这个部署是什么"的入口，
+              不是导航，所以和状态信息排在一起而不是顶栏。 */}
+          <Tooltip title={i18n.t('sourceCode')}>
+            <IconButton
+              size="small"
+              component="a"
+              href="https://github.com/LeisureLinux/happy-downloader"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ color: 'primary.main' }}
+            >
+              <GitHubIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Divider orientation="vertical" flexItem />
           <div style={{
             display: 'flex',
             alignItems: 'center',

@@ -1,5 +1,6 @@
 keys:
   appName: 'Descargador Feliz'
+  sourceCode: 'Código fuente'
   urlInput: URL de YouTube u otro servicio compatible
   startButton: Iniciar
   darkThemeButton: Tema oscuro
