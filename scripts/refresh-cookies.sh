@@ -15,7 +15,13 @@
 #
 # Usage:
 #   refresh-cookies.sh --output <path> [--check-url <url>] [--browser chrome]
-#                      [--check-only] [--dry-run]
+#                      [--keyring gnomekeyring] [--check-only] [--dry-run]
+#
+# --keyring defaults to gnomekeyring, and that default is load-bearing: yt-dlp
+# infers the backend from XDG_CURRENT_DESKTOP and gives up when it does not
+# recognise the session, leaving every v11 cookie undecrypted. The export then
+# contains LOGIN_INFO but no HSID or SID, which is a guest session wearing the
+# costume of a signed-in one.
 #
 # It refreshes on every run by default. Detecting an expired session from
 # outside is not reliable: yt-dlp does not validate a cookie file, it silently
@@ -39,6 +45,12 @@ set -uo pipefail
 OUTPUT=""
 CHECK_URL="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 BROWSER="chrome"
+# yt-dlp picks a keyring backend from XDG_CURRENT_DESKTOP, which is unset or
+# unknown on tiling window managers and other minimal sessions. When it cannot
+# choose, it silently fails to decrypt v11 cookies — the ones holding HSID and
+# SID — and produces an export that looks fine and is a guest session. Naming
+# the backend explicitly is the difference between 171 cookies and 2275.
+KEYRING="${COOKIE_KEYRING:-gnomekeyring}"
 FORCE=1
 DRY_RUN=0
 YTDLP="${YTDLP:-yt-dlp}"
@@ -51,6 +63,7 @@ while [ $# -gt 0 ]; do
     --output)    OUTPUT="${2:-}"; shift 2 ;;
     --check-url) CHECK_URL="${2:-}"; shift 2 ;;
     --browser)   BROWSER="${2:-}"; shift 2 ;;
+    --keyring)   KEYRING="${2:-}"; shift 2 ;;
     --check-only) FORCE=0; shift ;;
     --dry-run)   DRY_RUN=1; shift ;;
     -h|--help)   sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -117,8 +130,22 @@ TMP="$WORKDIR/dump.txt"
 # yt-dlp dumps every cookie it reads, across all sites. Only the ones that
 # matter are kept: a credential file should not carry the rest of the browser's
 # browsing history in cookie form.
-if ! "$YTDLP" --cookies-from-browser "$BROWSER" --cookies "$TMP" \
-     --skip-download --no-warnings "$CHECK_URL" >/dev/null 2>&1; then
+BROWSER_SPEC="$BROWSER"
+[ -n "$KEYRING" ] && BROWSER_SPEC="$BROWSER+$KEYRING"
+
+DUMP_OUT=$("$YTDLP" --cookies-from-browser "$BROWSER_SPEC" --cookies "$TMP" \
+     --skip-download "$CHECK_URL" 2>&1)
+DUMP_RC=$?
+
+# A partial export is the failure mode that cost hours: it has the shape of a
+# valid jar and the content of a signed-out one. yt-dlp says how many cookies it
+# could not decrypt, and only mentions it when the number is not zero.
+if printf '%s' "$DUMP_OUT" | grep -q "could not be decrypted"; then
+  log "WARNING: $(printf '%s' "$DUMP_OUT" | grep -oE '[0-9]+ could not be decrypted')" >&2
+  log "         the export may be a guest session; pass --keyring if the desktop is unusual" >&2
+fi
+
+if [ "$DUMP_RC" -ne 0 ]; then
   # The dump is written even when the request fails, so a non-zero exit here is
   # only fatal if nothing usable came out.
   if [ ! -s "$TMP" ]; then

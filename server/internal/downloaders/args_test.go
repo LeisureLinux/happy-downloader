@@ -3,7 +3,10 @@ package downloaders
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/profiles"
 )
 
 // yt-dlp's --cookies reads the file and writes its cookie jar back into it,
@@ -47,5 +50,24 @@ func TestStageCookieFileProtectsSourceFromRewrite(t *testing.T) {
 	}
 	if string(after) != original {
 		t.Errorf("source was modified:\ngot:  %q\nwant: %q", after, original)
+	}
+}
+
+// The POT provider fetches the BotGuard challenge from YouTube, so on a host
+// that reaches YouTube through a proxy the provider needs it too. Its HTTP
+// server has no --proxy flag; the proxy travels per request in the same
+// extractor-args value as base_url.
+func TestPotArgCarriesProxy(t *testing.T) {
+	got := profiles.Profile{
+		Name:       "YouTube",
+		HostSuffix: "youtube.com",
+		PotBaseURL: "http://127.0.0.1:4416",
+		Proxy:      "http://127.0.0.1:8888",
+	}.Argv("", "")
+
+	joined := strings.Join(got, " ")
+	want := "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416;proxy=http://127.0.0.1:8888"
+	if !strings.Contains(joined, want) {
+		t.Errorf("POT arg missing the provider proxy:\n got: %s\nwant: %s", joined, want)
 	}
 }

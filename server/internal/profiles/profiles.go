@@ -175,8 +175,14 @@ func (p Profile) Argv(cookieStaging, jsRuntime string) []string {
 	}
 
 	if p.PotBaseURL != "" {
-		args = append(args,
-			"--extractor-args", "youtubepot-bgutilhttp:base_url="+p.PotBaseURL)
+		// The provider fetches the BotGuard challenge from YouTube, so it needs
+		// the same egress as the download. Its HTTP server has no --proxy flag;
+		// the proxy travels per request, in the same extractor-args value.
+		potArg := "youtubepot-bgutilhttp:base_url=" + p.PotBaseURL
+		if p.Proxy != "" {
+			potArg += ";proxy=" + p.Proxy
+		}
+		args = append(args, "--extractor-args", potArg)
 	}
 
 	if p.Proxy != "" {

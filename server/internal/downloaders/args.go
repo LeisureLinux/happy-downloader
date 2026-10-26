@@ -83,25 +83,17 @@ func BuildArgs(url string, extra ...string) []string {
 		pot = strings.TrimSpace(config.Instance().YtDlp.PotBaseURL)
 	}
 
-	args := []string{url, "--ignore-config"}
+	// One implementation, in Profile.Argv: two copies of this logic is how the
+	// POT provider lost its proxy the first time. The resolved values are
+	// pushed into a copy of the profile so Argv stays free of the config
+	// singleton and remains directly testable.
+	resolved := profile
+	resolved.Proxy = proxy
+	resolved.PotBaseURL = pot
 
-	if runtime != "" {
-		args = append(args, "--js-runtimes", runtime)
-	}
-	if pot != "" {
-		args = append(args, "--extractor-args", "youtubepot-bgutilhttp:base_url="+pot)
-	}
-	if proxy != "" {
-		args = append(args, "--proxy", proxy)
-	}
-	if cookieStaging != "" {
-		args = append(args, "--cookies", cookieStaging)
-	}
-
-	// Profile extras come last so they can override anything above.
-	if matched {
-		args = append(args, profile.ExtraArgs...)
-	}
+	// Argv appends the profile's own extra args, so they must not be added
+	// again here.
+	args := append([]string{url}, resolved.Argv(cookieStaging, runtime)...)
 
 	return append(args, extra...)
 }
