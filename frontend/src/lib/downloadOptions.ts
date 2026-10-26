@@ -54,7 +54,20 @@ export const heightPresets: Array<{ label: string; value: number }> = [
 
 // Containers yt-dlp can produce with --merge-output-format. The list is
 // deliberately short: these are the ones a merged video reliably lands in.
-export const containers = ['', 'mp4', 'mkv', 'webm', 'mov']
+export const videoContainers = ['', 'mp4', 'mkv', 'webm', 'mov']
+
+// Audio targets for --audio-format. Separate from the video list on purpose:
+// asking for an mp4 container on an audio-only download produced an m4a named
+// .mp4, and mp3 was simply unreachable.
+export const audioContainers = ['', 'mp3', 'm4a', 'opus', 'flac', 'wav', 'vorbis']
+
+// Kept for the existing tests and for callers that do not know the media kind.
+export const containers = videoContainers
+
+/** The container list that applies to the current media choice. */
+export function containersFor(media: DownloadOptions['media']): string[] {
+  return media === 'audio' ? audioContainers : videoContainers
+}
 
 export const subtitleLangs = [
   'en', 'zh-Hans', 'zh-Hant', 'ja', 'ko', 'es', 'fr', 'de', 'ru', 'pt'
@@ -114,8 +127,14 @@ export function buildDownloadArgs(o: DownloadOptions): string[] {
     }
   }
 
+  // --merge-output-format only applies to a video merge; for audio-only the
+  // container is the audio codec target and belongs to --audio-format.
   if (o.container) {
-    args.push('--merge-output-format', o.container)
+    if (o.media === 'audio') {
+      args.push('--audio-format', o.container)
+    } else {
+      args.push('--merge-output-format', o.container)
+    }
   }
 
   if (o.writeMetadata) {

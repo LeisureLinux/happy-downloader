@@ -190,6 +190,48 @@ func (s *Service) KillAll(args NoArgs, killed *string) error {
 	return nil
 }
 
+// Retry re-queues a download that failed, reusing the arguments it was created
+// with. The old entry is replaced rather than kept alongside, so a retry does
+// not leave two rows for one URL with different outcomes.
+func (s *Service) Retry(args string, result *string) error {
+	old, err := s.db.Get(args)
+	if err != nil {
+		return err
+	}
+
+	if old == nil {
+		return errors.New("nil process")
+	}
+
+	snapshot := old.Status()
+	url := old.GetUrl()
+
+	if url == "" {
+		return errors.New("this entry has no URL recorded, so it cannot be retried")
+	}
+
+	s.db.Delete(args)
+
+	d := downloaders.NewGenericDownload(url, downloaders.StripOutputArgs(snapshot.Params))
+	d.SetOutput(internal.DownloadOutput{
+		Path:     snapshot.Output.Path,
+		Filename: snapshot.Output.Filename,
+	})
+
+	s.db.Set(d)
+	s.mq.Publish(d)
+
+	slog.Info("retrying download",
+		slog.String("old", args),
+		slog.String("new", d.GetId()),
+		slog.String("url", url),
+	)
+
+	*result = d.GetId()
+
+	return nil
+}
+
 // Remove a process from the db rendering it unusable if active
 func (s *Service) Clear(args string, killed *string) error {
 	slog.Info("Clearing process with id", slog.String("id", args))

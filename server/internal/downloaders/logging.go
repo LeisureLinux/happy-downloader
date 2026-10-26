@@ -3,6 +3,7 @@ package downloaders
 import (
 	"encoding/json"
 	"log/slog"
+	"regexp"
 	"strings"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
@@ -21,11 +22,22 @@ func NewJSONLogConsumer() LogConsumer {
 
 func (j *JSONLogConsumer) GetName() string { return "json-log-consumer" }
 
+// yt-dlp renders a missing numeric field as a bare NA, which is not valid
+// JSON — every audio download failed to parse because width and height do not
+// exist, and the reported file path and size were lost with it. Rewriting the
+// bare tokens to null keeps the template numeric while surviving the missing
+// case. The anchor on the colon keeps a quoted "NA" untouched.
+var bareNA = regexp.MustCompile(`:NA([,}\]])`)
+
+func sanitizeProgressJSON(entry []byte) []byte {
+	return bareNA.ReplaceAll(entry, []byte(":null$1"))
+}
+
 func (j *JSONLogConsumer) ParseLogEntry(entry []byte, d Downloader) {
 	var progress internal.ProgressTemplate
 	var postprocess internal.PostprocessTemplate
 
-	if err := json.Unmarshal(entry, &progress); err == nil {
+	if err := json.Unmarshal(sanitizeProgressJSON(entry), &progress); err == nil {
 		if progress.Percentage != "" {
 			d.SetProgress(internal.DownloadProgress{
 				Status:     internal.StatusDownloading,
@@ -42,7 +54,7 @@ func (j *JSONLogConsumer) ParseLogEntry(entry []byte, d Downloader) {
 		}
 	}
 
-	if err := json.Unmarshal(entry, &postprocess); err == nil {
+	if err := json.Unmarshal(sanitizeProgressJSON(entry), &postprocess); err == nil {
 		d.UpdateSavedFilePath(postprocess.FilePath)
 		if postprocess.Width > 0 && postprocess.Height > 0 {
 			d.UpdateOutputDimensions(postprocess.Width, postprocess.Height)

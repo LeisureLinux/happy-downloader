@@ -296,3 +296,24 @@ func LogCommand(stage, url string, args []string) {
 func Preview(url string) []string {
 	return BuildArgs(url)
 }
+
+// stripOutputArgs removes an -o/--output pair left in a stored request.
+//
+// Older builds appended the resolved output path to the downloader's own
+// params, so entries created before that was fixed carry an -o that the
+// argument whitelist rejects. Retrying one of those would fail with "param -o
+// not allowed" forever; the output path is re-derived on start anyway.
+func StripOutputArgs(params []string) []string {
+	clean := make([]string, 0, len(params))
+
+	for i := 0; i < len(params); i++ {
+		switch params[i] {
+		case "-o", "--output":
+			i++ // drop the flag and its value
+		default:
+			clean = append(clean, params[i])
+		}
+	}
+
+	return clean
+}

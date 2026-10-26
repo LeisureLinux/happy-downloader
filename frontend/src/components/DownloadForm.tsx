@@ -130,7 +130,7 @@ const DownloadForm: React.FC = () => {
   return (
     <Paper sx={{ p: 2, mb: 3 }}>
       <Stack spacing={2}>
-        <Typography variant="h6">{i18n.t('downloadsButtonLabel')}</Typography>
+        <Typography variant="h6" color="primary">{i18n.t('downloadsButtonLabel')}</Typography>
 
         <Stack direction="row" spacing={1} alignItems="flex-start">
           <TextField

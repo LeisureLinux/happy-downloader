@@ -16,7 +16,7 @@ import type { DLMetadata } from '../types'
 import {
   availableSubtitleLangs,
   buildDownloadArgs,
-  containers,
+  containersFor,
   defaultOptions,
   hasAudioStream,
   hasVideoStream,
@@ -64,7 +64,18 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
           exclusive
           size="small"
           value={value.media}
-          onChange={(_, v) => v && set('media', v)}
+          onChange={(_, v) => {
+            if (!v) return
+            // Switching to audio leaves "mp4" selected, which yt-dlp cannot
+            // produce from an audio-only source. Reset rather than silently
+            // passing an impossible target.
+            const allowed = containersFor(v as DownloadOptions['media'])
+            onChange({
+              ...value,
+              media: v as DownloadOptions['media'],
+              container: allowed.includes(value.container) ? value.container : '',
+            })
+          }}
         >
           <ToggleButton value="video" disabled={!canVideo}>
             视频+音频
@@ -93,13 +104,13 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
         </FormControl>
 
         <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel>容器格式</InputLabel>
+          <InputLabel>{value.media === 'audio' ? '音频格式' : '容器格式'}</InputLabel>
           <Select
-            label="容器格式"
+            label={value.media === 'audio' ? '音频格式' : '容器格式'}
             value={value.container}
             onChange={e => set('container', e.target.value)}
           >
-            {containers.map(c => (
+            {containersFor(value.media).map(c => (
               <MenuItem key={c || 'auto'} value={c}>
                 {c || '自动'}
               </MenuItem>

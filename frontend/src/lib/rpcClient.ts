@@ -143,6 +143,14 @@ export class RPCClient {
     })
   }
 
+  // Re-queue a failed download with the arguments it was created with.
+  public retry(id: string) {
+    return this.sendHTTP({
+      method: 'Service.Retry',
+      params: [id],
+    })
+  }
+
   public killAll() {
     return this.sendHTTP({
       method: 'Service.KillAll',

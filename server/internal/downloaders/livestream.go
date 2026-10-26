@@ -193,9 +193,13 @@ func (l *LiveStreamDownloader) RestoreFromSnapshot(snap *internal.ProcessSnapsho
 	s := *snap
 
 	l.Id = s.Id
-	l.URL = s.Info.URL
 	l.Metadata = s.Info
 	l.progress = s.Progress
+
+	l.URL = s.URL
+	if l.URL == "" {
+		l.URL = s.Info.URL
+	}
 
 	return nil
 }

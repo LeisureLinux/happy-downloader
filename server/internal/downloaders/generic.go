@@ -65,6 +65,11 @@ func NewGenericDownload(url string, params []string) Downloader {
 func (g *GenericDownloader) Start() error {
 	g.SetPending(true)
 
+	// Older builds recorded the resolved -o in Params. The whitelist rejects
+	// it, so those entries failed on every restart; the output path is
+	// re-derived below anyway, so drop it before validating.
+	g.Params = StripOutputArgs(g.Params)
+
 	whiltelistedParams, err := argsSanitizer(g.Params)
 	if err != nil {
 		return err
@@ -123,6 +128,12 @@ func (g *GenericDownloader) Start() error {
 		"ejs:github",
 	)
 
+	// The output flag goes onto a copy. Appending it to g.Params made the field
+	// record the resolved command instead of the request, so a second Start()
+	// — or a retry rebuilt from Status() — carried a -o that the argument
+	// whitelist rejects and the job could never be restarted.
+	userParams := g.Params
+
 	// if user asked to manually override the output path...
 	if !(slices.Contains(g.Params, "-P") || slices.Contains(g.Params, "--paths")) {
 		outputPath := filepath.Join(out.Path, out.Filename)
@@ -135,11 +146,10 @@ func (g *GenericDownloader) Start() error {
 			return errors.New(ErrIsNotSubPath)
 		}
 
-		g.Params = append(g.Params, "-o")
-		g.Params = append(g.Params, outputPath)
+		userParams = append(userParams, "-o", outputPath)
 	}
 
-	params := append(baseParams, g.Params...)
+	params := append(baseParams, userParams...)
 	params = append(params, "--no-exec")
 
 	LogCommand("download", g.URL, params)
@@ -218,6 +228,7 @@ func (g *GenericDownloader) Stop() error {
 func (g *GenericDownloader) Status() internal.ProcessSnapshot {
 	return internal.ProcessSnapshot{
 		Id:             g.Id,
+		URL:            g.URL,
 		Info:           g.Metadata,
 		Progress:       g.progress,
 		Output:         g.output,
@@ -255,11 +266,21 @@ func (g *GenericDownloader) RestoreFromSnapshot(snap *internal.ProcessSnapshot) 
 	s := *snap
 
 	g.Id = s.Id
-	g.URL = s.Info.URL
 	g.Metadata = s.Info
 	g.progress = s.Progress
 	g.output = s.Output
 	g.Params = s.Params
+
+	// Prefer the requested URL; older snapshots only recorded the metadata one.
+	g.URL = s.URL
+	if g.URL == "" {
+		g.URL = s.Info.URL
+	}
+
+	// Without this every restart re-ran every download that had ever finished,
+	// because Completed defaulted to false and the store publishes anything
+	// that is not completed.
+	g.Completed = s.Progress.Status == internal.StatusCompleted
 
 	return nil
 }

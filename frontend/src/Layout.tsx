@@ -24,7 +24,7 @@ import AppBar from './components/AppBar'
 import AppVersion from './components/AppVersion'
 import Drawer from './components/Drawer'
 import Footer from './components/Footer'
-import LogPanel from './components/LogPanel'
+import LogPanel, { LogToggle } from './components/LogPanel'
 import SocketSubscriber from './components/SocketSubscriber'
 import { useI18n } from './hooks/useI18n'
 import Toaster from './providers/ToasterProvider'
@@ -162,6 +162,7 @@ export default function Layout() {
         </Box>
       </Box>
       <LogPanel open={logOpen} onClose={() => setLogOpen(false)} />
+      <LogToggle open={logOpen} onToggle={() => setLogOpen(v => !v)} />
       <Footer />
       <Toaster />
     </ThemeProvider>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildDownloadArgs,
+  containersFor,
   defaultOptions,
   renderArgs,
   type DownloadOptions
@@ -106,5 +107,28 @@ describe('renderArgs', () => {
     })))
     expect(line).toContain('bestvideo[height<=720]+bestaudio/best')
     expect(line).toContain('--merge-output-format mp4')
+  })
+})
+
+describe('audio format targets', () => {
+  it('asks for mp3 through --audio-format, not a video container', () => {
+    const args = buildDownloadArgs({ ...defaultOptions, media: 'audio', container: 'mp3' })
+    expect(args).toContain('--extract-audio')
+    expect(args).toContain('--audio-format')
+    expect(args[args.indexOf('--audio-format') + 1]).toBe('mp3')
+    expect(args).not.toContain('--merge-output-format')
+  })
+
+  it('keeps --merge-output-format for video', () => {
+    const args = buildDownloadArgs({ ...defaultOptions, media: 'video', container: 'mkv' })
+    expect(args).toContain('--merge-output-format')
+    expect(args).not.toContain('--audio-format')
+  })
+
+  it('offers audio targets only when the download is audio-only', () => {
+    expect(containersFor('audio')).toContain('mp3')
+    expect(containersFor('audio')).not.toContain('mp4')
+    expect(containersFor('video')).toContain('mp4')
+    expect(containersFor('video')).not.toContain('mp3')
   })
 })

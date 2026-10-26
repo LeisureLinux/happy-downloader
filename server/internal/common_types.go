@@ -52,7 +52,11 @@ type DownloadProgress struct {
 // struct representing the response sent to the client
 // as JSON-RPC result field
 type ProcessSnapshot struct {
-	Id             string                  `json:"id"`
+	Id string `json:"id"`
+	// The URL as requested. Info.URL is the same value only once metadata has
+	// been fetched; restoring from it meant an entry whose metadata stage never
+	// completed came back with no URL and could not be retried.
+	URL            string                  `json:"url"`
 	Progress       DownloadProgress        `json:"progress"`
 	Info           common.DownloadMetadata `json:"info"`
 	Output         DownloadOutput          `json:"output"`

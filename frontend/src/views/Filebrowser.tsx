@@ -28,9 +28,10 @@ import { serverURL } from '../atoms/settings'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
 import { ffetch } from '../lib/httpClient'
-import { DirectoryEntry } from '../types'
+import { DirectoryEntry, ProcessStatus } from '../types'
 import { base64URLEncode, formatSize } from '../utils'
 import { useAtomValue } from 'jotai'
+import { activeDownloadsState } from '../atoms/downloads'
 
 // A row is a file or a folder. Selection is by path, which is unique within a
 // listing, unlike the name the previous implementation keyed on.
@@ -79,6 +80,25 @@ export default function Filebrowser() {
 
   useEffect(() => { void list(subdir) }, [list, subdir])
 
+  // A finished download is a file that belongs here, so the list should gain it
+  // without a manual refresh. Watching the completed count rather than the whole
+  // download state keeps progress ticks from re-listing the directory on every
+  // percentage point.
+  const completedCount = useAtomValue(activeDownloadsState)
+    .filter(d => d.progress.process_status === ProcessStatus.COMPLETED).length
+
+  const seenCompleted = useRef<number | null>(null)
+  useEffect(() => {
+    if (seenCompleted.current === null) {
+      seenCompleted.current = completedCount
+      return
+    }
+    if (completedCount !== seenCompleted.current) {
+      seenCompleted.current = completedCount
+      void list(subdir)
+    }
+  }, [completedCount, list, subdir])
+
   const files = useMemo(() => rows.filter(r => !r.isDirectory), [rows])
   const folders = useMemo(() => rows.filter(r => r.isDirectory), [rows])
 
@@ -120,7 +140,7 @@ export default function Filebrowser() {
     <Container maxWidth="xl" sx={{ mt: 2, mb: 8 }}>
       <Paper sx={{ p: 2 }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-          <Typography variant="h6">{i18n.t('browseButtonLabel')}</Typography>
+          <Typography variant="h6" color="primary">{i18n.t('browseButtonLabel')}</Typography>
           <Box flexGrow={1} />
           {/* 批量操作：只对选中的文件生效 */}
           <ButtonGroup size="small">

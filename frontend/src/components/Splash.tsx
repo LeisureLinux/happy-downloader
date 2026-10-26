@@ -1,44 +1,43 @@
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
-import { Container, SvgIcon, Typography, styled } from '@mui/material'
+import { Box, SvgIcon, Typography } from '@mui/material'
 import { activeDownloadsState } from '../atoms/downloads'
 import { useI18n } from '../hooks/useI18n'
+import { ProcessStatus } from '../types'
 import { useAtomValue } from 'jotai'
 
-const FlexContainer = styled(Container)({
-  display: 'flex',
-  minWidth: '100%',
-  minHeight: '80vh',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexDirection: 'column'
-})
-
-const Title = styled(Typography)({
-  display: 'flex',
-  width: '100%',
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingBottom: '0.5rem'
-})
-
+// The empty state for the download queue.
+//
+// It used to be a 200px icon over 36px text filling 80vh — a whole screen spent
+// saying "nothing here", which pushed the page around every time the queue
+// emptied. An empty list is not an announcement; it is a quiet line under the
+// form that disappears the moment something is queued.
 export default function Splash() {
   const { i18n } = useI18n()
-  const activeDownloads = useAtomValue(activeDownloadsState)
+  const allDownloads = useAtomValue(activeDownloadsState)
 
-  if (activeDownloads.length !== 0) {
+  // Same notion of "in the queue" the table uses: finished downloads live in
+  // the file browser, so they do not count as activity here.
+  const queued = allDownloads.filter(d => d.progress.process_status !== ProcessStatus.COMPLETED)
+
+  if (queued.length !== 0) {
     return null
   }
 
   return (
-    <FlexContainer>
-      <Title fontWeight={'500'} fontSize={72} color={'gray'}>
-        <SvgIcon sx={{ fontSize: '200px' }}>
-          <CloudDownloadIcon />
-        </SvgIcon>
-      </Title>
-      <Title fontWeight={'500'} fontSize={36} color={'gray'}>
-        {i18n.t('splashText')}
-      </Title>
-    </FlexContainer>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 1,
+        py: 3,
+        color: 'text.secondary',
+      }}
+    >
+      <SvgIcon sx={{ fontSize: 20, opacity: 0.6 }}>
+        <CloudDownloadIcon />
+      </SvgIcon>
+      <Typography variant="body2">{i18n.t('splashText')}</Typography>
+    </Box>
   )
 }

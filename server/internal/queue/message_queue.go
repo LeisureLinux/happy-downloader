@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/metadata"
 )
@@ -82,7 +83,15 @@ func (m *MessageQueue) downloadWorker(workerId int) {
 			m.metadataQueue <- p
 			slog.Info("queued for metadata", slog.String("id", p.GetId()))
 
-			p.Start()
+			// A rejected argument used to vanish here: the download sat at
+			// "preparing" forever with nothing in the log to explain it.
+			if err := p.Start(); err != nil {
+				slog.Error("failed to start download",
+					slog.String("id", p.GetId()),
+					slog.String("err", err.Error()),
+				)
+				p.SetProgress(internal.DownloadProgress{Status: internal.StatusErrored})
+			}
 		}
 	}
 }

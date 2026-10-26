@@ -55,6 +55,10 @@ func sse(logger *ObservableLogger) http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
+		// proxy_buffering off in the nginx block is not always enough: the
+		// upstream header is what actually disables it, and without this the
+		// stream arrives in bursts every few kilobytes instead of line by line.
+		w.Header().Set("X-Accel-Buffering", "no")
 
 		flusher, ok := w.(http.Flusher)
 		if !ok {

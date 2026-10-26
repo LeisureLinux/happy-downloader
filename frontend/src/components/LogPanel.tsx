@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Box, CircularProgress, IconButton, Paper, Tooltip, Typography } from '@mui/material'
+import { Box, Fab, IconButton, Paper, Tooltip, Typography } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import TerminalIcon from '@mui/icons-material/Terminal'
 import { serverURL } from '../atoms/settings'
 import { useI18n } from '../hooks/useI18n'
 import { useAtomValue } from 'jotai'
@@ -55,7 +56,7 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
       sx={{
         position: 'fixed',
         right: 16,
-        bottom: 64,
+        bottom: 88,
         width: 'min(760px, calc(100vw - 32px))',
         height: 'min(60vh, 520px)',
         zIndex: 1300,
@@ -73,7 +74,21 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
         <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
           {i18n.t('logsTitle')}
         </Typography>
-        {!connected && <CircularProgress size={12} />}
+        {/* 一个在跳的圆点：日志不动的时候，至少能看出连接还活着。 */}
+        <Box
+          sx={{
+            width: 8, height: 8, borderRadius: '50%',
+            bgcolor: connected ? 'success.main' : 'error.main',
+            animation: connected ? 'logPulse 1.6s ease-in-out infinite' : 'none',
+            '@keyframes logPulse': {
+              '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+              '50%': { opacity: 0.35, transform: 'scale(0.75)' },
+            },
+          }}
+        />
+        <Typography variant="caption" color="text.secondary">
+          {lines.length}
+        </Typography>
         <Tooltip title={i18n.t('close')}>
           <IconButton size="small" onClick={onClose}>
             <CloseIcon fontSize="small" />
@@ -121,5 +136,21 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
     </Paper>
   )
 }
+
+// The button lives in the corner rather than the footer: it is a diagnostic
+// tool, not part of the status bar, and the corner is where it stays reachable
+// without competing with the numbers you actually watch.
+export const LogToggle: React.FC<{ open: boolean; onToggle: () => void }> = ({ open, onToggle }) => (
+  <Tooltip title={open ? '关闭日志' : '查看日志'} placement="left">
+    <Fab
+      size="small"
+      color={open ? 'primary' : 'default'}
+      onClick={onToggle}
+      sx={{ position: 'fixed', right: 16, bottom: 16, zIndex: 1400 }}
+    >
+      {open ? <CloseIcon fontSize="small" /> : <TerminalIcon fontSize="small" />}
+    </Fab>
+  </Tooltip>
+)
 
 export default LogPanel

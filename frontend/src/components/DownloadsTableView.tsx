@@ -1,14 +1,12 @@
 import DeleteIcon from '@mui/icons-material/Delete'
-import DownloadIcon from '@mui/icons-material/Download'
 import DownloadDoneIcon from '@mui/icons-material/DownloadDone'
-import FileDownloadIcon from '@mui/icons-material/FileDownload'
-import SmartDisplayIcon from '@mui/icons-material/SmartDisplay'
+import ReplayIcon from '@mui/icons-material/Replay'
 import StopCircleIcon from '@mui/icons-material/StopCircle'
 import {
   Box,
   Button,
   ButtonGroup,
-  Checkbox,
+  Chip,
   IconButton,
   LinearProgress,
   LinearProgressProps,
@@ -34,15 +32,15 @@ import { useAtomValue } from 'jotai'
 
 const columns = [
   {
-    width: 44,
-    label: '',
-    dataKey: 'select',
-    numeric: false,
-  },
-  {
     width: 420,
     labelKey: 'colFile',
     dataKey: 'file',
+    numeric: false,
+  },
+  {
+    width: 90,
+    labelKey: 'colFileFormat',
+    dataKey: 'format',
     numeric: false,
   },
   {
@@ -103,25 +101,24 @@ const VirtuosoTableComponents: TableComponents<RPCResult> = {
 
 
 const DownloadsTableView: React.FC = () => {
-  const downloads = useAtomValue(activeDownloadsState)
+  const allDownloads = useAtomValue(activeDownloadsState)
   const serverAddr = useAtomValue(serverURL)
   const { client } = useRPC()
   const { i18n } = useI18n()
 
-  // Selection applies to completed downloads only: an in-flight one has no
-  // file to act on yet.
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-
-  const doneDownloads = useMemo(
-    () => downloads.filter(d => d.progress.process_status === ProcessStatus.COMPLETED),
-    [downloads]
+  // This is a queue, not a history. A download that finished is a file, and
+  // files belong in the browser; leaving them here meant the list grew without
+  // limit and the thing you were waiting for was buried in things you already
+  // had. Finished entries move themselves out by not being listed.
+  const downloads = useMemo(
+    () => allDownloads.filter(d => d.progress.process_status !== ProcessStatus.COMPLETED),
+    [allDownloads]
   )
 
-  const toggle = (id: string) => setSelected(prev => {
-    const next = new Set(prev)
-    next.has(id) ? next.delete(id) : next.add(id)
-    return next
-  })
+  const failedDownloads = useMemo(
+    () => downloads.filter(d => d.progress.process_status === ProcessStatus.ERRORED),
+    [downloads]
+  )
 
   // A download that has been queued but has not transferred anything yet shows
   // a 0% bar, which is indistinguishable from a stuck one. Naming the stage
@@ -146,16 +143,21 @@ const DownloadsTableView: React.FC = () => {
   // The list outlives the files: an entry whose file was removed elsewhere has
   // nothing to play or download, and offering the buttons produces a 404.
   const fileOnDisk = (r: RPCResult) => r.output.fileExists === true
+  // The saved file's own suffix, which is what the user opens. Falls back to
+  // the container yt-dlp reported before the file exists.
+  const fileFormat = (r: RPCResult): string => {
+    const saved = r.output.savedFilePath ?? ''
+    const dot = saved.lastIndexOf('.')
+    if (dot > 0) return saved.slice(dot + 1).toLowerCase()
+    return (r.info.ext ?? '').replace(/^\./, '').toLowerCase()
+  }
+
+  // Only the size on disk. The metadata estimate is the source's *best video*
+  // format, so an audio-only download showed 35 MB for a 9 MB mp3 and a 360p
+  // cap showed the 1080p figure. No number is better than a wrong one.
   const actualSize = (r: RPCResult) =>
-    r.output.fileSize && r.output.fileSize > 0
-      ? r.output.fileSize
-      : (r.info.filesize_approx ?? 0)
+    r.output.fileSize && r.output.fileSize > 0 ? r.output.fileSize : 0
 
-  const allSelected = doneDownloads.length > 0 && doneDownloads.every(d => selected.has(d.id))
-
-  const toggleAll = () => setSelected(
-    allSelected ? new Set() : new Set(doneDownloads.map(d => d.id))
-  )
 
   const viewFile = (path: string) => {
     const encoded = base64URLEncode(path)
@@ -166,6 +168,10 @@ const DownloadsTableView: React.FC = () => {
     const encoded = base64URLEncode(path)
     window.open(`${serverAddr}/filebrowser/d/${encoded}?token=${localStorage.getItem('token')}`)
   }
+
+  // 重新入队。服务端复用原来的参数，所以重试的是同一次请求，
+  // 不是重新猜一遍要什么格式。
+  const resume = (r: RPCResult) => client.retry(r.id)
 
   const stop = (r: RPCResult) => r.progress.process_status === ProcessStatus.COMPLETED
     ? client.clear(r.id)
@@ -183,15 +189,6 @@ const DownloadsTableView: React.FC = () => {
 
     return (
       <>
-        <TableCell padding="checkbox">
-          {done && (
-            <Checkbox
-              size="small"
-              checked={selected.has(download.id)}
-              onChange={() => toggle(download.id)}
-            />
-          )}
-        </TableCell>
         {/* 文件名与大小在同一列：大小是文件的属性，单独一列会让名称列被压缩 */}
         <TableCell>
           <Typography variant="body2" noWrap sx={{ maxWidth: 380 }}>
@@ -207,6 +204,15 @@ const DownloadsTableView: React.FC = () => {
               </Box>
             )}
           </Typography>
+        </TableCell>
+        <TableCell>
+          {/* 后缀取自实际保存的文件；还没落盘时退回元数据里的容器。
+              用户看到的和磁盘上的一致，不用去猜 -f 到底选了什么。 */}
+          <Chip
+            size="small"
+            variant="outlined"
+            label={fileFormat(download) || '—'}
+          />
         </TableCell>
         <TableCell align="right">
           {download.output.height
@@ -231,25 +237,17 @@ const DownloadsTableView: React.FC = () => {
         </TableCell>
         <TableCell align="right">
           <ButtonGroup size="small">
-            {done ? (
+            {download.progress.process_status === ProcessStatus.ERRORED ? (
               <>
-                {/* 文件已被删除时只给移除记录的按钮：播放和下载会 404 */}
-                {fileOnDisk(download) && (
-                  <>
-                    <Tooltip title={i18n.t('playSelected')}>
-                      <IconButton size="small" onClick={() => viewFile(download.output.savedFilePath)}>
-                        <SmartDisplayIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title={i18n.t('downloadSelected')}>
-                      <IconButton size="small" onClick={() => downloadFile(download.output.savedFilePath)}>
-                        <FileDownloadIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </>
-                )}
-                <Tooltip title={i18n.t('deleteSelected')}>
-                  <IconButton size="small" onClick={() => stop(download)}>
+                {/* 失败的行留着是为了还能重来，所以第一个按钮必须是"重来"，
+                    而不是"播放"——队列里没有可播放的东西。 */}
+                <Tooltip title={i18n.t('resumeDownload')}>
+                  <IconButton size="small" color="primary" onClick={() => resume(download)}>
+                    <ReplayIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={i18n.t('removeFromQueue')}>
+                  <IconButton size="small" onClick={() => client.clear(download.id)}>
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
@@ -267,39 +265,26 @@ const DownloadsTableView: React.FC = () => {
     )
   }
 
-  const selectedDownloads = doneDownloads.filter(d => selected.has(d.id))
-
   return (
     <Box sx={{ width: '100%' }}>
-      {/* 批量操作：作用于勾选的已完成下载 */}
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-        <Typography variant="h6">{i18n.t('downloadHistory')}</Typography>
+        <Typography variant="h6" color="primary">{i18n.t('downloadQueue')}</Typography>
+        <Typography variant="caption" color="text.secondary">
+          {downloads.length === 0
+            ? i18n.t('queueEmpty')
+            : i18n.t('queueHint')}
+        </Typography>
         <Box flexGrow={1} />
-        <Button
-          size="small"
-          startIcon={<FileDownloadIcon />}
-          disabled={selectedDownloads.length === 0}
-          onClick={() => selectedDownloads.forEach(d => downloadFile(d.output.savedFilePath))}
-        >
-          {i18n.t('downloadSelected')}
-        </Button>
-        <Button
-          size="small"
-          startIcon={<SmartDisplayIcon />}
-          disabled={selectedDownloads.length === 0}
-          onClick={() => selectedDownloads.forEach(d => viewFile(d.output.savedFilePath))}
-        >
-          {i18n.t('playSelected')}
-        </Button>
-        <Button
-          size="small"
-          color="error"
-          startIcon={<DeleteIcon />}
-          disabled={selectedDownloads.length === 0}
-          onClick={() => selectedDownloads.forEach(d => stop(d))}
-        >
-          {i18n.t('deleteSelected')}
-        </Button>
+        {failedDownloads.length > 0 && (
+          <Button
+            size="small"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={() => failedDownloads.forEach(d => client.clear(d.id))}
+          >
+            {i18n.t('clearFailedButton')}
+          </Button>
+        )}
       </Stack>
 
       <Box style={{ height: downloads.length === 0 ? '0vh' : '80vh', width: '100%' }}>
@@ -309,15 +294,7 @@ const DownloadsTableView: React.FC = () => {
           components={VirtuosoTableComponents}
           fixedHeaderContent={() => (
             <TableRow>
-              <TableCell padding="checkbox" variant="head">
-                <Checkbox
-                  size="small"
-                  checked={allSelected}
-                  indeterminate={!allSelected && selected.size > 0}
-                  onChange={toggleAll}
-                />
-              </TableCell>
-              {columns.slice(1).map((column) => (
+              {columns.map((column) => (
                 <TableCell
                   key={column.dataKey}
                   variant="head"

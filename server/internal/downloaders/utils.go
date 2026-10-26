@@ -83,8 +83,14 @@ var allowedFlags = map[string]bool{
 	"--embed-chapters":                 true,
 	"--embed-info-json":                true,
 	"--write-description":              true, // meta
-	"--audio-format":                   true, // safe post processing
+	"--extract-audio":                  true, // safe post processing
+	"-x":                               true,
+	"--audio-format":                   true,
 	"--audio-quality":                  true,
+	"--audio-format-sort":              true,
+	"--keep-video":                     true,
+	"--no-keep-video":                  true,
+	"--postprocessor-args":             true,
 	"--remux-video":                    true,
 	"--recode-video":                   true,
 	"--split-chapters":                 true,
