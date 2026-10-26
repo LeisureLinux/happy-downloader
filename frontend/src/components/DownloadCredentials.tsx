@@ -115,18 +115,18 @@ const DownloadCredentials: React.FC = () => {
         body: JSON.stringify(profiles)
       })
       if (!res.ok) {
-        pushMessage(await res.text(), 'error')
+        notifyRef.current(await res.text(), 'error')
         return
       }
       setProfiles(await res.json())
       setDirty(false)
-      pushMessage(i18n.t('profilesSaved'), 'success')
+      notifyRef.current(i18n.t('profilesSaved'), 'success')
     } catch (e) {
-      pushMessage(String(e), 'error')
+      notifyRef.current(String(e), 'error')
     } finally {
       setBusy(false)
     }
-  }, [profiles, serverAddr, pushMessage, i18n])
+  }, [profiles, serverAddr, i18n])
 
   const runPreview = useCallback(async (u: string) => {
     if (!u.trim()) { setPreview(null); return }

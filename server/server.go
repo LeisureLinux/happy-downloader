@@ -117,9 +117,10 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	// Convert paths.cookie_path into the Netscape file yt-dlp reads, and keep
 	// it in sync as the export is replaced. On a headless host this replaces
 	// the browser re-export that is not available there.
+	cookieSource := config.ResolvedCookieSource()
 	cookieWatcher := cookiewatch.New(
-		config.ResolvedCookieSource(),
-		config.CookiesPath(),
+		cookieSource,
+		config.CookiesPath(cookieSource),
 	)
 	if cookieWatcher.Enabled() {
 		if err := cookieWatcher.Start(); err != nil {

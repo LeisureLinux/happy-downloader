@@ -1,21 +1,13 @@
 keys:
   urlInput: YouTubeまたはサポート済み動画のURL
-  statusTitle: 状態
-  statusReady: 準備
   selectFormatButton: フォーマット選択
   startButton: 開始
-  abortAllButton: すべて中止
-  updateBinButton: yt-dlp更新
   darkThemeButton: 黒テーマ
   lightThemeButton: 白テーマ
   settingsAnchor: 設定
   serverAddressTitle: サーバーアドレス
   serverPortTitle: ポート番号
-  extractAudioCheckbox: 音質
-  noMTimeCheckbox: ファイル時間の修正をしない
-  bgReminder: このページを閉じてもバックグラウンドでダウンロードを続けます
   toastConnected: '接続中 '
-  toastUpdated: yt-dlpを更新しました!
   formatSelectionEnabler: 選択可能な動画/音源
   themeSelect: 'テーマ'
   languageSelect: '言語'
@@ -28,34 +20,16 @@ keys:
   customArgs: yt-dlpのオプションの有効化 (最適設定にする場合)
   customArgsInput: yt-dlpのオプション
   splashText: アクティブなダウンロードはありません
-  archiveTitle: アーカイブ
-  clipboardAction: URLをクリップボードにコピーしました
   playlistCheckbox: プレイリストをダウンロード (これには時間がかかりますが、処理中はウィンドウを閉じることができます)
   servedFromReverseProxyCheckbox: リバースプロキシのサブフォルダにあります
-  newDownloadButton: 新しくダウンロード
-  homeButtonLabel: ホーム
-  archiveButtonLabel: アーカイブ
+  browseButtonLabel: 'Browse'
   settingsButtonLabel: 設定
-  themeTogglerLabel: テーマ切り替え
   loadingLabel: 読み込み中...
   savedTemplates: 保存したテンプレート
-  templatesEditor: テンプレートエディター
-  templatesEditorNameLabel: テンプレート名
-  templatesEditorContentLabel: テンプレート内容
   logsTitle: 'ログ'
   awaitingLogs: 'ログを待機中...'
-  bulkDownload: 'ダウンロードしたファイルをZIPで保存'
-  livestreamURLInput: ライブストリームURL
-  livestreamStatusWaiting: 開始を待っています
-  livestreamStatusDownloading: ダウンロード中
-  livestreamStatusCompleted: 完了
-  livestreamStatusErrored: エラー
-  livestreamStatusUnknown: 不明
-  livestreamExperimentalWarning: この機能は実験的なものです。何かが壊れるかもしれません！
   accentSelect: 'Accent'
   urlBase: URL base, for reverse proxy support (subdir), defaults to empty
   generalDownloadSettings: 'General Download Settings'
-  deleteCookies: Delete Cookies
   noFilesFound: 'No Files Found'
-  tableView: 'Table View'
   deleteSelected: 'Delete selected'

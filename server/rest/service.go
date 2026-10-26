@@ -119,8 +119,13 @@ func (s *Service) CookieStatus() (*CookieStatus, error) {
 		}, nil
 	}
 
-	// No export configured: report on the converted file if it already exists.
-	path := config.CookiesPath()
+	// No watcher: report on the converted file if an export is configured and
+	// has already been converted.
+	source := config.ResolvedCookieSource()
+	if source == "" {
+		return &CookieStatus{Exists: false}, nil
+	}
+	path := config.CookiesPath(source)
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
 		return &CookieStatus{Exists: false}, nil

@@ -5,7 +5,6 @@ import Layout from './Layout'
 import Terminal from './views/Terminal'
 
 const Home = lazy(() => import('./views/Home'))
-const Archive = lazy(() => import('./views/Archive'))
 const Settings = lazy(() => import('./views/Settings'))
 const Filebrowser = lazy(() => import('./views/Filebrowser'))
 
@@ -42,19 +41,6 @@ export const router = createHashRouter([
         element: (
           <Suspense fallback={<CircularProgress />}>
             <Terminal />
-          </Suspense >
-        )
-      },
-      {
-        path: '/archive',
-        element: (
-          <Suspense fallback={<CircularProgress />}>
-            <Archive />
-          </Suspense >
-        ),
-        errorElement: (
-          <Suspense fallback={<CircularProgress />}>
-            <ErrorBoundary />
           </Suspense >
         )
       },

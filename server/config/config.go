@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,14 +105,29 @@ func Instance() *Config {
 	return instance
 }
 
-// CookiesPath is the Netscape file yt-dlp reads. It is derived, not configured:
-// when paths.cookie_path is set the converted output is written here, so the
-// source export is never overwritten by yt-dlp's cookie-jar writeback.
+// CookiesPath is the Netscape file yt-dlp reads.
 //
-// It is resolved against LocalDatabasePath rather than the working directory,
-// so the file is found regardless of where the process was started from.
-func CookiesPath() string {
-	return filepath.Join(Instance().Paths.LocalDatabasePath, "cookies.txt")
+// It is derived from the source path, not configured: the converted output
+// lives in the state directory under a name keyed by the source, so two
+// profiles pointing at different exports cannot overwrite each other, and
+// nothing is written next to the export itself.
+//
+// Both the watcher and the argv builder resolve the target through this
+// function. When they derived it independently they disagreed, and the file
+// the download read was the one nobody refreshed.
+func CookiesPath(source string) string {
+	return filepath.Join(
+		Instance().Paths.LocalDatabasePath,
+		"cookies-"+SourceKey(source)+".txt",
+	)
+}
+
+// SourceKey derives a short stable key from an export path. A hash rather than
+// the basename: two exports can share a name in different directories, and the
+// result has to stay valid across restarts.
+func SourceKey(source string) string {
+	sum := sha256.Sum256([]byte(filepath.Clean(source)))
+	return hex.EncodeToString(sum[:])[:12]
 }
 
 // ResolvedCookieSource returns paths.cookie_path as an absolute path, or an

@@ -1,21 +1,13 @@
 keys:
   urlInput: URL do vídeo (uma por linha)
-  statusTitle: Status
-  statusReady: Pronto
   selectFormatButton: Selecionar formato
   startButton: Iniciar
-  abortAllButton: Cancelar tudo
-  updateBinButton: Atualizar binário yt-dlp
   darkThemeButton: Tema escuro
   lightThemeButton: Tema claro
   settingsAnchor: Configurações
   serverAddressTitle: Endereço do servidor
   serverPortTitle: Porta
-  extractAudioCheckbox: Extrair áudio
-  noMTimeCheckbox: Não definir hora de modificação do arquivo
-  bgReminder: Uma vez que você feche esta página, o download continuará em segundo plano.
   toastConnected: 'Conectado a '
-  toastUpdated: Binário yt-dlp atualizado!
   formatSelectionEnabler: Habilitar seleção de formatos de vídeo/aúdio
   themeSelect: 'Tema'
   languageSelect: 'Idioma'
@@ -28,35 +20,17 @@ keys:
   customArgs: Habilitar argumentos personalizados do yt-dlp (grandes poderes = grandes responsabilidades)
   customArgsInput: Argumentos personalizados do yt-dlp
   splashText: Nenhum download ativo
-  archiveTitle: Arquivo
-  clipboardAction: URL copiada para a área de transferência
   playlistCheckbox: Baixar playlist (isso pode levar algum tempo, depois de enviar você pode fechar esta janela)
   restartAppMessage: Necessário recarregar a página para que a mudança tenha efeito
   servedFromReverseProxyCheckbox: Está atrás de um proxy reverso
   urlBase: Base da URL, para suporte de proxy reverso (subdiretório), padrão vazio
-  newDownloadButton: Novo download
-  homeButtonLabel: Início
-  archiveButtonLabel: Arquivo
+  browseButtonLabel: 'Browse'
   settingsButtonLabel: Configurações
-  themeTogglerLabel: Alternador de tema
   loadingLabel: Carregando...
   savedTemplates: Modelos salvos
-  templatesEditor: Editor de modelos
-  templatesEditorNameLabel: Nome do modelo
-  templatesEditorContentLabel: Conteúdo do modelo
   logsTitle: 'Logs'
   awaitingLogs: 'Aguardando logs...'
-  bulkDownload: 'Baixar arquivos em um arquivo zip'
-  livestreamURLInput: URL da transmissão ao vivo
-  livestreamStatusWaiting: Aguardando/Aguarde o início
-  livestreamStatusDownloading: Baixando
-  livestreamStatusCompleted: Concluído
-  livestreamStatusErrored: Erro
-  livestreamStatusUnknown: Desconhecido
-  livestreamExperimentalWarning: Este recurso ainda é experimental. Algo pode quebrar!
   accentSelect: 'Accent'
   generalDownloadSettings: 'General Download Settings'
-  deleteCookies: Delete Cookies
   noFilesFound: 'No Files Found'
-  tableView: 'Table View'
   deleteSelected: 'Delete selected'

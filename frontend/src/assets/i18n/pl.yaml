@@ -1,20 +1,12 @@
 keys:
   urlInput: Adres URL YouTube lub innej obsługiwanej usługi
-  statusTitle: Status
   startButton: Początek
-  statusReady: Gotowy
-  abortAllButton: Anuluj wszystko
-  updateBinButton: Zaktualizuj plik binarny yt-dlp
   darkThemeButton: Ciemny motyw
   lightThemeButton: Światło motyw
   settingsAnchor: Ustawienia
   serverAddressTitle: Adres serwera
   serverPortTitle: Port
-  extractAudioCheckbox: Wyodrębnij dźwięk
-  noMTimeCheckbox: Nie ustawiaj czasu modyfikacji pliku
-  bgReminder: Po zamknięciu tej strony pobieranie będzie kontynuowane w tle. 
   toastConnected: 'Połączony z '
-  toastUpdated: Zaktualizowano plik binarny yt-dlp!
   formatSelectionEnabler: Aktywuj wybór formatów wideo/audio
   themeSelect: 'Motyw'
   languageSelect: 'Język'
@@ -27,34 +19,16 @@ keys:
   customArgs: Uwzględnij konfigurowalne argumenty yt-dlp (wielka moc = wielka odpowiedzialność)
   customArgsInput: Niestandardowe argumenty yt-dlp
   splashText: Brak aktywnych pobrań
-  archiveTitle: Archiwum
-  clipboardAction: Adres URL zostanie skopiowany do schowka
   playlistCheckbox: Download playlist (it will take time, after submitting you may even close this window)
   servedFromReverseProxyCheckbox: Is behind a reverse proxy subfolder
-  newDownloadButton: New download
-  homeButtonLabel: Home
-  archiveButtonLabel: Archive
+  browseButtonLabel: 'Browse'
   settingsButtonLabel: Settings
-  themeTogglerLabel: Theme toggler
   loadingLabel: Loading...
   savedTemplates: Saved templates
-  templatesEditor: Templates editor
-  templatesEditorNameLabel: Template name
-  templatesEditorContentLabel: Template content
   logsTitle: 'Logs'
   awaitingLogs: 'Awaiting logs...'
-  bulkDownload: 'Download files in a zip archive'
-  livestreamURLInput: Livestream URL
-  livestreamStatusWaiting: Waiting/Wait start
-  livestreamStatusDownloading: Downloading
-  livestreamStatusCompleted: Completed
-  livestreamStatusErrored: Errored
-  livestreamStatusUnknown: Unknown
-  livestreamExperimentalWarning: This feature is still experimental. Something might break!
   accentSelect: 'Accent'
   urlBase: URL base, for reverse proxy support (subdir), defaults to empty
   generalDownloadSettings: 'General Download Settings'
-  deleteCookies: Delete Cookies
   noFilesFound: 'No Files Found'
-  tableView: 'Table View'
   deleteSelected: 'Delete selected'

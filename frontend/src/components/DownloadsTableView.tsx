@@ -6,10 +6,13 @@ import SmartDisplayIcon from '@mui/icons-material/SmartDisplay'
 import StopCircleIcon from '@mui/icons-material/StopCircle'
 import {
   Box,
+  Button,
   ButtonGroup,
+  Checkbox,
   IconButton,
   LinearProgress,
   LinearProgressProps,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -18,54 +21,49 @@ import {
   TableRow,
   Typography
 } from "@mui/material"
-import { forwardRef } from 'react'
+import { forwardRef, useMemo, useState } from 'react'
 import { TableComponents, TableVirtuoso } from 'react-virtuoso'
 import { activeDownloadsState } from '../atoms/downloads'
 import { serverURL } from '../atoms/settings'
 import { useRPC } from '../hooks/useRPC'
 import { ProcessStatus, RPCResult } from '../types'
 import { base64URLEncode, formatSize, formatSpeedMiB } from "../utils"
+import { useI18n } from '../hooks/useI18n'
 import { useAtomValue } from 'jotai'
 
 const columns = [
   {
-    width: 8,
-    label: 'Status',
-    dataKey: 'status',
+    width: 44,
+    label: '',
+    dataKey: 'select',
     numeric: false,
   },
   {
-    width: 500,
-    label: 'Title',
-    dataKey: 'title',
+    width: 420,
+    label: 'File',
+    dataKey: 'file',
     numeric: false,
   },
   {
-    width: 50,
-    label: 'Speed',
-    dataKey: 'speed',
+    width: 130,
+    label: 'Resolution',
+    dataKey: 'resolution',
     numeric: true,
   },
   {
-    width: 150,
+    width: 160,
     label: 'Progress',
     dataKey: 'progress',
     numeric: true,
   },
   {
-    width: 80,
-    label: 'Size',
-    dataKey: 'size',
-    numeric: true,
-  },
-  {
-    width: 100,
+    width: 160,
     label: 'Added on',
     dataKey: 'addedon',
     numeric: true,
   },
   {
-    width: 80,
+    width: 150,
     label: 'Actions',
     dataKey: 'actions',
     numeric: true,
@@ -101,27 +99,34 @@ const VirtuosoTableComponents: TableComponents<RPCResult> = {
   )),
 }
 
-function fixedHeaderContent() {
-  return (
-    <TableRow>
-      {columns.map((column) => (
-        <TableCell
-          key={column.dataKey}
-          variant="head"
-          align={column.numeric || false ? 'right' : 'left'}
-          style={{ width: column.width }}
-        >
-          {column.label}
-        </TableCell>
-      ))}
-    </TableRow>
-  )
-}
+
 
 const DownloadsTableView: React.FC = () => {
   const downloads = useAtomValue(activeDownloadsState)
   const serverAddr = useAtomValue(serverURL)
   const { client } = useRPC()
+  const { i18n } = useI18n()
+
+  // Selection applies to completed downloads only: an in-flight one has no
+  // file to act on yet.
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  const doneDownloads = useMemo(
+    () => downloads.filter(d => d.progress.process_status === ProcessStatus.COMPLETED),
+    [downloads]
+  )
+
+  const toggle = (id: string) => setSelected(prev => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
+
+  const allSelected = doneDownloads.length > 0 && doneDownloads.every(d => selected.has(d.id))
+
+  const toggleAll = () => setSelected(
+    allSelected ? new Set() : new Set(doneDownloads.map(d => d.id))
+  )
 
   const viewFile = (path: string) => {
     const encoded = base64URLEncode(path)
@@ -145,76 +150,130 @@ const DownloadsTableView: React.FC = () => {
 
 
   function rowContent(_index: number, download: RPCResult) {
+    const done = isDone(download)
+
     return (
       <>
-        <TableCell>
-          {isDone(download)
-            ? <DownloadDoneIcon color="primary" />
-            : <DownloadIcon color="primary" />
-          }
+        <TableCell padding="checkbox">
+          {done && (
+            <Checkbox
+              size="small"
+              checked={selected.has(download.id)}
+              onChange={() => toggle(download.id)}
+            />
+          )}
         </TableCell>
-        <TableCell>{download.info.title}</TableCell>
-        <TableCell align="right">{formatSpeedMiB(download.progress.speed)}</TableCell>
+        {/* 文件名与大小在同一列：大小是文件的属性，单独一列会让名称列被压缩 */}
+        <TableCell>
+          <Typography variant="body2" noWrap sx={{ maxWidth: 380 }}>
+            {download.info.title}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {formatSize(download.info.filesize_approx ?? 0)}
+          </Typography>
+        </TableCell>
+        <TableCell align="right">{download.info.resolution || '—'}</TableCell>
         <TableCell align="right">
           <LinearProgressWithLabel
             sx={{ height: '16px' }}
-            value={
-              isDone(download)
-                ? 100
-                : Number(download.progress.percentage.replace('%', ''))
-            }
-            variant={
-              download.progress.process_status === 0
-                ? 'indeterminate'
-                : 'determinate'
-            }
+            value={done ? 100 : Number(download.progress.percentage.replace('%', ''))}
+            variant={download.progress.process_status === 0 ? 'indeterminate' : 'determinate'}
             color={'primary'}
           />
         </TableCell>
-        <TableCell align="right">{formatSize(download.info.filesize_approx ?? 0)}</TableCell>
         <TableCell align="right">
           {new Date(download.info.created_at).toLocaleString()}
         </TableCell>
         <TableCell align="right">
-          <ButtonGroup>
-            <IconButton
-              size="small"
-              onClick={() => stop(download)}
-            >
-              {isDone(download) ? <DeleteIcon /> : <StopCircleIcon />}
-
-            </IconButton>
-            {isDone(download) &&
+          <ButtonGroup size="small">
+            {done ? (
               <>
-                <IconButton
-                  size="small"
-                  onClick={() => viewFile(download.output.savedFilePath)}
-                >
+                <IconButton size="small" onClick={() => viewFile(download.output.savedFilePath)}>
                   <SmartDisplayIcon />
                 </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => downloadFile(download.output.savedFilePath)}
-                >
+                <IconButton size="small" onClick={() => downloadFile(download.output.savedFilePath)}>
                   <FileDownloadIcon />
                 </IconButton>
+                <IconButton size="small" onClick={() => stop(download)}>
+                  <DeleteIcon />
+                </IconButton>
               </>
-            }
+            ) : (
+              <IconButton size="small" onClick={() => stop(download)}>
+                <StopCircleIcon />
+              </IconButton>
+            )}
           </ButtonGroup>
         </TableCell>
       </>
     )
   }
 
+  const selectedDownloads = doneDownloads.filter(d => selected.has(d.id))
+
   return (
-    <Box style={{ height: downloads.length === 0 ? '0vh' : '80vh', width: '100%' }}>
-      <TableVirtuoso
-        hidden={downloads.length === 0}
-        data={downloads}
-        components={VirtuosoTableComponents}
-        fixedHeaderContent={fixedHeaderContent}
-        itemContent={rowContent}
-      />
+    <Box sx={{ width: '100%' }}>
+      {/* 批量操作：作用于勾选的已完成下载 */}
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+        <Typography variant="h6">{i18n.t('downloadsButtonLabel')}</Typography>
+        <Box flexGrow={1} />
+        <Button
+          size="small"
+          startIcon={<FileDownloadIcon />}
+          disabled={selectedDownloads.length === 0}
+          onClick={() => selectedDownloads.forEach(d => downloadFile(d.output.savedFilePath))}
+        >
+          {i18n.t('downloadSelected')}
+        </Button>
+        <Button
+          size="small"
+          startIcon={<SmartDisplayIcon />}
+          disabled={selectedDownloads.length === 0}
+          onClick={() => selectedDownloads.forEach(d => viewFile(d.output.savedFilePath))}
+        >
+          {i18n.t('playSelected')}
+        </Button>
+        <Button
+          size="small"
+          color="error"
+          startIcon={<DeleteIcon />}
+          disabled={selectedDownloads.length === 0}
+          onClick={() => selectedDownloads.forEach(d => stop(d))}
+        >
+          {i18n.t('deleteSelected')}
+        </Button>
+      </Stack>
+
+      <Box style={{ height: downloads.length === 0 ? '0vh' : '80vh', width: '100%' }}>
+        <TableVirtuoso
+          hidden={downloads.length === 0}
+          data={downloads}
+          components={VirtuosoTableComponents}
+          fixedHeaderContent={() => (
+            <TableRow>
+              <TableCell padding="checkbox" variant="head">
+                <Checkbox
+                  size="small"
+                  checked={allSelected}
+                  indeterminate={!allSelected && selected.size > 0}
+                  onChange={toggleAll}
+                />
+              </TableCell>
+              {columns.slice(1).map((column) => (
+                <TableCell
+                  key={column.dataKey}
+                  variant="head"
+                  align={column.numeric || false ? 'right' : 'left'}
+                  style={{ width: column.width }}
+                >
+                  {column.label}
+                </TableCell>
+              ))}
+            </TableRow>
+          )}
+          itemContent={rowContent}
+        />
+      </Box>
     </Box>
   )
 }

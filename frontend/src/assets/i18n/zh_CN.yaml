@@ -7,25 +7,21 @@ keys:
   cookieExpired: '已过期'
   cookieMissingLogin: '缺少 YouTube 登录态 Cookie'
   cookieRefreshStatus: '刷新状态'
+  clearCompletedButton: '清除已完成'
+  probing: '读取中...'
+  downloadQueued: '已加入下载队列'
+  playlistDetected: '这是一个播放列表，所有条目都会加入队列'
+  browseButtonLabel: '浏览'
+  downloadsButtonLabel: '下载'
   urlInput: 视频 URL
-  statusTitle: 状态
-  statusReady: 就绪
   selectFormatButton: 选择格式
   startButton: 开始
-  abortAllButton: 全部中止
-  updateBinButton: '检查 yt-dlp 更新'
-  ytdlpUpdatedTo: 'yt-dlp 已更新至'
-  ytdlpAlreadyLatest: 'yt-dlp 已是最新版本'
   darkThemeButton: 黑暗主题
   lightThemeButton: 明亮主题
   settingsAnchor: 设置
   serverAddressTitle: 服务器地址
   serverPortTitle: 端口
-  extractAudioCheckbox: 提取音频
-  noMTimeCheckbox: 不设置文件修改时间
-  bgReminder: 关闭页面后，下载会继续在后台运行。
   toastConnected: '已连接到 '
-  toastUpdated: 已更新 yt-dlp 可执行文件！
   formatSelectionEnabler: 启用视频/音频格式选择
   themeSelect: '主题'
   languageSelect: '语言'
@@ -39,31 +35,14 @@ keys:
   customArgsInput: 自定义 yt-dlp 参数
   connectionError: 无法连接到服务器
   splashText: 没有正在进行的下载
-  archiveTitle: 归档
-  clipboardAction: 复制 URL 到剪贴板
   playlistCheckbox: 下载播放列表（可能需要一段时间，提交后可以关闭页面等待）
   restartAppMessage: 需要刷新页面才能生效
   servedFromReverseProxyCheckbox: 处于反向代理的子目录后
-  newDownloadButton: 新下载
-  homeButtonLabel: 主页
-  archiveButtonLabel: 归档
   settingsButtonLabel: 设置
-  themeTogglerLabel: 主题切换
   loadingLabel: 正在加载…
   savedTemplates: 保存模板
-  templatesEditor: 模板编辑器
-  templatesEditorNameLabel: 模板名称
-  templatesEditorContentLabel: 模板内容
   logsTitle: '日志'
   awaitingLogs: '正在等待日志…'
-  bulkDownload: '下载 zip 压缩包中的文件'
-  livestreamURLInput: 直播 URL
-  livestreamStatusWaiting: 等待直播开始
-  livestreamStatusDownloading: 下载中
-  livestreamStatusCompleted: 已完成
-  livestreamStatusErrored: 发生错误
-  livestreamStatusUnknown: 未知
-  livestreamExperimentalWarning: 实验性功能，可能存在未知Bug，请谨慎使用
   accentSelect: '主题色'
   urlBase: 'URL 基础路径（用于反向代理子目录），留空表示不使用'
   generalDownloadSettings: '通用下载设置'
@@ -89,6 +68,13 @@ keys:
   cookieSourcePath: 'Cookie 源文件'
   cookieCreatedAt: '创建时间'
   cookieModifiedAt: '最后修改'
+  colFileName: '视频文件'
+  colDownloadTime: '下载时间'
+  colFileSize: '文件大小'
+  colActions: '操作'
+  downloadSelected: '下载'
+  playSelected: '播放'
+  deleteSelected: '删除'
+  confirmDeleteFiles: '确定删除选中的文件？此操作无法撤销。'
+  goUp: '返回上一级'
   noFilesFound: '没有文件'
-  tableView: '表格视图'
-  deleteSelected: '删除所选'

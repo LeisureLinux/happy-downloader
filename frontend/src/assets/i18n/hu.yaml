@@ -1,21 +1,13 @@
 keys:
   urlInput: Video URL (soronként egy)
-  statusTitle: Állapot
-  statusReady: Előkészítve
   selectFormatButton: Válassz formátumot
   startButton: Indítás
-  abortAllButton: Összes megszakítása
-  updateBinButton: yt-dlp bináris frissítése
   darkThemeButton: Sötét téma
   lightThemeButton: Világos téma
   settingsAnchor: Beállítások
   serverAddressTitle: Szerver címe
   serverPortTitle: Port
-  extractAudioCheckbox: Audio konvertálása
-  noMTimeCheckbox: Fájl módosítás időpontja ne legyen beállítva
-  bgReminder: Miután a lap bezárásra kerül, a letöltés folytatódni fog a háttérben.
   toastConnected: 'Kapcsolódva: '
-  toastUpdated: yt-dlp bináris frissítése sikeres volt!
   formatSelectionEnabler: Video/audio formátum manuális kiválasztásának engedélyezése
   themeSelect: 'Téma'
   languageSelect: 'Nyelv'
@@ -28,35 +20,17 @@ keys:
   customArgs: Egyedi yt-dlp argumentumok (Nagy hatalommal nagy felelősség jár.)
   customArgsInput: Egyedi yt-dlp argumentumok
   splashText: Nincs aktív letöltés
-  archiveTitle: Archívum
-  clipboardAction: URL a vágólapra másolva.
   playlistCheckbox: Lejátszási lista letöltése (Több időt vehet igénybe. A letöltés a háttérben történik, a böngészőablak szabadon bezárható.)
   restartAppMessage: Az oldal újratöltése lehet szükséges a változtatások megjelenítéséhez.
   servedFromReverseProxyCheckbox: Reverse proxy mögötti működés
   urlBase: URL base, reverse proxy támogatásához (subdir), alapból üres
-  newDownloadButton: Új letöltés
-  homeButtonLabel: Kezdőlap
-  archiveButtonLabel: Archívum
+  browseButtonLabel: 'Browse'
   settingsButtonLabel: Beállítások
-  themeTogglerLabel: Témaválasztó
   loadingLabel: Betöltés...
   savedTemplates: Mentett sablonok
-  templatesEditor: Sablonszerkesztő
-  templatesEditorNameLabel: Sablon neve
-  templatesEditorContentLabel: Sablon tartalma
   logsTitle: 'Naplók'
   awaitingLogs: 'Napló letöltése...'
-  bulkDownload: 'Fájlok letöltése ZIP archívumként'
-  livestreamURLInput: Élő stream URL
-  livestreamStatusWaiting: Várakozás a kezdésre
-  livestreamStatusDownloading: Letöltés
-  livestreamStatusCompleted: Letöltve
-  livestreamStatusErrored: Hiba
-  livestreamStatusUnknown: Ismeretlen
-  livestreamExperimentalWarning: Ez a funkció még kísérleti. Nem garantált a hibamentes működés.
   accentSelect: 'Kiemelt szín'
   generalDownloadSettings: 'Általános letöltési beállítások'
-  deleteCookies: Sütik törlése
   noFilesFound: 'Nem található fájlok'
-  tableView: 'Táblázatos Nézet'
   deleteSelected: 'Kiválasztottak törlése'

@@ -7,25 +7,20 @@ keys:
   cookieExpired: 'Expired'
   cookieMissingLogin: 'Missing YouTube login cookies'
   cookieRefreshStatus: 'Refresh status'
+  probing: 'Reading...'
+  downloadQueued: 'Download queued'
+  playlistDetected: 'This is a playlist; every item will be queued'
+  browseButtonLabel: 'Browse'
+  downloadsButtonLabel: 'Downloads'
   urlInput: Video URL (one per line)
-  statusTitle: Status
-  statusReady: Ready
   selectFormatButton: Select format
   startButton: Start
-  abortAllButton: Abort All
-  updateBinButton: 'Check for yt-dlp updates'
-  ytdlpUpdatedTo: 'yt-dlp updated to'
-  ytdlpAlreadyLatest: 'yt-dlp is already up to date'
   darkThemeButton: Dark theme
   lightThemeButton: Light theme
   settingsAnchor: Settings
   serverAddressTitle: Server address
   serverPortTitle: Port
-  extractAudioCheckbox: Extract audio
-  noMTimeCheckbox: Don't set file modification time
-  bgReminder: Once you close this page the download will continue in the background.
   toastConnected: 'Connected to '
-  toastUpdated: Updated yt-dlp binary!
   formatSelectionEnabler: Enable video/audio formats selection
   themeSelect: 'Theme'
   languageSelect: 'Language'
@@ -39,32 +34,15 @@ keys:
   customArgsInput: Custom yt-dlp arguments
   connectionError: 'Cannot reach the server'
   splashText: No active downloads
-  archiveTitle: Archive
-  clipboardAction: Copied URL to clipboard
   playlistCheckbox: Download playlist
   restartAppMessage: Needs a page reload to take effect
   servedFromReverseProxyCheckbox: Is behind a reverse proxy
   urlBase: URL base, for reverse proxy support (subdir), defaults to empty
-  newDownloadButton: New download
-  homeButtonLabel: Home
-  archiveButtonLabel: Archive
   settingsButtonLabel: Settings
-  themeTogglerLabel: Theme toggler
   loadingLabel: Loading...
   savedTemplates: Saved templates
-  templatesEditor: Templates editor
-  templatesEditorNameLabel: Template name
-  templatesEditorContentLabel: Template content
   logsTitle: 'Logs'
   awaitingLogs: 'Awaiting logs...'
-  bulkDownload: 'Download files in a zip archive'
-  livestreamURLInput: Livestream URL
-  livestreamStatusWaiting: Waiting/Wait start
-  livestreamStatusDownloading: Downloading
-  livestreamStatusCompleted: Completed
-  livestreamStatusErrored: Errored
-  livestreamStatusUnknown: Unknown
-  livestreamExperimentalWarning: This feature is still experimental. Something might break!
   accentSelect: 'Accent'
   generalDownloadSettings: 'General Download Settings'
   reverseProxyAnchor: 'Reverse Proxy'
@@ -89,10 +67,14 @@ keys:
   cookieSourcePath: 'Cookie source file'
   cookieCreatedAt: 'Created'
   cookieModifiedAt: 'Last modified'
+  colFileName: 'File'
+  colDownloadTime: 'Downloaded'
+  colFileSize: 'Size'
+  colActions: 'Actions'
+  downloadSelected: 'Download'
+  playSelected: 'Play'
+  deleteSelected: 'Delete'
+  confirmDeleteFiles: 'Delete the selected files? This cannot be undone.'
+  goUp: 'Up one level'
   noFilesFound: 'No Files Found'
-  tableView: 'Table View'
-  deleteSelected: 'Delete selected'
   clearCompletedButton: 'Clear completed'
-  twitchIntegrationInfo: |
-    To enable monitoring Twitch streams follow this wiki page.
-    https://github.com/LeisureLinux/happy-downloader/wiki/Twitch-integration

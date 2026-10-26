@@ -1,21 +1,13 @@
 keys:
   urlInput: Videolänk (en per rad)
-  statusTitle: Status
-  statusReady: Redo
   selectFormatButton: Välj format
   startButton: Start
-  abortAllButton: Avbryt alla
-  updateBinButton: Uppdatera yt-dlp
   darkThemeButton: Mörkt tema
   lightThemeButton: Ljust tema
   settingsAnchor: Inställningar
   serverAddressTitle: Serveraddress
   serverPortTitle: Port
-  extractAudioCheckbox: Extrahera ljud
-  noMTimeCheckbox: Lägg inte till info om när filen senast modifierades
-  bgReminder: När du stänger denna sida så kommer nedladdningen att fortsätta i bakgrunden.
   toastConnected: 'Ansluten till '
-  toastUpdated: Uppdaterade yt-dlp!
   formatSelectionEnabler: Tillåt val av ljud- och bildformat
   themeSelect: 'Tema'
   languageSelect: 'Språk'
@@ -28,35 +20,17 @@ keys:
   customArgs: Tillåt egna yt-dlp-argument (frihet under ansvar!)
   customArgsInput: Egna yt-dlp-argument
   splashText: Inga pågående nedladdningar
-  archiveTitle: Arkiv
-  clipboardAction: Kopierade länken
   playlistCheckbox: Ladda ner spellista (detta kommer ta did, efter start så kan du stänga detta fönster)
   restartAppMessage: En sidomladdning behövs innan förändringen får effekt
   servedFromReverseProxyCheckbox: Servern befinner sig bakom en omvänd proxy
   urlBase: "URL-bas, måste anges när en omvänd proxy används. Standardinställning: lämna blank"
-  newDownloadButton: Ny nedladdning
-  homeButtonLabel: Hem
-  archiveButtonLabel: Arkiv
+  browseButtonLabel: 'Browse'
   settingsButtonLabel: Inställningar
-  themeTogglerLabel: Tema-knapp
   loadingLabel: Laddar...
   savedTemplates: Sparade mallar
-  templatesEditor: Mallredigerare
-  templatesEditorNameLabel: Namn
-  templatesEditorContentLabel: Innehåll 
   logsTitle: 'Loggar'
   awaitingLogs: 'Väntar på loggar...'
-  bulkDownload: 'Ladda ner filer i ett zip-arkiv'
-  livestreamURLInput: Livestream URL
-  livestreamStatusWaiting: Waiting/Wait start
-  livestreamStatusDownloading: Downloading
-  livestreamStatusCompleted: Completed
-  livestreamStatusErrored: Errored
-  livestreamStatusUnknown: Unknown
-  livestreamExperimentalWarning: This feature is still experimental. Something might break!
   accentSelect: 'Accent'
   generalDownloadSettings: 'General Download Settings'
-  deleteCookies: Delete Cookies
   noFilesFound: 'No Files Found'
-  tableView: 'Table View'
   deleteSelected: 'Delete selected'

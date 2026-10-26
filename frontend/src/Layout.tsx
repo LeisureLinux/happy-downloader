@@ -115,22 +115,10 @@ export default function Layout() {
                 <ListItemIcon>
                   <Dashboard />
                 </ListItemIcon>
-                <ListItemText primary={i18n.t('homeButtonLabel')} />
+                <ListItemText primary={i18n.t('downloadsButtonLabel')} />
               </ListItemButton>
             </Link>
-            {/* <Link to={'/archive'} style={
-              {
-                textDecoration: 'none',
-                color: mode === 'dark' ? '#ffffff' : '#000000DE'
-              }
-            }>
-              <ListItemButton>
-                <ListItemIcon>
-                  <ArchiveIcon />
-                </ListItemIcon>
-                <ListItemText primary={i18n.t('archiveButtonLabel')} />
-              </ListItemButton>
-            </Link> */}
+            
             <Link to={'/filebrowser'} style={
               {
                 textDecoration: 'none',
@@ -141,7 +129,7 @@ export default function Layout() {
                 <ListItemIcon>
                   <CloudDownloadIcon />
                 </ListItemIcon>
-                <ListItemText primary={i18n.t('archiveButtonLabel')} />
+                <ListItemText primary={i18n.t('browseButtonLabel')} />
               </ListItemButton>
             </Link>
             <Link to={'/log'} style={

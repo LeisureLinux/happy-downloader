@@ -43,7 +43,6 @@ export interface SettingsState {
   autoFileExtension: boolean
   pathOverriding: boolean
   enableCustomArgs: boolean
-  listView: boolean
   servedFromReverseProxy: boolean
 }
 
@@ -95,11 +94,6 @@ export const pathOverridingState = atomWithStorage(
 export const enableCustomArgsState = atomWithStorage(
   'enable-custom-args',
   localStorage.getItem('enable-custom-args') === 'true'
-)
-
-export const listViewState = atomWithStorage(
-  'listview',
-  localStorage.getItem('listview') === 'true'
 )
 
 export const servedFromReverseProxyState = atomWithStorage(
@@ -194,6 +188,5 @@ export const settingsState = atom<SettingsState>((get) => ({
   autoFileExtension: get(autoFileExtensionState),
   pathOverriding: get(pathOverridingState),
   enableCustomArgs: get(enableCustomArgsState),
-  listView: get(listViewState),
   servedFromReverseProxy: get(servedFromReverseProxyState),
 }))

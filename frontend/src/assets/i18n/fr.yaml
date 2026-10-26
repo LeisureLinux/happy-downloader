@@ -1,21 +1,13 @@
 keys:
   urlInput: URL vidéo de YouTube ou d'un autre service pris en charge
-  statusTitle: Statut
-  statusReady: Prêt
   selectFormatButton: Sélectionner le format
   startButton: Démarrer
-  abortAllButton: Tout arrêter
-  updateBinButton: Mettre à jour l'exécutable yt-dlp
   darkThemeButton: Thème sombre
   lightThemeButton: Thème clair
   settingsAnchor: Paramètres
   serverAddressTitle: Adresse du serveur
   serverPortTitle: Port
-  extractAudioCheckbox: Extraire l'audio
-  noMTimeCheckbox: Ne pas définir le temps de modification du fichier
-  bgReminder: Une fois que vous aurez fermé cette page, le téléchargement continuera en arrière-plan.
   toastConnected: 'Connecté à '
-  toastUpdated: L'exécutable yt-dlp a été mis à jour !
   formatSelectionEnabler: Activer la sélection des formats vidéo/audio
   themeSelect: 'Thème'
   languageSelect: 'Langue'
@@ -28,37 +20,18 @@ keys:
   customArgs: Activer les args personnalisés yt-dlp (grand pouvoir = grandes responsabilités)
   customArgsInput: Arguments yt-dlp personnalisés
   splashText: Aucun téléchargement actif
-  archiveTitle: Archive
-  clipboardAction: URL copiée dans le presse-papiers
   playlistCheckbox: Télécharger la liste de lecture (cela prendra du temps, vous pouvez fermer cette fenêtre après l'avoir validée)
   restartAppMessage: Nécessite un rechargement de la page pour prendre effet
   servedFromReverseProxyCheckbox: Est derrière un sous-dossier de proxy inverse
   notConnectedText: not connected
-  settingsLabel: Settings
-  newDownloadButton: New download
-  homeButtonLabel: Home
-  archiveButtonLabel: Archive
+  browseButtonLabel: 'Browse'
   settingsButtonLabel: Settings
-  themeTogglerLabel: Theme toggler
   loadingLabel: Loading...
   savedTemplates: Saved templates
-  templatesEditor: Templates editor
-  templatesEditorNameLabel: Template name
-  templatesEditorContentLabel: Template content
   logsTitle: 'Logs'
   awaitingLogs: 'Awaiting logs...'
-  bulkDownload: 'Download files in a zip archive'
-  livestreamURLInput: Livestream URL
-  livestreamStatusWaiting: Waiting/Wait start
-  livestreamStatusDownloading: Downloading
-  livestreamStatusCompleted: Completed
-  livestreamStatusErrored: Errored
-  livestreamStatusUnknown: Unknown
-  livestreamExperimentalWarning: This feature is still experimental. Something might break!
   accentSelect: 'Accent'
   urlBase: URL base, for reverse proxy support (subdir), defaults to empty
   generalDownloadSettings: 'General Download Settings'
-  deleteCookies: Delete Cookies
   noFilesFound: 'No Files Found'
-  tableView: 'Table View'
   deleteSelected: 'Delete selected'

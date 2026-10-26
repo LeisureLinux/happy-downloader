@@ -1,21 +1,13 @@
 keys:
   urlInput: Video URL
-  statusTitle: Status
-  statusReady: Bereit
   selectFormatButton: Format auswählen
   startButton: Start
-  abortAllButton: Alle Abbrechen
-  updateBinButton: yt-dlp Binärdatei aktualisieren
   darkThemeButton: Dunkler Modus
   lightThemeButton: Heller Modus
   settingsAnchor: Einstellungen
   serverAddressTitle: Adresse des Servers
   serverPortTitle: Port
-  extractAudioCheckbox: Audio extrahieren
-  noMTimeCheckbox: Datei-Änderungszeitpunkt nicht festlegen
-  bgReminder: Sobald Sie diese Seite schließen, wird der Download im Hintergrund fortgesetzt.
   toastConnected: 'Verbunden mit '
-  toastUpdated: yt-dlp Binärdatei aktualisiert!
   formatSelectionEnabler: Video/Audio Format auswählbar
   themeSelect: 'Modus'
   languageSelect: 'Sprache'
@@ -28,35 +20,17 @@ keys:
   customArgs: Benutzerdefinierte yt-dlp Argumente aktivieren (Auf viel Macht folgt große Verantwortung)
   customArgsInput: Benutzerdefinierte yt-dlp Argumente
   splashText: Keine aktiven Downloads
-  archiveTitle: Archiv
-  clipboardAction: URL in Zwischenablage kopiert
   playlistCheckbox: Playlist herunterladen (es wird einige Zeit dauern, nach dem Absenden können Sie dieses Fenster schließen)
   restartAppMessage: Erfordert ein Neuladen der Seite, um wirksam zu werden
   servedFromReverseProxyCheckbox: Ist hinter einem Reverse Proxy Unterordner
-  newDownloadButton: Neuer Download
-  homeButtonLabel: Home
-  archiveButtonLabel: Archiv
+  browseButtonLabel: 'Browse'
   settingsButtonLabel: Einstellungen
-  themeTogglerLabel: Modus Umschalter
   loadingLabel: Lädt...
   savedTemplates: Gespeicherte Vorlage
-  templatesEditor: Vorlageneditor
-  templatesEditorNameLabel: Vorlagen Name
-  templatesEditorContentLabel: Vorlagen Inhalt
   logsTitle: 'Logausgabe'
   awaitingLogs: 'Warte auf Log ...'
-  bulkDownload: 'Alles in einem ZIP-Archiv herunterladen'
-  livestreamURLInput: Livestream URL
-  livestreamStatusWaiting: Warte auf Start
-  livestreamStatusDownloading: Herunterladen
-  livestreamStatusCompleted: Abgeschlossen
-  livestreamStatusErrored: Fehlerhaft
-  livestreamStatusUnknown: Status unbekannt
-  livestreamExperimentalWarning: Dieses Feature ist aktuell noch experimentell, sei vorsichtig, denn es könnte sein, dass etwas nicht genau funktioniert!
   accentSelect: 'Farbtöne'
   urlBase: URL-Basis für Reverse-Proxy-Unterstützung (Unterverzeichnis), standardmäßig leer
   generalDownloadSettings: 'Allgemeine Download Einstellungen'
-  deleteCookies: 'Cookies löschen'
   noFilesFound: 'Keine Dateien gefunden'
-  tableView: 'Tabellenansicht'
   deleteSelected: 'Ausgewählte löschen'

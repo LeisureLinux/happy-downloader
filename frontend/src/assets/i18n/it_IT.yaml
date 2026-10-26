@@ -1,21 +1,13 @@
 keys:
   urlInput: URL Video (uno per linea)
-  statusTitle: Stato
-  statusReady: Pronto
   selectFormatButton: Seziona formato
   startButton: Inizia
-  abortAllButton: Termina tutto
-  updateBinButton: Aggiorna yt-dlp
   darkThemeButton: Tema scuro
   lightThemeButton: Tema chiaro
   settingsAnchor: Impostazioni
   serverAddressTitle: Indirizzo server
   serverPortTitle: Porta
-  extractAudioCheckbox: Estrai l'audio
-  noMTimeCheckbox: Non impostare la proprietà "Data ultima modifica"
-  bgReminder: Chiusa questa UI il download continuerà in background.
   toastConnected: 'Connesso a '
-  toastUpdated: yt-dlp aggiornato con successo!
   formatSelectionEnabler: Abilita la selezione dei formati audio/video
   themeSelect: 'Tema'
   languageSelect: 'Lingua'
@@ -28,35 +20,17 @@ keys:
   customArgs: Abilita argomenti yt-dlp personalizzati (grande potere = grandi responsabilità)
   customArgsInput: Argomenti yt-dlp personalizzati
   splashText: Nessun download attivo
-  archiveTitle: Archivio
-  clipboardAction: URL copiato negli appunti
   playlistCheckbox: Download playlist (richiederà tempo, puoi chiudere la finestra dopo l'inoltro)
   restartAppMessage: La finestra deve essere ricaricata affinché abbia effetto
   servedFromReverseProxyCheckbox: È dietro un reverse proxy
   urlBase: base URL, per supporto a reverse proxy (subdir), default vuoto
-  newDownloadButton: Nuovo download
-  homeButtonLabel: Home
-  archiveButtonLabel: Archivio
+  browseButtonLabel: 'Browse'
   settingsButtonLabel: Impostazioni
-  themeTogglerLabel: Selettore Tema
   loadingLabel: Caricamento...
   savedTemplates: Modelli salvati
-  templatesEditor: Editor modelli
-  templatesEditorNameLabel: Nome modello
-  templatesEditorContentLabel: Contenuto del modello
   logsTitle: 'Logs'
   awaitingLogs: 'Awaiting logs...'
-  bulkDownload: 'Scaricare i file in un archivio zip'
-  livestreamURLInput: Livestream URL
-  livestreamStatusWaiting: Attesa inizio
-  livestreamStatusDownloading: Downloading
-  livestreamStatusCompleted: Completato
-  livestreamStatusErrored: Errore
-  livestreamStatusUnknown: Sconosciuto
-  livestreamExperimentalWarning: Questa funzione è ancora sperimentale. Qualcosa potrebbe rompersi!
   accentSelect: 'Accent'
   generalDownloadSettings: 'Impostazioni generali di download'
-  deleteCookies: Elimina Cookies
   noFilesFound: 'Nessun file trovato'
-  tableView: 'Vista Tabella'
   deleteSelected: 'Elimina selezionati'

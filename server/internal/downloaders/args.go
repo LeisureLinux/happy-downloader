@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -47,10 +48,11 @@ func SanitizeRuntime(runtime string) string {
 // agree: when metadata ran with a thinner argv than the download, a URL could
 // pass one stage and fail the next with no way to tell which.
 //
-// The profile for the URL decides the arguments (cookie, POT provider, proxy,
-// extras). --ignore-config keeps the host's own yt-dlp config out of the
-// picture, so the argv is complete by construction and reproducible from the
-// log line alone.
+// --ignore-config keeps the host's own yt-dlp config out of the picture, so
+// the argv is complete by construction and the logged command line is enough
+// to reproduce a download. The consequence is that anything the host config
+// used to supply — a proxy above all — has to be passed explicitly, or the
+// download fails on a network that never needed a profile to work.
 func BuildArgs(url string, extra ...string) []string {
 	// Refresh the converted cookie file first: this is the pre-download check
 	// that covers a replaced export when the inotify watch is unavailable.
@@ -65,36 +67,40 @@ func BuildArgs(url string, extra ...string) []string {
 		cookieStaging = stageCookieFile(profile.CookiePath)
 	}
 
-	if !matched {
-		// No profile store (tests): config-file behaviour only.
-		cookieStaging = resolveCookiePath()
+	// The proxy is a property of the network, not of a site: whatever reaches
+	// YouTube needs the same egress as everything else. A profile may override
+	// it (one site behind a different route), otherwise the global value
+	// applies, and without one there is no --proxy flag at all.
+	proxy := profile.Proxy
+	if proxy == "" {
+		proxy = strings.TrimSpace(config.Instance().YtDlp.Proxy)
 	}
 
-	args := []string{url}
-
-	if !matched {
-		// Legacy path without a profile: keep the config-driven behaviour
-		// but still isolate from the host config file.
-		args = append(args, "--ignore-config")
-
-		if runtime != "" {
-			args = append(args, "--js-runtimes", runtime)
-		}
-		if c := config.Instance().YtDlp.PotBaseURL; c != "" {
-			args = append(args, "--extractor-args", "youtubepot-bgutilhttp:base_url="+c)
-		}
-		if c := config.Instance().YtDlp.Proxy; c != "" {
-			args = append(args, "--proxy", c)
-		}
-		if c := cookieStaging; c != "" {
-			args = append(args, "--cookies", c)
-		}
-
-		return append(args, extra...)
+	// POT provider, likewise: global unless the profile names its own.
+	pot := profile.PotBaseURL
+	if pot == "" {
+		pot = strings.TrimSpace(config.Instance().YtDlp.PotBaseURL)
 	}
 
-	// Profile path: the site decides.
-	args = append(args, profile.Argv(cookieStaging, runtime)...)
+	args := []string{url, "--ignore-config"}
+
+	if runtime != "" {
+		args = append(args, "--js-runtimes", runtime)
+	}
+	if pot != "" {
+		args = append(args, "--extractor-args", "youtubepot-bgutilhttp:base_url="+pot)
+	}
+	if proxy != "" {
+		args = append(args, "--proxy", proxy)
+	}
+	if cookieStaging != "" {
+		args = append(args, "--cookies", cookieStaging)
+	}
+
+	// Profile extras come last so they can override anything above.
+	if matched {
+		args = append(args, profile.ExtraArgs...)
+	}
 
 	return append(args, extra...)
 }
@@ -131,9 +137,6 @@ var cookieStagingMu sync.Mutex
 // it. Handing over the converted file directly lets one download replace it
 // with a jar missing the login cookies, which surfaces as "cookies are no
 // longer valid" on the next run.
-//
-// The source here is the per-profile CookiePath, converted on demand when the
-// export is newer than the last conversion.
 func stageCookieFile(source string) string {
 	cookieStagingMu.Lock()
 	defer cookieStagingMu.Unlock()
@@ -167,10 +170,15 @@ func stageCookieFile(source string) string {
 // convertSource ensures a Netscape conversion of the export exists and is
 // current, returning its path.
 //
-// The conversion result is cached next to the export with a ".cookies.txt"
-// suffix; when the export is newer the conversion is redone. A failed
-// conversion keeps the previous result, so a partially copied file does not
-// break a working session.
+// The result lives in the state directory, keyed by a hash of the source path,
+// so two profiles pointing at different exports do not overwrite each other
+// and nothing is written next to the export itself. Writing beside the export
+// also collided with the cookie watcher, which maintains the same conversion
+// under a different name: one of the two went stale, and the stale one was the
+// one downloads read.
+//
+// A failed conversion keeps the previous result, so a partially copied file
+// does not break a working session.
 func convertSource(source string) (string, bool) {
 	stagedMu.Lock()
 	defer stagedMu.Unlock()
@@ -180,7 +188,9 @@ func convertSource(source string) (string, bool) {
 		return "", false
 	}
 
-	converted := source + ".cookies.txt"
+	// Resolved through config so the watcher and this builder always agree on
+	// the file they maintain.
+	converted := config.CookiesPath(source)
 
 	ci, err := os.Stat(converted)
 	if err == nil && !info.ModTime().After(ci.ModTime()) {
@@ -192,7 +202,7 @@ func convertSource(source string) (string, bool) {
 		return "", false
 	}
 
-	out, _, err := cookiesConvert(raw)
+	out, _, err := cookies.Convert(raw)
 	if err != nil {
 		slog.Warn("cookie conversion failed",
 			slog.String("source", source), slog.String("err", err.Error()))
@@ -203,6 +213,10 @@ func convertSource(source string) (string, bool) {
 		return "", false
 	}
 
+	if err := os.MkdirAll(filepath.Dir(converted), 0o755); err != nil {
+		return "", false
+	}
+
 	if err := os.WriteFile(converted, []byte(out), 0o600); err != nil {
 		return "", false
 	}
@@ -210,38 +224,8 @@ func convertSource(source string) (string, bool) {
 	return converted, true
 }
 
-// stagedMu guards the per-source conversion cache.
+// stagedMu guards the conversion cache.
 var stagedMu sync.Mutex
-
-// resolveCookiePath is the legacy no-profile path.
-func resolveCookiePath() string {
-	converted := config.CookiesPath()
-
-	info, err := os.Stat(converted)
-	if err != nil || info.IsDir() {
-		return ""
-	}
-
-	staging := converted + ".ytdlp-jar"
-
-	src, err := os.Open(converted)
-	if err != nil {
-		return ""
-	}
-	defer src.Close()
-
-	dst, err := os.OpenFile(staging, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
-	if err != nil {
-		return ""
-	}
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, src); err != nil {
-		return ""
-	}
-
-	return staging
-}
 
 // NewCommand builds an *exec.Cmd in the detached process-group shape the
 // downloaders use, so Stop() can signal the whole tree.
@@ -254,14 +238,11 @@ func NewCommand(args []string) *exec.Cmd {
 // LogCommand emits the resolved yt-dlp command line.
 //
 // A download failure surfaces in the UI as a single blob of yt-dlp stderr.
-// Without the argv there is no way to tell whether the metadata stage or the
-// download stage ran, what runtime was in effect, or whether cookies were
-// passed at all — the questions that decide whether the next step is to fix
-// the config or to pick a different video.
+// Without the argv there is no way to tell which stage ran, what runtime was
+// in effect, or whether cookies and the proxy were passed at all.
 func LogCommand(stage, url string, args []string) {
 	argv := append([]string{config.Instance().Paths.DownloaderPath}, args...)
 
-	// Quote arguments containing whitespace so the line is copy-pasteable.
 	quoted := make([]string, len(argv))
 	for i, a := range argv {
 		if strings.ContainsAny(a, " \t\"'") {
@@ -278,15 +259,11 @@ func LogCommand(stage, url string, args []string) {
 	)
 }
 
-// cookiesConvert is aliased so args.go reads without the import list growing;
-// the conversion itself lives in the cookies package.
-var cookiesConvert = cookies.Convert
-
 // Preview returns the argv a URL would produce, without starting yt-dlp.
 //
 // This backs the UI's "what will actually run" panel: the resolved command
 // line is the only authoritative answer to which cookie, POT provider, proxy
-// and extras apply, and reading it out of the table by hand is error-prone.
+// and extras apply.
 func Preview(url string) []string {
 	return BuildArgs(url)
 }
