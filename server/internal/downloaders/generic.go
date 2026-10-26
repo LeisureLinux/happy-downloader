@@ -100,6 +100,13 @@ func (g *GenericDownloader) Start() error {
 		"--newline",
 		"--no-colors",
 		"--no-playlist",
+		// Keep going when a secondary step fails. The video is the artifact the
+		// user asked for; a throttled caption request (HTTP 429 from YouTube's
+		// subtitle endpoint is routine) or a failed thumbnail embed should not
+		// discard a download that already succeeded. A genuinely failed video
+		// still leaves no output path, which the UI reports as a missing file
+		// rather than a success.
+		"--ignore-errors",
 		// Subtitles are disabled on purpose. A host-level yt-dlp config often
 		// turns on --write-subs/--write-auto-subs, and YouTube rate-limits the
 		// caption endpoint hard (HTTP 429). Without these overrides a throttled

@@ -87,8 +87,8 @@ export type DLMetadata = {
   duration?: number
   /** manually authored caption tracks, keyed by language code */
   subtitles?: Record<string, unknown>
-  /** generated caption tracks, keyed by language code */
-  automaticCaptions?: Record<string, unknown>
+  /** generated caption tracks, keyed by language code (yt-dlp field name) */
+  automatic_captions?: Record<string, unknown>
 }
 
 export type DLFormat = {

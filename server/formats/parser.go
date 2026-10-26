@@ -1,8 +1,11 @@
 package formats
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"log/slog"
+	"strings"
 	"sync"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
@@ -15,10 +18,21 @@ func ParseURL(url string) (*Metadata, error) {
 	args := downloaders.BuildArgs(url, "-J")
 	downloaders.LogCommand("formats", url, args)
 
-	stdout, err := downloaders.NewCommand(args).Output()
+	// Capture stderr: "exit status 1" on its own says nothing about why, and
+	// the reason is the whole point of a diagnostic.
+	var stderr bytes.Buffer
+	cmd := downloaders.NewCommand(args)
+	cmd.Stderr = &stderr
+
+	stdout, err := cmd.Output()
 	if err != nil {
-		slog.Error("failed to retrieve metadata", slog.String("err", err.Error()))
-		return nil, err
+		msg := strings.TrimSpace(stderr.String())
+		if msg == "" {
+			msg = err.Error()
+		}
+		slog.Error("failed to retrieve metadata",
+			slog.String("url", url), slog.String("err", msg))
+		return nil, errors.New(msg)
 	}
 
 	slog.Info(

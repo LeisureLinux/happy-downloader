@@ -141,11 +141,11 @@ export function renderArgs(args: string[]): string {
 // then generated, de-duplicated.
 export function availableSubtitleLangs(meta?: {
   subtitles?: Record<string, unknown>
-  automaticCaptions?: Record<string, unknown>
+  automatic_captions?: Record<string, unknown>
 }): { manual: string[]; auto: string[] } {
   return {
     manual: Object.keys(meta?.subtitles ?? {}),
-    auto: Object.keys(meta?.automaticCaptions ?? {}),
+    auto: Object.keys(meta?.automatic_captions ?? {}),
   }
 }
 

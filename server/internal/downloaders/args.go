@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
@@ -131,22 +132,21 @@ func SyncCookies() {
 // otherwise race the copy and hand one yt-dlp process a truncated jar.
 var cookieStagingMu sync.Mutex
 
-// stageCookieFile copies a converted cookie export to a scratch path.
+// stageCookieFile copies a converted cookie export to a scratch file for one
+// yt-dlp invocation.
 //
-// yt-dlp's --cookies both reads the file and writes its cookie jar back into
-// it. Handing over the converted file directly lets one download replace it
-// with a jar missing the login cookies, which surfaces as "cookies are no
-// longer valid" on the next run.
+// Two reasons for the copy. yt-dlp's --cookies both reads the file and writes
+// its cookie jar back into it, so handing over the converted file directly
+// would let a download replace it with a jar missing the login cookies. And
+// the copy has to be per-invocation: yt-dlp rewrites the file it was given,
+// so a shared staging path means one process truncates it while another is
+// still reading, and that reader fails with a cookie error that has nothing to
+// do with the cookies.
 func stageCookieFile(source string) string {
-	cookieStagingMu.Lock()
-	defer cookieStagingMu.Unlock()
-
 	converted, ok := convertSource(source)
 	if !ok {
 		return ""
 	}
-
-	staging := converted + ".ytdlp-jar"
 
 	src, err := os.Open(converted)
 	if err != nil {
@@ -154,17 +154,54 @@ func stageCookieFile(source string) string {
 	}
 	defer src.Close()
 
-	dst, err := os.OpenFile(staging, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	// The state directory, not the OS temp dir: it is on the same filesystem as
+	// the converted file and is already the place this server writes to.
+	dst, err := os.CreateTemp(filepath.Dir(converted), "cookies-*.jar")
 	if err != nil {
 		return ""
 	}
 	defer dst.Close()
 
+	if err := dst.Chmod(0o600); err != nil {
+		slog.Debug("could not restrict cookie jar permissions", slog.String("err", err.Error()))
+	}
+
 	if _, err := io.Copy(dst, src); err != nil {
+		os.Remove(dst.Name())
 		return ""
 	}
 
-	return staging
+	// Jars are disposable and one is created per invocation, so sweep the ones
+	// from finished downloads. Without this the state directory accumulates a
+	// file per download forever.
+	sweepStaleJars(filepath.Dir(converted))
+
+	return dst.Name()
+}
+
+// staleJarAge is how long a staging jar is kept before being swept. Generous
+// enough that a long download is never racing its own cleanup.
+const staleJarAge = 6 * time.Hour
+
+func sweepStaleJars(dir string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+
+	cutoff := time.Now().Add(-staleJarAge)
+
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".jar") ||
+			!strings.HasPrefix(e.Name(), "cookies-") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil || info.ModTime().After(cutoff) {
+			continue
+		}
+		os.Remove(filepath.Join(dir, e.Name()))
+	}
 }
 
 // convertSource ensures a Netscape conversion of the export exists and is
