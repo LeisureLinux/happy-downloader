@@ -30,7 +30,7 @@ keys:
   logsTitle: 'ログ'
   awaitingLogs: 'ログを待っています...'
   accentSelect: 'アクセントカラー'
-  urlBase: URL base, for reverse proxy support (subdir), defaults to empty
+  urlBase: 'リバースプロキシ（サブディレクトリ）用の URL ベース。既定では空です'
   generalDownloadSettings: '一般ダウンロード設定'
   noFilesFound: 'ファイルがありません'
   deleteSelected: 'Delete selected'

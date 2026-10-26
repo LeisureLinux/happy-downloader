@@ -20,16 +20,16 @@ keys:
   customArgs: Uwzględnij konfigurowalne argumenty yt-dlp (wielka moc = wielka odpowiedzialność)
   customArgsInput: Niestandardowe argumenty yt-dlp
   splashText: Brak aktywnych pobrań
-  playlistCheckbox: Download playlist (it will take time, after submitting you may even close this window)
-  servedFromReverseProxyCheckbox: Is behind a reverse proxy subfolder
+  playlistCheckbox: 'Pobierz playlistę (to potrwa; po wysłaniu możesz zamknąć to okno)'
+  servedFromReverseProxyCheckbox: 'Znajduje się za podkatalogiem reverse proxy'
   browseButtonLabel: 'Przeglądaj'
-  settingsButtonLabel: Settings
-  loadingLabel: Loading...
-  savedTemplates: Saved templates
+  settingsButtonLabel: 'Ustawienia'
+  loadingLabel: 'Wczytywanie...'
+  savedTemplates: 'Zapisane szablony'
   logsTitle: 'Dziennik'
   awaitingLogs: 'Oczekiwanie na dziennik...'
   accentSelect: 'Kolor akcentu'
-  urlBase: URL base, for reverse proxy support (subdir), defaults to empty
+  urlBase: 'Bazowy URL dla reverse proxy (podkatalog), domyślnie pusty'
   generalDownloadSettings: 'Ogólne ustawienia pobierania'
   noFilesFound: 'Nie znaleziono plików'
   deleteSelected: 'Delete selected'

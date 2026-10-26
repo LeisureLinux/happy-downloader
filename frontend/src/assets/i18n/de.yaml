@@ -2,7 +2,7 @@ keys:
   appName: 'Fröhlicher Downloader'
   urlInput: Video URL
   selectFormatButton: 'Format wählen'
-  startButton: Start
+  startButton: 'Starten'
   darkThemeButton: Dunkler Modus
   lightThemeButton: Heller Modus
   settingsAnchor: Einstellungen

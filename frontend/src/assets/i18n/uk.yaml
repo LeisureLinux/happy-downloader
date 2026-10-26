@@ -20,16 +20,16 @@ keys:
   customArgs: Включити аргументи, що настроюються yt-dlp (велика сила = велика відповідальність)
   customArgsInput: Користувальницькі аргументи yt-dlp
   splashText: Немає активних завантажень
-  playlistCheckbox: Download playlist (it will take time, after submitting you may even close this window)
-  servedFromReverseProxyCheckbox: Is behind a reverse proxy subfolder
+  playlistCheckbox: 'Завантажити список відтворення (це триватиме; після надсилання вікно можна закрити)'
+  servedFromReverseProxyCheckbox: 'Розташовано за підкаталогом зворотного проксі'
   browseButtonLabel: 'Файли'
-  settingsButtonLabel: Settings
-  loadingLabel: Loading...
-  savedTemplates: Saved templates
+  settingsButtonLabel: 'Налаштування'
+  loadingLabel: 'Завантаження...'
+  savedTemplates: 'Збережені шаблони'
   logsTitle: 'Журнал'
   awaitingLogs: 'Очікування журналу...'
   accentSelect: 'Акцент'
-  urlBase: URL base, for reverse proxy support (subdir), defaults to empty
+  urlBase: 'Базовий URL для зворотного проксі (підкаталог), типово порожній'
   generalDownloadSettings: 'Загальні налаштування завантажень'
   noFilesFound: 'Файлів не знайдено'
   deleteSelected: 'Delete selected'

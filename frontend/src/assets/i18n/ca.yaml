@@ -6,7 +6,7 @@ keys:
   lightThemeButton: Tema clar
   settingsAnchor: Configuració
   serverAddressTitle: Direcció del servidor
-  serverPortTitle: Port
+  serverPortTitle: 'Port'
   toastConnected: 'Connectat a'
   formatSelectionEnabler: Habilitar la selecció de formats de vídeo/àudio
   themeSelect: 'Tema'
@@ -19,17 +19,17 @@ keys:
   customPath: Ruta personalitzada
   customArgs: Habilitar els arguments yt-dlp personalitzats (un gran poder comporta una gran responsabilitat)
   customArgsInput: Arguments yt-dlp personalitzats
-  splashText: No active downloads
-  playlistCheckbox: Download playlist (it will take time, after submitting you may even close this window)
-  servedFromReverseProxyCheckbox: Is behind a reverse proxy subfolder
+  splashText: 'No hi ha descàrregues actives'
+  playlistCheckbox: 'Descarrega la llista de reproducció (trigarà una estona; després d’enviar-ho pots tancar aquesta finestra)'
+  servedFromReverseProxyCheckbox: 'Està darrere d’un subdirectori de servidor intermediari invers'
   browseButtonLabel: 'Navega'
-  settingsButtonLabel: Settings
-  loadingLabel: Loading...
-  savedTemplates: Saved templates
+  settingsButtonLabel: 'Configuració'
+  loadingLabel: 'Carregant...'
+  savedTemplates: 'Plantilles desades'
   logsTitle: 'Registre'
   awaitingLogs: 'Esperant el registre...'
   accentSelect: 'Color d’accent'
-  urlBase: URL base, for reverse proxy support (subdir), defaults to empty
+  urlBase: 'Base de l’URL per a un servidor intermediari invers (subdirectori); buit per defecte'
   generalDownloadSettings: 'Paràmetres generals de descàrrega'
   noFilesFound: 'No s’ha trobat cap fitxer'
   deleteSelected: 'Delete selected'

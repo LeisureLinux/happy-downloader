@@ -29,7 +29,7 @@ keys:
   logsTitle: 'Журнал'
   awaitingLogs: 'Ожидание журнала...'
   accentSelect: 'Акцент'
-  urlBase: URL base, for reverse proxy support (subdir), defaults to empty
+  urlBase: 'Базовый URL для обратного прокси (подкаталог), по умолчанию пусто'
   generalDownloadSettings: 'Общие настройки загрузки'
   noFilesFound: 'Файлы не найдены'
   deleteSelected: 'Delete selected'

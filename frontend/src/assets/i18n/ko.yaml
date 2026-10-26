@@ -6,30 +6,30 @@ keys:
   lightThemeButton: 라이트 모드
   settingsAnchor: 설정
   serverAddressTitle: 서버 주소
-  serverPortTitle: Port
+  serverPortTitle: '포트'
   toastConnected: '다음으로 연결됨 '
   formatSelectionEnabler: 비디오/오디오 포멧 옵션 표시
   themeSelect: '테마'
   languageSelect: '언어'
-  overridesAnchor: Overrides
-  pathOverrideOption: Enable output path overriding
-  filenameOverrideOption: Enable output file name overriding
+  overridesAnchor: '재정의'
+  pathOverrideOption: '출력 경로 재정의 사용'
+  filenameOverrideOption: '출력 파일 이름 재정의 사용'
   autoFileExtensionOption: 자동으로 파일 확장자 추가
-  customFilename: Custom filename (leave blank to use default)
-  customPath: Custom path
+  customFilename: '사용자 지정 파일 이름 (비워 두면 기본값)'
+  customPath: '사용자 지정 경로'
   customArgs: Enable custom yt-dlp args (great power = great responsabilities)
-  customArgsInput: Custom yt-dlp arguments
-  splashText: No active downloads
-  playlistCheckbox: Download playlist (it will take time, after submitting you may even close this window)
-  servedFromReverseProxyCheckbox: Is behind a reverse proxy subfolder
+  customArgsInput: '사용자 지정 yt-dlp 인자'
+  splashText: '진행 중인 다운로드가 없습니다'
+  playlistCheckbox: '재생목록 다운로드 (시간이 걸립니다. 제출한 뒤에는 이 창을 닫아도 됩니다)'
+  servedFromReverseProxyCheckbox: '역방향 프록시 하위 경로 뒤에 있음'
   browseButtonLabel: '파일'
-  settingsButtonLabel: Settings
-  loadingLabel: Loading...
-  savedTemplates: Saved templates
+  settingsButtonLabel: '설정'
+  loadingLabel: '불러오는 중...'
+  savedTemplates: '저장된 템플릿'
   logsTitle: '로그'
   awaitingLogs: '로그를 기다리는 중...'
   accentSelect: '강조 색'
-  urlBase: URL base, for reverse proxy support (subdir), defaults to empty
+  urlBase: '역방향 프록시(하위 경로)용 URL 기준, 기본값은 비어 있음'
   generalDownloadSettings: '일반 다운로드 설정'
   noFilesFound: '파일이 없습니다'
   deleteSelected: 'Delete selected'

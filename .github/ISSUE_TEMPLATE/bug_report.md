@@ -1,30 +1,30 @@
 ---
 name: Bug report
-about: Create a report to help improve the project
+about: Something does not work as described
 title: ''
 labels: ''
 assignees: ''
 
 ---
 
-**Version running**
-Provide the docker label or release tag you're running.
+**Version**
+The header shows `v<version>@<build timestamp>`. Paste it, plus the yt-dlp
+version from Settings.
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**What happened**
+What you did, what you expected, what happened instead.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**The command line**
+Open the log panel (bottom-right) and copy the `msg="yt-dlp exec"` line for the
+failing download. Every invocation logs its full argv, so this is usually
+enough to reproduce the problem by hand.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+**Environment**
+- Host OS and architecture
+- yt-dlp version, and whether a PO Token provider is in use
+- Whether downloads go through a proxy
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
-**Additional context**
-Add any other context about the problem here.
+**Log excerpt**
+The relevant lines from the log panel, including any `level=ERROR` entries.
+Cookie values are never logged; the file paths and argument lists are safe to
+paste.

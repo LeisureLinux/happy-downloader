@@ -26,13 +26,13 @@ keys:
   servedFromReverseProxyCheckbox: Est derrière un sous-dossier de proxy inverse
   notConnectedText: 'Non connecté'
   browseButtonLabel: 'Parcourir'
-  settingsButtonLabel: Settings
-  loadingLabel: Loading...
-  savedTemplates: Saved templates
+  settingsButtonLabel: 'Réglages'
+  loadingLabel: 'Chargement...'
+  savedTemplates: 'Modèles enregistrés'
   logsTitle: 'Journal'
   awaitingLogs: 'En attente du journal...'
   accentSelect: 'Couleur d’accent'
-  urlBase: URL base, for reverse proxy support (subdir), defaults to empty
+  urlBase: 'Base de l’URL pour un proxy inverse (sous-dossier), vide par défaut'
   generalDownloadSettings: 'Réglages généraux de téléchargement'
   noFilesFound: 'Aucun fichier trouvé'
   deleteSelected: 'Delete selected'

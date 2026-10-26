@@ -1,360 +1,235 @@
-# Happy Downloader
+# Happy Downloader · 欢喜下载
 
-A web UI for [yt-dlp](https://github.com/yt-dlp/yt-dlp) built to run on a
-headless host: point it at a cookie export, let it watch the file, and add
-sites from the browser without restarting anything.
+A self-hosted web UI for [yt-dlp](https://github.com/yt-dlp/yt-dlp). One static
+binary, no runtime dependencies, no database server — point a browser at it
+from anywhere on your network and download videos onto the machine that has the
+disk space.
 
-Forked from
-[LeisureLinux/happy-downloader](https://github.com/LeisureLinux/happy-downloader)
-at v4.0.0. Upstream is archived; this fork carries the changes below.
+It was written for a specific awkward situation: a headless Linux box with no
+browser and no desktop session, which nonetheless needs to download things that
+require a logged-in session. The cookies are refreshed on another machine and
+pushed over; the server just watches the file.
 
-## What this fork adds
+## What it does
 
-- **Site profiles.** Arguments are composed from an editable table keyed by
-  hostname, and every invocation passes `--ignore-config`, so nothing from the
-  host's yt-dlp config affects a download. Adding a site is a new row.
-- **Cookies from a path.** `paths.cookie_path` accepts a browser extension's
-  JSON export or an existing cookies.txt; the format is detected and converted
-  with `httpOnly` preserved. The file is watched, so replacing it refreshes the
-  session with no restart.
-- **Argument preview.** Settings shows the exact command line a URL resolves
-  to, defaults included.
-- **Version reporting.** The header carries the version and build timestamp
-  injected at build time.
+**Downloads from a web page.** Paste one or more URLs, pick what you want, and
+the work happens on the server. The page shows a queue, live progress, and the
+full yt-dlp log.
+
+**Site profiles.** Every site gets its own argument set, matched by hostname
+(longest suffix wins, an empty host is the fallback). Editable in Settings, no
+restart needed. Each invocation passes `--ignore-config`, so whatever is in the
+host's own yt-dlp config cannot quietly change a download — the argument list
+you see in the log is the complete one.
+
+**Cookie files, watched.** `paths.cookie_path` accepts either a browser
+extension's JSON export or a plain `cookies.txt`. The format is detected from
+the content and converted with `httpOnly` preserved. The file is watched, so
+replacing it refreshes the session without a restart. Each yt-dlp invocation
+gets its own temporary copy, because `--cookies` also *writes back* and a shared
+file lets one process truncate a file another is reading.
+
+**PO Token support.** Point `ytdlp.pot_base_url` at a
+[bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider)
+instance and the token argument is composed for you, proxy included.
+
+**A queue, not a history.** Only unfinished downloads are listed. A finished
+file stops being a queue entry and appears in the file browser instead, which
+refreshes itself when something completes.
+
+**Argument preview.** Settings shows the exact command line a URL resolves to,
+defaults and all. It is the same string the log records, so a failure can be
+reproduced by copying it.
+
+**Log panel with history.** The log button in the bottom-right corner opens a
+panel that starts with the last 200 lines and then streams live over SSE. Each
+request line carries the client address, so it is clear which machine on the LAN
+asked for what.
+
+**16 languages**, including Simplified and Traditional Chinese, each named in
+its own script in the language menu.
+
+**Themes.** Light and dark, plus a choice of accent colour.
+
+## Requirements
+
+- Linux (amd64 or arm64 for the prebuilt binaries; it builds anywhere Go does)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) on `PATH`, or an absolute path in
+  the config
+- `ffmpeg`, if you want merged video or audio conversion
+- A JavaScript runtime (`node` or `deno`) for YouTube's challenge solving
+- Optional: a PO Token provider, if YouTube asks you to prove you are not a bot
 
 ## Install
 
-Static binaries, no runtime dependencies. yt-dlp, ffmpeg and a JS runtime are
-still needed on the host.
+Download the binary for your architecture from
+[Releases](https://github.com/LeisureLinux/happy-downloader/releases) and put it
+somewhere stable.
 
 ```sh
-docker pull ghcr.io/leisurelinux/happy-downloader:v4
+mkdir -p ~/.local/share/happy-downloader/bin
+curl -L -o ~/.local/share/happy-downloader/bin/happy-downloader \
+  https://github.com/LeisureLinux/happy-downloader/releases/latest/download/happy-downloader_linux-arm64
+chmod +x ~/.local/share/happy-downloader/bin/happy-downloader
 ```
+
+Write a config file and start it:
+
+```sh
+~/.local/share/happy-downloader/bin/happy-downloader -conf ~/.config/happy-downloader/config.yml
+```
+
+The server listens on `0.0.0.0:3033` by default and serves the frontend from
+the same binary.
+
+### Running it as a user service
+
+A user unit rather than a system one, because reading a browser's cookie
+database needs the login keyring and that only exists inside a session bus.
+
+`~/.config/systemd/user/happy-downloader.service`:
+
+```ini
+[Unit]
+Description=Happy Downloader
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h
+ExecStart=%h/.local/share/happy-downloader/bin/happy-downloader -conf %h/.config/happy-downloader/config.yml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+```
+
+```sh
+systemctl --user daemon-reload
+systemctl --user enable --now happy-downloader.service
+loginctl enable-linger "$USER"   # keep it running after you log out
+```
+
+### Reverse proxy
+
+The app has no TLS and no login screen of its own. Put it behind nginx and keep
+it on the LAN. A ready config is at
+[`packaging/nginx/happydl.conf`](packaging/nginx/happydl.conf); the parts that
+matter are the WebSocket upgrade headers, `proxy_buffering off` for the log
+stream, and long timeouts for large files.
+
+Set `server.base_url` if you serve it under a subdirectory.
+
+### Refreshing cookies from another machine
+
+A headless host has no browser, so the cookie export has to come from somewhere
+else. [`scripts/refresh-cookies.sh`](scripts/refresh-cookies.sh) reads a browser
+profile, filters to the sites you care about, refuses to write a guest session,
+and can push the result to the server in one step:
+
+```sh
+scripts/refresh-cookies.sh \
+  --output ~/.config/happy-downloader/youtube-cookie.json \
+  --browser chrome+gnomekeyring \
+  --deploy user@server:/home/user/.config/happy-downloader/youtube-cookie.json
+```
+
+A matching systemd timer is in [`packaging/systemd/`](packaging/systemd/); the
+notes there explain the keyring requirement.
 
 ## Configuration
 
+`-conf` takes the path to a YAML file, default `./config.yml`.
+
 ```yaml
 server:
-  host: 0.0.0.0
+  host: 0.0.0.0          # default; use 127.0.0.1 behind a reverse proxy
   port: 3033
+  base_url: ""           # set when served under a subdirectory
+  queue_size: 4          # concurrent downloads; defaults to the CPU count
 
 paths:
-  download_path: /data/downloads
-  downloader_path: /usr/bin/yt-dlp
-  local_database_path: /data/state
-  js_runtime_path: /usr/bin/node
-  # Optional: a cookie export to convert and watch. JSON or Netscape.
-  cookie_path: /data/youtube-cookie.json
+  download_path: /srv/media/downloads
+  downloader_path: yt-dlp          # or an absolute path
+  local_database_path: /var/lib/happy-downloader
+  js_runtime_path: /usr/bin/node   # used for YouTube challenge solving
+  cookie_path: /etc/happy-downloader/youtube-cookie.json
 
 ytdlp:
-  # Optional. Per-site overrides live in the UI.
-  pot_base_url: http://127.0.0.1:4416
-  proxy: http://127.0.0.1:7890
+  pot_base_url: http://127.0.0.1:4416   # bgutil PO Token provider
+  proxy: http://127.0.0.1:8888          # egress proxy, if the host needs one
+
+logging:
+  log_path: /var/log/happy-downloader.log
+  enable_file_logging: false
 ```
 
-A not so terrible web ui for yt-dlp. 
+Relative paths resolve against the config file's directory.
 
-High performance extendeable web ui and RPC server for yt-dlp with low impact on resources.
+Every key can also be set through the environment with an `APP_` prefix and the
+dots replaced by underscores — `APP_SERVER_PORT=8080`,
+`APP_PATHS_COOKIE_PATH=/etc/cookies.json`. This keeps secrets out of the config
+file without any extra machinery.
 
-Created for the only purpose of *fetching* videos from my server/nas and monitor upcoming livestreams. 
+Per-site overrides — a different proxy, a different cookie file, extra
+arguments — live in Settings and are stored in the local database, not here.
 
-**Docker images are available on [Docker Hub](https://hub.docker.com/r/leisurelinux/happy-downloader) or [ghcr.io](https://github.com/LeisureLinux/happy-downloader/pkgs/container/yt-dlp-web-ui)**.
+### A note on `authentication`
+
+The server still honours `authentication.require_auth` and the OpenID settings,
+but the login screen was removed from the frontend. Turning either on will lock
+the web UI out. If you need access control, terminate it at the reverse proxy.
+
+## Building
 
 ```sh
-docker pull leisurelinux/happy-downloader:v4
-```
-```sh
-# latest stable
-docker pull ghcr.io/LeisureLinux/happy-downloader:v4
-```
+cd frontend && pnpm install && pnpm build && cd ..
 
-## Donate to happy-downloader development
-[PayPal](https://paypal.me/marcofw)
-
-*Keeps the project alive!* 😃
-
-## Community stuff
-Feel free to join :)
-
-[Discord](https://discord.gg/GZAX5FfGzE)
-
-## Some screeshots
-![image](https://github.com/user-attachments/assets/fc43a3fb-ecf9-449d-b5cb-5d5635020c00)
-![image](https://github.com/user-attachments/assets/3210f6ac-0dd8-403c-b839-3c24ff7d7d00)
-![image](https://github.com/user-attachments/assets/16450a40-cda6-4c8b-9d20-8ec36282f6ed)
-
-## Video showcase
-[app.webm](https://github.com/LeisureLinux/happy-downloader/assets/35533749/91545bc4-233d-4dde-8504-27422cb26964)
-
-## Settings
-
-The currently avaible settings are:
--   Server address
--   Switch theme
--   Extract audio
--   Switch language
--   Optional format selection
--   Override the output filename
--   Override the output path
--   Pass custom yt-dlp arguments safely
--   Download queue (limit concurrent downloads)
-
-## Format selection
-
-This feature is disabled by default as this intended to be used to retrieve the best quality automatically.
-
-To enable it just go to the settings page and enable the **Enable video/audio formats selection** flag!
-
-## [Docker](https://github.com/LeisureLinux/happy-downloader/pkgs/container/yt-dlp-web-ui) run
-```sh
-docker pull leisurelinux/happy-downloader
-docker run -d -p 3033:3033 -v <your dir>:/downloads leisurelinux/happy-downloader
+CGO_ENABLED=0 go build -trimpath \
+  -ldflags "-s -w \
+    -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerVersion=$(git describe --tags --always) \
+    -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerBuiltAt=$(date +%s)" \
+  -o happy-downloader main.go
 ```
 
-Or with docker but building the container manually.
+The frontend is embedded into the binary with `go:embed`, so the order matters:
+build the frontend first.
 
-```sh
-docker build -t happy-downloader .
-docker run -d -p 3033:3033 -v <your dir>:/downloads happy-downloader
+Requires Go 1.26+ and Node with pnpm.
 
-docker run -d -p 3033:3033 \
-  -v <your dir>:/downloads \  
-  -v <your dir>:/config \ # optional
-  happy-downloader
+## HTTP API
 
-```
+The frontend talks to the backend over JSON-RPC at `POST /rpc/http` (and
+`/rpc/ws` for live state). A few plain endpoints sit alongside it:
 
-If you opt to add RPC authentication...
-```sh
-docker run -d \
-    -p 3033:3033 \
-    -e JWT_SECRET randomsecret
-    -v /path/to/downloads:/downloads \
-    -v /path/for/config:/config \ # optional
-    leisurelinux/happy-downloader \
-    --auth \
-    --user your_username \
-    --pass your_pass
-```
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/v1/version` | Server and yt-dlp version |
+| `GET /api/v1/cookies/status` | Cookie file state |
+| `GET /api/v1/profiles` | Site profiles |
+| `POST /filebrowser/downloaded` | List downloaded files |
+| `GET /filebrowser/d/{id}` | Download a file |
+| `GET /filebrowser/v/{id}` | Stream a file for playback |
+| `GET /log/sse`, `/log/ws` | Live log stream |
+| `GET /status` | Queue and connection state |
 
-If you wish for limiting the download queue size...
+Probing a URL for its streams is the JSON-RPC method `Service.Formats`; the
+frontend calls it through `/rpc/http` like everything else.
 
-e.g. limiting max 2 concurrent download.
-```sh
-docker run -d \
-    -p 3033:3033 \
-    -e JWT_SECRET randomsecret
-    -v /path/to/downloads:/downloads \
-    leisurelinux/happy-downloader \
-    --qs 2
-```
+The full OpenAPI document is served at `/openapi`.
 
-### Docker Compose
-```yaml
-services:
-  happy-downloader:
-    image: leisurelinux/happy-downloader
-    ports:
-      - 3033:3033
-    volumes:
-      - <your dir>:/downloads # replace <your dir> with a directory on your host system
-    healthcheck:
-      test: curl -f http://localhost:3033 || exit 1
-    restart: unless-stopped
-```
+## License
 
-### ⚡ One-Click Deploy
+GPL-3.0-only. See [LICENSE](LICENSE).
 
-| Cloud Provider | Deploy Button |
-|----------------|---------------|
-| AWS | <a href="https://deploystack.io/deploy/LeisureLinux-happy-downloader?provider=aws&language=cfn"><img src="https://raw.githubusercontent.com/deploystackio/deploy-templates/refs/heads/main/.assets/img/aws.svg" height="38"></a> |
-| DigitalOcean | <a href="https://deploystack.io/deploy/LeisureLinux-happy-downloader?provider=do&language=dop"><img src="https://raw.githubusercontent.com/deploystackio/deploy-templates/refs/heads/main/.assets/img/do.svg" height="38"></a> |
-| Render | <a href="https://deploystack.io/deploy/LeisureLinux-happy-downloader?provider=rnd&language=rnd"><img src="https://raw.githubusercontent.com/deploystackio/deploy-templates/refs/heads/main/.assets/img/rnd.svg" height="38"></a> |
+This is a fork of [marcopeocchi/yt-dlp-web-ui](https://github.com/marcopeocchi/yt-dlp-web-ui),
+which is also GPL-3.0. The original copyright notice and licence are kept
+intact; the modifications in this fork are released under the same terms.
 
-<sub>Generated by <a href="https://deploystack.io/c/LeisureLinux-happy-downloader" target="_blank">DeployStack.io</a></sub>
+yt-dlp itself is Unlicense; ffmpeg, which yt-dlp calls, has its own licensing
+that you should check before redistributing anything you download.
 
-## [Prebuilt binaries](https://github.com/LeisureLinux/happy-downloader/releases) installation
+## 中文
 
-```sh
-# download the latest release from the releases page
-mv happy-downloader_linux-[your_system_arch] /usr/local/bin/happy-downloader
-
-# /home/user/downloads as an example and yt-dlp in $PATH
-happy-downloader --out /home/user/downloads
-
-# specifying yt-dlp path
-happy-downloader --out /home/user/downloads --driver /opt/soemdir/yt-dlp
-
-# specifying using a config file
-happy-downloader --conf /home/user/.config/happy-downloader.conf
-```
-
-### Arguments
-```sh
-Usage happy-downloader:
-  -auth
-        Enable RPC authentication
-  -conf string
-        Config file path (default "./config.yml")
-  -db string
-        local database path (default "local.db")
-  -driver string
-        yt-dlp executable path (default "yt-dlp")
-  -fl
-        enable file based logging
-  -host string
-        Host where server will listen at (default "0.0.0.0")
-  -lf string
-        set log file location (default "happy-downloader.log")
-  -out string
-        Where files will be saved (default ".")
-  -pass string
-        Password required for auth
-  -port int
-        Port where server will listen at (default 3033)
-  -qs int
-        Queue size (concurrent downloads) (default 2)
-  -session string
-        session file path (default ".")
-  -user string
-        Username required for auth
-  -web string
-        frontend web resources path
-```
-
-### Config file
-By running `happy-downloader` in standalone mode you have the ability to also specify a config file.
-The config file **will overwrite what have been passed as cli argument**.
-With Docker, inside the mounted `/conf` volume inside there must be a file named `config.yml`.
-
-```yaml
-# Simple configuration file for yt-dlp webui
-
----
-# Host where server will listen at (default: "0.0.0.0")
-#host: 0.0.0.0
-
-# Port where server will listen at (default: 3033)
-port: 8989
-
-# Directory where downloaded files will be stored (default: ".")
-downloadPath: /home/ren/archive
-
-# [optional] Enable RPC authentication (requires username and password)
-require_auth: true
-username: my_username
-password: my_random_secret
-
-# [optional] The download queue size (default: logical cpu cores)
-queue_size: 4 # min. 2
-
-# [optional] Full path to the yt-dlp (default: "yt-dlp")
-#downloaderPath: /usr/local/bin/yt-dlp
-
-# [optional] Enable file based logging with rotation (default: false)
-#enable_file_logging: false
-
-# [optional] Directory where the log file will be stored (default: ".")
-#log_path: .
-
-# [optional] Directory where the session database file will be stored (default: ".")
-#session_file_path: .
-
-# [optional] Path where the sqlite database will be created/opened (default: "./local.db")
-#local_database_path
-
-# [optional] Path where a custom frontend will be loaded (instead of the embedded one)
-#frontend_path: ./web/solid-frontend
-```
-
-### Systemd integration
-By defining a service file in `/etc/systemd/system/happy-downloader.service` yt-dlp webui can be launched as in background.
-
-```
-[Unit]
-Description=happy-downloader service file
-After=network.target
-
-[Service]
-User=some_user
-ExecStart=/usr/local/bin/happy-downloader --out /mnt/share/downloads --port 8100
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```shell
-systemctl enable happy-downloader
-systemctl start happy-downloader
-```
-It could be that happy-downloader works correctly when started manually from the console, but with systemd, it does not see the yt-dlp executable, or has issues writing to the database file. One way to fix these issues could be as follows:
-```shell
-cd
-mkdir happy-downloader-workingdir
-# optionally move the already existing database file there:
-mv local.db happy-downloader-workingdir
-nano happy-downloader-workingdir/my.conf
-```
-The config file format is described above; make sure to include the `downloaderPath` setting (the path can possibly be found by running `which yt-dlp`). For example, one could have:
-```
-downloadPath: /stuff/media
-downloaderPath: /home/your_user/.local/bin/yt-dlp
-log_path: /home/your_user/happy-downloader-workingdir
-session_file_path: /home/your_user/happy-downloader-workingdir
-```
-Adjust the Service section in the `/etc/systemd/system/happy-downloader.service` file as follows:
-```
-[Service]
-User=your_user
-Group=your_user
-WorkingDirectory=/home/your_user/happy-downloader-workingdir
-ExecStart=/usr/local/bin/happy-downloader --conf /home/your_user/happy-downloader-workingdir/my.conf
-```
-
-## Manual installation
-```sh
-# the dependencies are: yt-dlp, ffmpeg, nodejs, go, make.
-
-make all
-```
-## Open-API
-Navigate to `/openapi` to see the related swagger.
-
-
-## Extendable
-You dont'like the Material feel?
-Want to build your own frontend? We got you covered 🤠
-
-`happy-downloader` now exposes a nice **JSON-RPC 1.0** interface through Websockets and HTTP-POST
-It is **planned** to also expose a **gRPC** server.
-
-For more information open an issue on GitHub and I will provide more info ASAP.
-
-## Custom frontend
-To load a custom frontend you need to specify its path either in the config file ([see config file](#config-file)) or via flags.
-
-The frontend needs to follow this structure:
-```
-path/to/my/frontend
-├── assets
-│   ├── js-chunk-1.js (example)
-│   ├── js-chunk-2.js (example)
-│   ├── style.css (example)
-└── index.html
-```
-
-`assets` is where the resources will be loaded.  
-`index.html` is the entrypoint.
-
-## Nix
-This repo adds support for Nix(OS) in various ways through a `flake-parts` flake. 
-For more info, please refer to the [official documentation](https://nixos.org/learn/).
-
-## What happy-downloader is not
-`happy-downloader` isn't your ordinary website where to download stuff from the internet, so don't try asking for links of where this is hosted. It's a self hosted platform for a Linux NAS.
-
-## Troubleshooting
--   **It says that it isn't connected.**
-    - In some circumstances, you must set the server ip address or hostname in the settings section (gear icon).
--   **The download  doesn't start.**
-    - Simply, yt-dlp process takes a lot of time to fire up. (yt-dlp isn't fast especially if you have a lower-end/low-power NAS/server/desktop. Furthermore some yt-dlp builds are slower than others)
+[README.zh_CN.md](README.zh_CN.md)

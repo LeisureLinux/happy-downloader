@@ -19,17 +19,17 @@ keys:
   customPath: Ruta personalizada
   customArgs: Habilitar los argumentos yt-dlp personalizados (un gran poder conlleva una gran responsabilidad)
   customArgsInput: Argumentos yt-dlp personalizados
-  splashText: No active downloads
-  playlistCheckbox: Download playlist (it will take time, after submitting you may even close this window)
-  servedFromReverseProxyCheckbox: Is behind a reverse proxy subfolder
+  splashText: 'No hay descargas activas'
+  playlistCheckbox: 'Descargar la lista de reproducción (tardará un rato; tras enviarlo puedes cerrar esta ventana)'
+  servedFromReverseProxyCheckbox: 'Está detrás de un subdirectorio de proxy inverso'
   browseButtonLabel: 'Explorar'
-  settingsButtonLabel: Settings
-  loadingLabel: Loading...
-  savedTemplates: Saved templates
+  settingsButtonLabel: 'Ajustes'
+  loadingLabel: 'Cargando...'
+  savedTemplates: 'Plantillas guardadas'
   logsTitle: 'Registro'
   awaitingLogs: 'Esperando el registro...'
   accentSelect: 'Color de acento'
-  urlBase: URL base, for reverse proxy support (subdir), defaults to empty
+  urlBase: 'Base de la URL para proxy invers (subdirectorio), vacío por defecto'
   generalDownloadSettings: 'Ajustes generales de descarga'
   noFilesFound: 'No se encontraron archivos'
   deleteSelected: 'Delete selected'

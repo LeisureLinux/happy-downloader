@@ -1,0 +1,84 @@
+# Happy Downloader
+
+> A self-hosted web UI for yt-dlp: one static Go binary with an embedded React
+> frontend, built for a headless host that has no browser of its own.
+
+Happy Downloader (欢喜下载) lets a browser anywhere on the LAN queue downloads
+that run on a server. It exists because the usual yt-dlp GUI assumes the machine
+doing the downloading is the machine you are sitting at. Here it is not: the
+server has no desktop session, so cookies have to arrive as a file from
+somewhere else, and the interface has to work over the network.
+
+The project is a fork of [marcopeocchi/yt-dlp-web-ui](https://github.com/marcopeocchi/yt-dlp-web-ui).
+It is not a wrapper around a CLI; the server builds the yt-dlp argument list
+itself, logs it in full, and runs it.
+
+## Key facts
+
+- Language and stack: Go backend (`net/http` + chi), React 18 + MUI + Vite
+  frontend, embedded into the binary with `go:embed`. No Node runtime in
+  production, no database server — state lives in BoltDB.
+- Module path: `github.com/LeisureLinux/happy-downloader/v4`
+- Licence: GPL-3.0-only, inherited from upstream. The original copyright is
+  preserved; this is not a permissive-licence project.
+- Single binary, listens on `0.0.0.0:3033` by default.
+- Configured by one YAML file (`-conf`), overridable by `APP_*` environment
+  variables with dots replaced by underscores.
+
+## Behaviour worth knowing before changing it
+
+- **Every yt-dlp invocation passes `--ignore-config`.** The host's own yt-dlp
+  config must not affect a download, so the logged argv is the complete truth.
+  Proxy and PO Token settings are therefore composed explicitly by the server,
+  falling back to the global config when a site profile does not override them.
+- **Cookie files are converted and watched, not uploaded per request.** A JSON
+  export from a browser extension and a Netscape `cookies.txt` are both
+  accepted; the format is detected from the content. `httpOnly` is preserved.
+- **Each invocation gets its own temporary copy of the cookie jar.** `--cookies`
+  also writes back, so a shared path lets one process truncate a file another is
+  reading.
+- **The download list is a queue, not a history.** Completed downloads are not
+  listed; they appear in the file browser instead.
+- **A finished probe is cached for ten minutes** so pressing "start" does not
+  repeat the metadata extraction the probe just performed.
+- **Arguments are validated against an allowlist** before they reach the
+  process, and the output path is checked to stay inside the download directory.
+
+## Documentation
+
+- [README.md](README.md): install, configuration reference, API, build steps.
+- [README.zh_CN.md](README.zh_CN.md): the same in Simplified Chinese.
+- [packaging/nginx/happydl.conf](packaging/nginx/happydl.conf): reverse proxy
+  config with WebSocket upgrade and SSE buffering disabled.
+- [packaging/systemd/](packaging/systemd/): user units and the cookie refresh
+  timer.
+- [scripts/refresh-cookies.sh](scripts/refresh-cookies.sh): read a browser
+  profile, filter to chosen sites, push the export to the server.
+
+## Configuration
+
+Top-level keys of the config file, all optional:
+
+- `server`: `host`, `port`, `base_url`, `queue_size`
+- `paths`: `download_path`, `downloader_path`, `local_database_path`,
+  `js_runtime_path`, `cookie_path`
+- `ytdlp`: `pot_base_url` (bgutil PO Token provider), `proxy`
+- `logging`: `log_path`, `enable_file_logging`
+
+Per-site overrides (proxy, cookie file, extra arguments, PO Token URL) are stored
+in the local database and edited from the Settings page, not in this file.
+
+## HTTP surface
+
+JSON-RPC at `POST /rpc/http` carries most operations; `/rpc/ws` streams live
+state. Plain endpoints: `/api/v1/version`, `/api/v1/cookies/status`,
+`/api/v1/profiles`, `/filebrowser/{downloaded,delete,d/{id},v/{id},bulk}`,
+`/log/sse`, `/log/ws`, `/status`. OpenAPI is served at `/openapi`.
+
+## Optional
+
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp): required; the binary shells out to
+  it and does not bundle it.
+- [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider):
+  needed when YouTube demands a PO Token.
+- ffmpeg: needed for merged video and audio conversion.
