@@ -20,6 +20,10 @@ keys:
   settingsAnchor: Settings
   serverAddressTitle: Server address
   serverPortTitle: Port
+  retrying: 'Retrying'
+  connectionLostTitle: 'Server unreachable'
+  connectionLostHint: 'It may be restarting. Returning to the downloads page...'
+  goHome: 'Go to downloads'
   toastConnected: 'Connected to '
   formatSelectionEnabler: Enable video/audio formats selection
   themeSelect: 'Theme'

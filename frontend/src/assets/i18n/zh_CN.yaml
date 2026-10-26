@@ -21,6 +21,10 @@ keys:
   settingsAnchor: 设置
   serverAddressTitle: 服务器地址
   serverPortTitle: 端口
+  retrying: '重试中'
+  connectionLostTitle: '无法连接到服务器'
+  connectionLostHint: '服务器可能正在重启，即将返回下载页...'
+  goHome: '返回下载页'
   toastConnected: '已连接到 '
   formatSelectionEnabler: 启用视频/音频格式选择
   themeSelect: '主题'

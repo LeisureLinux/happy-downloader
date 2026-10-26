@@ -2,13 +2,13 @@ import { CircularProgress } from '@mui/material'
 import { Suspense, lazy } from 'react'
 import { createHashRouter } from 'react-router-dom'
 import Layout from './Layout'
+import ErrorBoundary from './components/ErrorBoundary'
 import Terminal from './views/Terminal'
 
 const Home = lazy(() => import('./views/Home'))
 const Settings = lazy(() => import('./views/Settings'))
 const Filebrowser = lazy(() => import('./views/Filebrowser'))
 
-const ErrorBoundary = lazy(() => import('./components/ErrorBoundary'))
 
 export const router = createHashRouter([
   {

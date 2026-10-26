@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option'
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { take, timer } from 'rxjs'
+import { EMPTY, catchError, exhaustMap, take, timer } from 'rxjs'
 import { downloadsState } from '../atoms/downloads'
 import { serverAddressAndPortState } from '../atoms/settings'
 import { connectedState } from '../atoms/status'
@@ -21,6 +21,9 @@ interface Props extends React.HTMLAttributes<HTMLBaseElement> { }
 // needed to weigh.
 const STATUS_POLL_MS = 2000
 
+// How long to wait between attempts to re-establish a dropped WebSocket.
+const RECONNECT_MS = 2000
+
 const SocketSubscriber: React.FC<Props> = () => {
   const [connected, setIsConnected] = useAtom(connectedState)
   const setDownloads = useSetAtom(downloadsState)
@@ -33,19 +36,27 @@ const SocketSubscriber: React.FC<Props> = () => {
 
   const navigate = useNavigate()
 
-  const socketOnce$ = useMemo(() => client.socket$.pipe(take(1)), [])
-
+  // Reconnect loop. WebSocketSubject closes on error and stays closed until
+  // something subscribes again, so the retry has to be a fresh subscription on
+  // a timer rather than a one-shot take(1) captured once at mount.
   useEffect(() => {
-    if (!connected) {
-      socketOnce$.subscribe(() => {
-        setIsConnected(true)
-        pushMessage(
-          `${i18n.t('toastConnected')} (${serverAddressAndPort})`,
-          "success"
-        )
-      })
-    }
-  }, [connected])
+    if (connected) return
+
+    const sub = timer(0, RECONNECT_MS).pipe(
+      exhaustMap(() => client.socket$.pipe(
+        take(1),
+        catchError(() => EMPTY)
+      ))
+    ).subscribe(() => {
+      setIsConnected(true)
+      pushMessage(
+        `${i18n.t('toastConnected')} (${serverAddressAndPort})`,
+        'success'
+      )
+    })
+
+    return () => sub.unsubscribe()
+  }, [connected, client])
 
   useSubscription(
     client.socket$,
@@ -67,11 +78,15 @@ const SocketSubscriber: React.FC<Props> = () => {
     },
     err => {
       console.error(err)
+      // Reset the flag before navigating: the reconnect effect keys off it, and
+      // leaving it true meant a restart stranded the page on /error forever
+      // because nothing ever tried the socket again.
+      setIsConnected(false)
       pushMessage(
         `${i18n.t('connectionError')} (${serverAddressAndPort})`,
         "error"
-      ),
-        navigate(`/error`)
+      )
+      navigate('/error')
     }
   )
 
