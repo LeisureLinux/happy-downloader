@@ -49,6 +49,23 @@ export function formatSize(bytes: number): string {
 export const formatSpeedMiB = (val: number) =>
   `${(val / 1_048_576).toFixed(2)} MiB/s`
 
+// A duration as h:mm:ss, or m:ss when it is under an hour.
+//
+// Hours are dropped only when there are none: "1:02:03" is clearer than
+// "62:03", and "18:24" is what everyone expects for a short video.
+export function formatDuration(seconds?: number): string {
+  if (!seconds || seconds <= 0) return ''
+
+  const total = Math.round(seconds)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
+}
+
 export const datetimeCompareFunc = (a: string, b: string) =>
   new Date(a).getTime() - new Date(b).getTime()
 

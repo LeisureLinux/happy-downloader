@@ -62,6 +62,25 @@ type ProcessSnapshot struct {
 	Output         DownloadOutput          `json:"output"`
 	Params         []string                `json:"params"`
 	DownloaderName string                  `json:"downloader_name"`
+
+	// Duration in seconds, from the probe. Known before a byte is transferred,
+	// so the queue can show it without reading the finished file.
+	Duration float64 `json:"duration,omitempty"`
+
+	// The caption tracks the source offered. Kept so the player can offer the
+	// languages that were actually available, rather than guessing from the
+	// filename.
+	Captions []CaptionTrack `json:"captions,omitempty"`
+}
+
+// CaptionTrack is one caption language the source offers.
+type CaptionTrack struct {
+	// Language is the code YouTube uses, e.g. "en" or "zh-Hans".
+	Language string `json:"language"`
+	// Name is the human-readable label, when the source provides one.
+	Name string `json:"name,omitempty"`
+	// Automatic marks a generated track rather than an authored one.
+	Automatic bool `json:"automatic,omitempty"`
 }
 
 // struct representing the current status of the memoryDB

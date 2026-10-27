@@ -185,6 +185,10 @@ func (l *LiveStreamDownloader) SetPending(p bool) {
 func (l *LiveStreamDownloader) GetId() string  { return l.Id }
 func (l *LiveStreamDownloader) GetUrl() string { return l.URL }
 
+// A livestream has no probe to learn a length or a caption list from.
+func (l *LiveStreamDownloader) SetDuration(float64)                 {}
+func (l *LiveStreamDownloader) SetCaptions([]internal.CaptionTrack) {}
+
 func (l *LiveStreamDownloader) RestoreFromSnapshot(snap *internal.ProcessSnapshot) error {
 	if snap == nil {
 		return errors.New("cannot restore nil snapshot")

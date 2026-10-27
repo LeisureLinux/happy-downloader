@@ -106,6 +106,12 @@ export type DLFormat = {
   ext?: string
 }
 
+export type SubtitleFile = {
+  path: string
+  language: string
+  label: string
+}
+
 export type DirectoryEntry = {
   name: string
   path: string
@@ -113,6 +119,10 @@ export type DirectoryEntry = {
   modTime: string
   isVideo: boolean
   isDirectory: boolean
+  // Length in seconds, for media files. Absent when it cannot be determined.
+  duration?: number
+  // The caption files sitting next to this one.
+  subtitles?: SubtitleFile[]
 }
 
 export type DeleteRequest = Pick<DirectoryEntry, 'path'>

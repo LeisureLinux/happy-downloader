@@ -1,10 +1,11 @@
-package metadata
+package probeinfo
 
 import (
 	"sync"
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 )
 
 // A probe result is expensive — the metadata stage runs a full yt-dlp extraction
@@ -24,6 +25,12 @@ const (
 type cacheEntry struct {
 	meta     common.DownloadMetadata
 	storedAt time.Time
+
+	// duration in seconds, and the caption tracks the source offered. Both
+	// come from the same probe and are carried alongside so the download stage
+	// can report them without running the extraction again.
+	duration float64
+	captions []internal.CaptionTrack
 }
 
 var (
@@ -33,6 +40,11 @@ var (
 
 // Remember stores a freshly fetched result for the download stage to reuse.
 func Remember(url string, meta common.DownloadMetadata) {
+	RememberFull(url, meta, 0, nil)
+}
+
+// RememberFull stores a result together with what the probe learned about it.
+func RememberFull(url string, meta common.DownloadMetadata, duration float64, captions []internal.CaptionTrack) {
 	cacheMu.Lock()
 	defer cacheMu.Unlock()
 
@@ -40,20 +52,44 @@ func Remember(url string, meta common.DownloadMetadata) {
 		evictOldestLocked()
 	}
 
-	cache[url] = cacheEntry{meta: meta, storedAt: time.Now()}
+	cache[url] = cacheEntry{
+		meta:     meta,
+		storedAt: time.Now(),
+		duration: duration,
+		captions: captions,
+	}
 }
 
 // Recall returns a cached result when one is still fresh.
 func Recall(url string) (common.DownloadMetadata, bool) {
+	entry, ok := recallEntry(url)
+	if !ok {
+		return common.DownloadMetadata{}, false
+	}
+
+	return entry.meta, true
+}
+
+// RecallFull returns a cached result with the probe's duration and captions.
+func RecallFull(url string) (common.DownloadMetadata, float64, []internal.CaptionTrack, bool) {
+	entry, ok := recallEntry(url)
+	if !ok {
+		return common.DownloadMetadata{}, 0, nil, false
+	}
+
+	return entry.meta, entry.duration, entry.captions, true
+}
+
+func recallEntry(url string) (cacheEntry, bool) {
 	cacheMu.RLock()
 	entry, ok := cache[url]
 	cacheMu.RUnlock()
 
 	if !ok || time.Since(entry.storedAt) > cacheTTL {
-		return common.DownloadMetadata{}, false
+		return cacheEntry{}, false
 	}
 
-	return entry.meta, true
+	return entry, true
 }
 
 func evictOldestLocked() {

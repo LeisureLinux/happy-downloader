@@ -15,4 +15,8 @@ type DownloadMetadata struct {
 	OriginalURL string    `json:"original_url"`
 	FileName    string    `json:"filename"`
 	CreatedAt   time.Time `json:"created_at"`
+
+	// Duration in seconds. It comes from the probe, so it is known before a
+	// byte is transferred and does not depend on reading the finished file.
+	Duration float64 `json:"duration,omitempty"`
 }

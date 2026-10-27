@@ -4,6 +4,7 @@ import {
   Button,
   ButtonGroup,
   Checkbox,
+  Chip,
   CircularProgress,
   Container,
   IconButton,
@@ -29,17 +30,21 @@ import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
 import { ffetch } from '../lib/httpClient'
 import { DirectoryEntry, ProcessStatus } from '../types'
-import { base64URLEncode, formatSize } from '../utils'
+import { base64URLEncode, formatDuration, formatSize } from '../utils'
 import { useAtomValue } from 'jotai'
 import { activeDownloadsState } from '../atoms/downloads'
+import Player from '../components/Player'
 
 // A row is a file or a folder. Selection is by path, which is unique within a
 // listing, unlike the name the previous implementation keyed on.
 type Row = DirectoryEntry & { selected: boolean }
 
-const fileAction = (serverAddr: string, path: string, kind: 'view' | 'download') => {
+// Downloads open in a new tab. Playback does not: the browser's own player
+// cannot offer a caption track, and choosing one is the reason the captions
+// were downloaded.
+const downloadFile = (serverAddr: string, path: string) => {
   const encoded = base64URLEncode(path)
-  window.open(`${serverAddr}/filebrowser/${kind === 'view' ? 'v' : 'd'}/${encoded}`)
+  window.open(`${serverAddr}/filebrowser/d/${encoded}`)
 }
 
 export default function Filebrowser() {
@@ -48,6 +53,9 @@ export default function Filebrowser() {
   const { pushMessage } = useToast()
 
   const [rows, setRows] = useState<Row[]>([])
+  // The file being played, if any. The player is a dialog over the list, so
+  // the list stays where it was.
+  const [playing, setPlaying] = useState<Row | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [subdir, setSubdir] = useState('')
   const [loading, setLoading] = useState(true)
@@ -152,7 +160,7 @@ export default function Filebrowser() {
                 <IconButton
                   size="small"
                   disabled={selectedFiles.length === 0}
-                  onClick={() => selectedFiles.forEach(f => fileAction(serverAddr, f.path, 'view'))}
+                  onClick={() => setPlaying(selectedFiles[0] ?? null)}
                 >
                   <SmartDisplayIcon fontSize="small" />
                 </IconButton>
@@ -163,7 +171,7 @@ export default function Filebrowser() {
                 <IconButton
                   size="small"
                   disabled={selectedFiles.length === 0}
-                  onClick={() => selectedFiles.forEach(f => fileAction(serverAddr, f.path, 'download'))}
+                  onClick={() => selectedFiles.forEach(f => downloadFile(serverAddr, f.path))}
                 >
                   <FileDownloadIcon fontSize="small" />
                 </IconButton>
@@ -212,6 +220,7 @@ export default function Filebrowser() {
                   {/* 表头用主题色：这些是列名，和标题一样是该被强调的东西，
                       默认灰色让表格和页面其他部分的配色脱节。 */}
                   <TableCell sx={{ color: 'primary.main' }}>{i18n.t('colFileName')}</TableCell>
+                  <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colDuration')}</TableCell>
                   <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colDownloadTime')}</TableCell>
                   <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colFileSize')}</TableCell>
                   <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colActions')}</TableCell>
@@ -229,7 +238,7 @@ export default function Filebrowser() {
                         </Button>
                       </Stack>
                     </TableCell>
-                    <TableCell colSpan={3} />
+                    <TableCell colSpan={4} />
                   </TableRow>
                 ))}
                 {files.map(f => (
@@ -240,7 +249,21 @@ export default function Filebrowser() {
                         onChange={() => toggleOne(f.path)}
                       />
                     </TableCell>
-                    <TableCell>{f.name}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <span>{f.name}</span>
+                        {/* 字幕文件的数量：一眼看出这个视频带了字幕 */}
+                        {f.subtitles && f.subtitles.length > 0 && (
+                          <Chip
+                            size="small"
+                            variant="outlined"
+                            label={`${f.subtitles.length} ${i18n.t('subtitleCount')}`}
+                            sx={{ height: 20, fontSize: 11 }}
+                          />
+                        )}
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="right">{formatDuration(f.duration) || '—'}</TableCell>
                     <TableCell align="right">
                       {f.modTime ? new Date(f.modTime).toLocaleString() : '—'}
                     </TableCell>
@@ -249,12 +272,12 @@ export default function Filebrowser() {
                       {/* 与下载历史用同一组图标按钮：同一类操作在两处长得一样 */}
                       <ButtonGroup size="small">
                         <Tooltip title={i18n.t('playSelected')}>
-                          <IconButton size="small" onClick={() => fileAction(serverAddr, f.path, 'view')}>
+                          <IconButton size="small" onClick={() => setPlaying(f)}>
                             <SmartDisplayIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title={i18n.t('downloadSelected')}>
-                          <IconButton size="small" onClick={() => fileAction(serverAddr, f.path, 'download')}>
+                          <IconButton size="small" onClick={() => downloadFile(serverAddr, f.path)}>
                             <FileDownloadIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -272,6 +295,15 @@ export default function Filebrowser() {
           </TableContainer>
         )}
       </Paper>
+
+      <Player
+        open={playing !== null}
+        serverAddr={serverAddr}
+        path={playing?.path ?? ''}
+        name={playing?.name ?? ''}
+        subtitles={playing?.subtitles}
+        onClose={() => setPlaying(null)}
+      />
     </Container>
   )
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/probeinfo"
 	"github.com/google/uuid"
 )
 
@@ -40,6 +41,10 @@ type GenericDownloader struct {
 
 	progress internal.DownloadProgress
 	output   internal.DownloadOutput
+
+	// duration in seconds, and the caption tracks the source offered.
+	duration float64
+	captions []internal.CaptionTrack
 
 	proc *os.Process
 
@@ -234,10 +239,21 @@ func (g *GenericDownloader) Status() internal.ProcessSnapshot {
 		Output:         g.output,
 		Params:         g.Params,
 		DownloaderName: "generic",
+		Duration:       g.duration,
+		Captions:       g.captions,
 	}
 }
 
 func (g *GenericDownloader) UpdateSavedFilePath(p string) { g.output.SavedFilePath = p }
+
+// SetDuration records the video length, in seconds.
+//
+// It comes from the probe, which runs before anything is transferred, so the
+// queue can show a length for work that has not started. Zero means unknown.
+func (g *GenericDownloader) SetDuration(d float64) { g.duration = d }
+
+// SetCaptions records the caption tracks the source offered.
+func (g *GenericDownloader) SetCaptions(c []internal.CaptionTrack) { g.captions = c }
 
 func (g *GenericDownloader) UpdateOutputDimensions(width, height float64) {
 	g.output.Width = width
@@ -249,6 +265,15 @@ func (g *GenericDownloader) SetProgress(p internal.DownloadProgress) { g.progres
 
 func (g *GenericDownloader) SetMetadata(fetcher func(url string) (*common.DownloadMetadata, error)) {
 	g.FetchMetadata(fetcher)
+
+	// The probe already knew the length and which caption languages the source
+	// offers. Carry them over so the queue can show a duration and the player
+	// can offer the right tracks, without a second extraction.
+	if meta, duration, captions, ok := probeinfo.RecallFull(g.URL); ok {
+		g.duration = duration
+		g.captions = captions
+		_ = meta
+	}
 }
 
 func (g *GenericDownloader) SetPending(p bool) {

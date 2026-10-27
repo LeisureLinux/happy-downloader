@@ -10,12 +10,13 @@ import (
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/probeinfo"
 )
 
 func DefaultFetcher(url string) (*common.DownloadMetadata, error) {
 	// The probe for this URL already ran a full extraction; reuse it instead of
 	// making the user wait the same twenty seconds twice.
-	if cached, ok := Recall(url); ok {
+	if cached, ok := probeinfo.Recall(url); ok {
 		slog.Info("metadata reused from the earlier probe", slog.String("url", url))
 		return &cached, nil
 	}
@@ -65,7 +66,7 @@ func DefaultFetcher(url string) (*common.DownloadMetadata, error) {
 		return nil, errors.New(bufferedStderr.String())
 	}
 
-	Remember(url, meta)
+	probeinfo.Remember(url, meta)
 
 	return &meta, nil
 }

@@ -19,6 +19,8 @@ type Downloader interface {
 
 	UpdateSavedFilePath(path string)
 	UpdateOutputDimensions(width, height float64)
+	SetDuration(seconds float64)
+	SetCaptions(captions []internal.CaptionTrack)
 
 	RestoreFromSnapshot(*internal.ProcessSnapshot) error
 
