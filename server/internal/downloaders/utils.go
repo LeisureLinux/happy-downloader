@@ -186,3 +186,37 @@ func printYtDlpErrors(stdout io.Reader, shortId, url string) error {
 
 	return scanner.Err()
 }
+
+// requestedContainer returns the container the arguments will produce, when
+// they say so.
+//
+// The queue used to show the probe's answer, which is the container of the
+// source's *best* format — webm on YouTube, because the best video stream is
+// VP9 or AV1. So a download that asked for mp4 read "webm" until the file
+// landed and the real suffix could be read off the path. The arguments are the
+// truth: --merge-output-format for a video merge, --audio-format for an
+// extracted track.
+//
+// An empty result means the arguments do not decide it — a merge of VP9 and
+// Opus lands in webm or mkv depending on what yt-dlp picks — and the caller
+// should fall back to the probe.
+func requestedContainer(params []string) string {
+	container := ""
+
+	for i := 0; i < len(params); i++ {
+		switch params[i] {
+		case "--merge-output-format", "--audio-format":
+			// The next token is the value. It is skipped when it looks like a
+			// flag, which means the value was omitted rather than that the
+			// container is named "--something".
+			if i+1 < len(params) && !strings.HasPrefix(params[i+1], "-") {
+				// A comma-separated list is a preference order, not a set: the
+				// first entry is what yt-dlp will try to produce.
+				container = strings.Split(params[i+1], ",")[0]
+				i++
+			}
+		}
+	}
+
+	return strings.TrimPrefix(strings.TrimSpace(container), ".")
+}

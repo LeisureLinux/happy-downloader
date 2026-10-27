@@ -26,7 +26,7 @@ keys:
   cookieMissingLogin: '缺少 YouTube 登入態 Cookie'
   cookieRefreshStatus: '重新整理狀態'
   clearCompletedButton: '清除已完成'
-  probing: '讀取中...'
+  probing: '讀取元資料中'
   downloadQueued: '已加入下載佇列'
   playlistDetected: '這是一個播放列表，所有條目都會加入佇列'
   browseButtonLabel: '瀏覽'

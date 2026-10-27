@@ -8,6 +8,7 @@ import { connectedState } from '../atoms/status'
 import { totalDownloadSpeedState } from '../atoms/ui'
 import { useI18n } from '../hooks/useI18n'
 import { formatSpeedMiB } from '../utils'
+import CookieIndicator from './CookieIndicator'
 import FreeSpaceIndicator from './FreeSpaceIndicator'
 import { useAtomValue } from 'jotai'
 
@@ -73,6 +74,13 @@ const Footer: React.FC = () => {
           <Divider orientation="vertical" flexItem />
           <Suspense fallback={i18n.t('loadingLabel')}>
             <FreeSpaceIndicator />
+          </Suspense>
+          <Divider orientation="vertical" flexItem />
+          {/* The cookie export's timestamp, beside the disk figure: both answer
+              "can this download work right now", and both are the first thing
+              to look at when one fails. */}
+          <Suspense fallback={null}>
+            <CookieIndicator />
           </Suspense>
         </div>
       </Toolbar>

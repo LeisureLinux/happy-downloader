@@ -159,9 +159,28 @@ const DownloadForm: React.FC = () => {
             variant="contained"
             disabled={!url.trim() || probing}
             onClick={() => void probe()}
-            sx={{ flexShrink: 0, whiteSpace: 'nowrap', minWidth: 118 }}
+            sx={{
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+              // Wide enough for the longest label — "Reading metadata 12s" — so
+              // the row does not jump while the probe runs. The old label was
+              // "Reading...", which said what the spinner said and nothing more.
+              minWidth: 186,
+              // Probing disables the button so a second request cannot start,
+              // but the probe is the thing happening on the page: MUI's grey
+              // disabled state made the wait look like an idle button.
+              '&.Mui-disabled': probing
+                ? {
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    opacity: 0.75,
+                  }
+                : {},
+            }}
           >
-            {probing ? `${i18n.t('probing')} ${elapsed}s` : i18n.t('selectFormatButton')}
+            {probing
+              ? `${i18n.t('probing')} ${elapsed}s`
+              : i18n.t('selectFormatButton')}
           </Button>
         </Stack>
 

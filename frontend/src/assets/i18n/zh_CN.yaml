@@ -26,7 +26,7 @@ keys:
   cookieMissingLogin: '缺少 YouTube 登录态 Cookie'
   cookieRefreshStatus: '刷新状态'
   clearCompletedButton: '清除已完成'
-  probing: '读取中...'
+  probing: '元数据读取中'
   downloadQueued: '已加入下载队列'
   playlistDetected: '这是一个播放列表，所有条目都会加入队列'
   browseButtonLabel: '浏览'

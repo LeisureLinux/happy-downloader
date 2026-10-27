@@ -25,7 +25,7 @@ keys:
   cookieExpired: 'Expired'
   cookieMissingLogin: 'Missing YouTube login cookies'
   cookieRefreshStatus: 'Refresh status'
-  probing: 'Reading...'
+  probing: 'Reading metadata'
   downloadQueued: 'Download queued'
   playlistDetected: 'This is a playlist; every item will be queued'
   browseButtonLabel: 'Browse'

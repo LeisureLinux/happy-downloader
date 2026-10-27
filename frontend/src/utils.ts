@@ -46,6 +46,24 @@ export function formatSize(bytes: number): string {
   return `${bytes.toFixed(i == 0 ? 0 : 2)} ${units[i]}`
 }
 
+// A timestamp as yyyy-mm-dd HH:MM, in local time.
+//
+// Written out rather than toLocaleString: this sits in a fixed-width row and
+// the locale's own rendering ("27/10/2026, 15:40:07") changes both the width
+// and the order per language. Seconds are dropped on purpose — a cookie export
+// is replaced every ten minutes, so the second it happened on is not
+// information.
+export function formatTimestamp(iso?: string): string {
+  if (!iso) return '—'
+
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
+    `${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 export const formatSpeedMiB = (val: number) =>
   `${(val / 1_048_576).toFixed(2)} MiB/s`
 

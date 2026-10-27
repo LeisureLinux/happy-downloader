@@ -231,10 +231,18 @@ func (g *GenericDownloader) Stop() error {
 }
 
 func (g *GenericDownloader) Status() internal.ProcessSnapshot {
+	// The container the arguments asked for, not the one the probe reported.
+	// Recomputed from Params rather than cached so a restored snapshot, whose
+	// Params came back with it, shows the same thing.
+	info := g.Metadata
+	if container := requestedContainer(g.Params); container != "" {
+		info.Extension = container
+	}
+
 	return internal.ProcessSnapshot{
 		Id:             g.Id,
 		URL:            g.URL,
-		Info:           g.Metadata,
+		Info:           info,
 		Progress:       g.progress,
 		Output:         g.output,
 		Params:         g.Params,

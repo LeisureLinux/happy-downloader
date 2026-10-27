@@ -71,3 +71,35 @@ func TestPotArgCarriesProxy(t *testing.T) {
 		t.Errorf("POT arg missing the provider proxy:\n got: %s\nwant: %s", joined, want)
 	}
 }
+
+// The queue shows the container of what is being downloaded, before the file
+// exists to ask. The probe's answer is the source's *best* format — webm on
+// YouTube, because the best video stream is VP9 or AV1 — so a download that
+// asked for mp4 still said webm until it landed. The arguments say what will
+// actually be produced.
+func TestRequestedContainer(t *testing.T) {
+	cases := []struct {
+		name   string
+		params []string
+		want   string
+	}{
+		{"no container chosen", []string{"-f", "bestvideo[height<=1080]+bestaudio/best"}, ""},
+		{"merged video", []string{"-f", "bestvideo+bestaudio", "--merge-output-format", "mp4"}, "mp4"},
+		{"extracted audio", []string{"-f", "bestaudio/best", "--extract-audio", "--audio-format", "mp3"}, "mp3"},
+		{"dot prefix", []string{"--merge-output-format", ".mkv"}, "mkv"},
+		// yt-dlp takes a preference list; the first entry is what it tries.
+		{"preference list", []string{"--merge-output-format", "mp4,mkv"}, "mp4"},
+		// A format selector is a value, not a flag, and must not be read as one.
+		{"selector is not a flag", []string{"-f", "bestvideo[height<=720]+bestaudio"}, ""},
+		{"last one wins", []string{"--audio-format", "m4a", "--audio-format", "flac"}, "flac"},
+		{"missing value", []string{"--merge-output-format"}, ""},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := requestedContainer(c.params); got != c.want {
+				t.Errorf("requestedContainer(%v) = %q, want %q", c.params, got, c.want)
+			}
+		})
+	}
+}

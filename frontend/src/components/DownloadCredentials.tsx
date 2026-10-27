@@ -153,44 +153,26 @@ const DownloadCredentials: React.FC = () => {
         {i18n.t('profilesHint')}
       </Typography>
 
-      {/* ── 当前生效的 cookie 文件 ───────────────────────────── */}
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-        <Chip
-          size="small"
-          label={stat?.exists ? i18n.t('cookieLoaded') : i18n.t('cookieNotLoaded')}
-          color={stat?.exists ? (hasLogin ? 'success' : 'warning') : 'default'}
-        />
-        {stat?.format && <Chip size="small" variant="outlined" label={stat.format} />}
-        <Typography variant="body2">{i18n.t('cookieCount')}: {stat?.count ?? 0}</Typography>
-        {!!stat?.httpOnly && (
-          <Typography variant="caption" color="text.secondary">httpOnly {stat.httpOnly}</Typography>
-        )}
-        {!!stat?.expired && (
-          <Typography variant="caption" color="error.main">
-            {i18n.t('cookieExpired')}: {stat.expired}
-          </Typography>
-        )}
-        <Tooltip title={i18n.t('cookieRefreshStatus')}>
-          <IconButton size="small" onClick={refresh} disabled={busy}>
-            {busy ? <CircularProgress size={16} /> : <RefreshIcon fontSize="small" />}
-          </IconButton>
-        </Tooltip>
-      </Stack>
-
-      {/* 时间戳：刷新前后都能看到，判断 cookie 新旧是排障第一步 */}
+      {/* ── 当前生效的 cookie 文件 ─────────────────────────────
+          只有路径和刷新按钮。数量、格式、最后修改时间都挪走了：时间和磁盘
+          空间一样是常驻状态，放在左下角一直能看见；数量和格式是排障时才看的
+          东西，而这个面板要打开才看得见，留着只是把路径挤小。 */}
       <Paper variant="outlined" sx={{ p: 1.5 }}>
-        <Typography variant="caption" color="text.secondary">
-          {i18n.t('cookieSourcePath')}
-        </Typography>
-        <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
-          {stat?.sourcePath || '—'}
-        </Typography>
-        {/* Only the last-modified time. The creation time of a file that gets
-            replaced every ten minutes is the moment the first export was
-            written, which says nothing about the session in use. */}
-        <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
-          {i18n.t('cookieModifiedAt')}: <b>{stat?.modifiedAt ?? '—'}</b>
-        </Typography>
+        <Stack direction="row" spacing={1} alignItems="flex-start">
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Typography variant="caption" color="text.secondary">
+              {i18n.t('cookieSourcePath')}
+            </Typography>
+            <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
+              {stat?.sourcePath || '—'}
+            </Typography>
+          </Box>
+          <Tooltip title={i18n.t('cookieRefreshStatus')}>
+            <IconButton size="small" onClick={refresh} disabled={busy}>
+              {busy ? <CircularProgress size={16} /> : <RefreshIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+        </Stack>
       </Paper>
 
       {stat?.exists && !hasLogin && (
