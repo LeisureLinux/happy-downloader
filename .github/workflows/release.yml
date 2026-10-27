@@ -102,6 +102,11 @@ jobs:
             exit 1
           fi
 
+      # A release is what people run, so the browser check runs here too: the
+      # binary must not need a Chrome newer than Windows 7 has.
+      - name: Browser support
+        run: node frontend/scripts/check-browser-support.mjs
+
       - name: Test
         run: go test ./...
 

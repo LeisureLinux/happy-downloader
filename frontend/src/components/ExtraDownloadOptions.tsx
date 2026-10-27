@@ -28,7 +28,7 @@ const ExtraDownloadOptions: React.FC = () => {
           customTemplates
             .filter(({ id, name }) => id === "0" || name.toLowerCase() === "default")
             .map(({ name, content }) => ({ label: name, content }))
-            .at(0)
+            [0]
         }
         getOptionLabel={(option) => option.label}
         onChange={(_, value) => {

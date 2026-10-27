@@ -99,7 +99,7 @@ export class RPCClient {
     this.sendHTTP({
       method: 'Service.Exec',
       params: [{
-        URL: req.url.split('?list').at(0)!,
+        URL: req.url.split('?list')[0]!,
         Params: sanitizedArgs,
         Path: req.pathOverride,
         Rename: req.renameTo ?? '',
@@ -112,7 +112,7 @@ export class RPCClient {
       return this.sendHTTP<DLMetadata>({
         method: 'Service.Formats',
         params: [{
-          URL: url.split('?list').at(0)!,
+          URL: url.split('?list')[0]!,
         }]
       })
     }

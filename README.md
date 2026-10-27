@@ -61,6 +61,9 @@ its own script in the language menu.
   it, and the failure looks like missing formats rather than a missing runtime
 - A PO Token provider — YouTube now requires one for most content; see
   [Installing for an AI agent](#installing-for-an-ai-agent) for the setup
+- A browser no older than Chrome 87. The one that matters is Windows 7, where
+  Chrome stops at 109; the bundle is built and checked against that floor, so
+  the interface works on a machine that cannot update any further
 
 Requirements are the part people underestimate. If you are installing this for
 someone, read that section instead of this list: it covers the four external

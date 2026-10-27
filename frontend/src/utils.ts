@@ -43,7 +43,7 @@ export function formatSize(bytes: number): string {
     i = i + 1
   }
 
-  return `${bytes.toFixed(i == 0 ? 0 : 2)} ${units.at(i)}`
+  return `${bytes.toFixed(i == 0 ? 0 : 2)} ${units[i]}`
 }
 
 export const formatSpeedMiB = (val: number) =>

@@ -32,6 +32,8 @@
 - `PATH` 里有 [yt-dlp](https://github.com/yt-dlp/yt-dlp)，或在配置里写绝对路径
 - `ffmpeg`，如果要合并视频或转换音频
 - 一个 JavaScript 运行时（`node` 20+）——没有它 YouTube 的挑战求解会失败，而且报错看起来像缺少格式，不像缺少运行时
+- 浏览器不低于 Chrome 87。真正要照顾的是 Windows 7：那里的 Chrome 停在
+  109，前端就按这个下限构建并检查，所以不能再升级的机器也能用
 - 一个 PO Token 提供方——YouTube 现在对大部分内容都要求它，安装步骤见
   [给 AI Agent 的安装说明](#给-ai-agent-的安装说明)
 

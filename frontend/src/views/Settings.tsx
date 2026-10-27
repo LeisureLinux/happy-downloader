@@ -183,7 +183,7 @@ export function SettingsContent() {
                 label={i18n.t('languageSelect')}
                 onChange={handleLanguageChange}
               >
-                {languages.toSorted((a, b) => languageNames[a].localeCompare(languageNames[b])).map(l => (
+                {[...languages].sort((a, b) => languageNames[a].localeCompare(languageNames[b])).map(l => (
                   <MenuItem value={l} key={l}>
                     {languageNames[l]}
                   </MenuItem>

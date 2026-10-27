@@ -38,6 +38,12 @@ jobs:
           GOOS: linux
         run: ./scripts/build.sh happy-downloader
 
+      # The bundle has to run in the last Chrome that installs on Windows 7.
+      # Syntax is handled by the build target; an API that does not exist yet
+      # is not, so it is checked here.
+      - name: Browser support
+        run: node frontend/scripts/check-browser-support.mjs
+
       - name: gofmt
         run: |
           set -eu
