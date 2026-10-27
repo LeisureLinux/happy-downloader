@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { EMPTY, catchError, exhaustMap, take, timer } from 'rxjs'
+import { EMPTY, Observable, catchError, exhaustMap, take, timer } from 'rxjs'
 import { downloadsState } from '../atoms/downloads'
 import { serverAddressAndPortState } from '../atoms/settings'
 import { connectedState } from '../atoms/status'
@@ -36,17 +36,41 @@ const SocketSubscriber: React.FC<Props> = () => {
 
   const navigate = useNavigate()
 
-  // Reconnect loop. WebSocketSubject closes on error and stays closed until
-  // something subscribes again, so the retry has to be a fresh subscription on
-  // a timer rather than a one-shot take(1) captured once at mount.
+  // Reconnect loop.
+  //
+  // The socket used to be probed with take(1): subscribe, wait for the first
+  // message, unsubscribe. That looked harmless because WebSocketSubject is
+  // multicast, but it closes the socket when the last subscriber leaves — and
+  // "last" counted the probe. If the probe's take(1) completed while the state
+  // subscription was between mounts, the socket was closed underneath it, and
+  // the page reported that the server was unreachable while the server was
+  // answering perfectly.
+  //
+  // The probe now keeps its subscription until it is deliberately torn down,
+  // and it is only used to decide whether to retry.
   useEffect(() => {
     if (connected) return
 
+    let probe: { unsubscribe: () => void } | undefined
+
     const sub = timer(0, RECONNECT_MS).pipe(
-      exhaustMap(() => client.socket$.pipe(
-        take(1),
-        catchError(() => EMPTY)
-      ))
+      exhaustMap(() => {
+        probe?.unsubscribe()
+
+        return new Observable<void>(observer => {
+          const inner = client.socket$.subscribe({
+            next: () => observer.next(),
+            error: () => observer.complete(),
+          })
+
+          probe = { unsubscribe: () => inner.unsubscribe() }
+
+          return () => inner.unsubscribe()
+        }).pipe(
+          take(1),
+          catchError(() => EMPTY)
+        )
+      })
     ).subscribe(() => {
       setIsConnected(true)
       pushMessage(
@@ -55,7 +79,10 @@ const SocketSubscriber: React.FC<Props> = () => {
       )
     })
 
-    return () => sub.unsubscribe()
+    return () => {
+      sub.unsubscribe()
+      probe?.unsubscribe()
+    }
   }, [connected, client])
 
   useSubscription(

@@ -25,7 +25,8 @@ export type RPCRequest = {
 
 export type RPCResponse<T> = Readonly<{
   result: T
-  error: number | null
+  // net/rpc/jsonrpc reports errors as an object with a message, not a number.
+  error: { code: number, message: string } | null
   id?: string
 }>
 

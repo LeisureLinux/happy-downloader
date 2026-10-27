@@ -32,11 +32,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
-      - name: Build frontend
-        working-directory: frontend
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm build
+      - name: Build
+        run: ./scripts/build.sh happy-downloader
 
       - name: gofmt
         run: |

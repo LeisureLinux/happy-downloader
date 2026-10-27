@@ -102,8 +102,12 @@ const DownloadForm: React.FC = () => {
   const start = async () => {
     if (!url.trim()) return
 
-    const args = renderArgs(buildDownloadArgs(options))
-    const finalArgs = `${args} ${customArgs}`.replace(/  +/g, ' ').trim()
+    // The list, not a joined string: the client used to re-parse a string and
+    // an argument containing "-o" was cut in half.
+    const finalArgs = [
+      ...buildDownloadArgs(options),
+      ...customArgs.split(/\s+/).filter(Boolean),
+    ]
 
     try {
       await client.download({

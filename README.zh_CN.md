@@ -362,18 +362,23 @@ logging:
 ## 自行编译
 
 ```sh
-cd frontend && pnpm install && pnpm build && cd ..
-
-CGO_ENABLED=0 go build -trimpath \
-  -ldflags "-s -w \
-    -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerVersion=$(git describe --tags --always) \
-    -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerBuiltAt=$(date +%s)" \
-  -o happy-downloader main.go
+./scripts/build.sh
 ```
 
-前端通过 `go:embed` 编进二进制，所以顺序有讲究：先构建前端。
+就这一条。它先构建前端再构建二进制，而且**先删掉 `frontend/dist`**——前端是通过
+`go:embed` 编进去的，留着旧的 dist 会被静默编进二进制，产物带着上一版的界面，
+却不会报任何错。删掉它之后，这种情况会变成构建失败。
 
 需要 Go 1.26+ 和带 pnpm 的 Node。
+
+编别的架构就设 `GOARCH` 和 `GOOS`：
+
+```sh
+GOARCH=arm64 GOOS=linux ./scripts/build.sh happy-downloader_linux-arm64
+```
+
+发布版由 GitHub Actions 编译，不是手工构建：推一个 tag，工作流就编两个架构、
+算校验和并发布。见 [`.github/workflows/release.yml`](.github/workflows/release.yml)。
 
 ## HTTP 接口
 

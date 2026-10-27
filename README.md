@@ -439,19 +439,26 @@ authentication there.
 ## Building
 
 ```sh
-cd frontend && pnpm install && pnpm build && cd ..
-
-CGO_ENABLED=0 go build -trimpath \
-  -ldflags "-s -w \
-    -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerVersion=$(git describe --tags --always) \
-    -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerBuiltAt=$(date +%s)" \
-  -o happy-downloader main.go
+./scripts/build.sh
 ```
 
-The frontend is embedded into the binary with `go:embed`, so the order matters:
-build the frontend first.
+That is the whole thing. It builds the frontend and then the binary, and it
+removes `frontend/dist` first — the frontend is embedded with `go:embed`, so a
+stale bundle would otherwise be compiled in silently and the binary would
+carry the previous version's interface without any error. Removing it turns
+that into a build failure.
 
 Requires Go 1.26+ and Node with pnpm.
+
+To build for another architecture, set `GOARCH` and `GOOS`:
+
+```sh
+GOARCH=arm64 GOOS=linux ./scripts/build.sh happy-downloader_linux-arm64
+```
+
+Releases are built by GitHub Actions rather than by hand: push a tag and the
+workflow compiles both architectures, checksums them and publishes. See
+[`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## HTTP API
 

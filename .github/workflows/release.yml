@@ -62,38 +62,22 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
-      # The frontend is embedded into the binary with go:embed, so it has to
-      # exist before the Go build. This ordering is the whole reason the
-      # workflow has more than one step.
-      - name: Build frontend
-        working-directory: frontend
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm build
-
       - name: Test
         run: go test ./...
 
+      # scripts/build.sh builds the frontend and then the binary, and removes
+      # frontend/dist first so a stale bundle cannot be embedded silently.
       - name: Build
         env:
           GOARCH: ${{ matrix.goarch }}
           GOOS: linux
           CGO_ENABLED: '0'
+          VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           set -eu
-          # Strip the leading v so the binary reports "4.6.0", matching the tag
-          # without the decoration.
-          version="${GITHUB_REF_NAME#v}"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            version="${{ inputs.tag }}"
-            version="${version#v}"
-          fi
-
-          go build -trimpath \
-            -ldflags "-s -w \
-              -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerVersion=${version} \
-              -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerBuiltAt=$(date +%s)" \
-            -o happy-downloader_${{ matrix.suffix }} main.go
+          # The leading v is stripped inside the script, so the binary reports
+          # "4.6.0" and matches the tag without the decoration.
+          ./scripts/build.sh "happy-downloader_${{ matrix.suffix }}"
 
           # A binary that embedded no frontend still compiles, so check the
           # artefact is plausible rather than trusting the exit code.

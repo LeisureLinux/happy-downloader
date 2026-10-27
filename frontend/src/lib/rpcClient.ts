@@ -5,7 +5,15 @@ import { WebSocketSubject, webSocket } from 'rxjs/webSocket'
 
 type DownloadRequestArgs = {
   url: string,
-  args: string,
+  // The arguments as a list, not a joined string.
+  //
+  // They used to be a string that this class parsed back into a list, and the
+  // parser looked for "-o" with indexOf and replace. That finds the "o" inside
+  // "--merge-output-format", so the flag arrived at the server as "--merge"
+  // and the format "mp4" as its value — a combination the server's argument
+  // whitelist rejects, which left the download stuck at "preparing" with
+  // nothing in the log to explain it. A list needs no parsing.
+  args: string[],
   pathOverride?: string,
   renameTo?: string,
   playlist?: boolean
@@ -37,15 +45,6 @@ export class RPCClient {
     })
   }
 
-  private argsSanitizer(args: string): string[] {
-    const splitOnlyWhitespaces = /[^\s"']+|"([^"]*)"|'([^']*)'/gm
-
-    return args
-      .match(splitOnlyWhitespaces)
-      ?.map(a => a.trim())
-      .filter(Boolean) ?? []
-  }
-
   private async sendHTTP<T>(req: RPCRequest) {
     const res = await fetch(this.httpEndpoint, {
       method: 'POST',
@@ -59,6 +58,21 @@ export class RPCClient {
     })
     const data: RPCResponse<T> = await res.json()
 
+    // An RPC error means the server refused the request. Throwing it here
+    // makes it visible where the request was made — the download form shows it
+    // as a toast — instead of the request appearing to succeed and the
+    // download never appearing in the queue.
+    //
+    // The server speaks net/rpc/jsonrpc, whose error is an object with a
+    // message; the number in the type was wrong.
+    if (data.error) {
+      const message = typeof data.error === 'object' && data.error !== null
+        ? data.error.message
+        : String(data.error)
+
+      throw new Error(message || 'RPC error')
+    }
+
     return data
   }
 
@@ -67,23 +81,9 @@ export class RPCClient {
       return
     }
 
-    const rename = req.args.includes('-o')
-      ? req.args
-        .substring(req.args.indexOf('-o'))
-        .replaceAll("'", '')
-        .replaceAll('"', '')
-        .split('-o')
-        .map(s => s.trim())
-        .join('')
-        .split(' ')
-        .at(0) ?? ''
-      : ''
-
-    const sanitizedArgs = this.argsSanitizer(
-      req.args
-        .replace('-o', '')
-        .replace(rename, '')
-    )
+    // An explicit output filename is the user's choice, not an argument, so it
+    // travels in its own field rather than inside the argument list.
+    const sanitizedArgs = req.args.filter(a => a !== '-o' && a !== '--output')
 
     if (req.playlist) {
       return this.sendHTTP({
@@ -92,7 +92,7 @@ export class RPCClient {
           URL: req.url,
           Params: sanitizedArgs,
           Path: req.pathOverride,
-          Rename: req.renameTo || rename,
+          Rename: req.renameTo ?? '',
         }]
       })
     }
@@ -102,7 +102,7 @@ export class RPCClient {
         URL: req.url.split('?list').at(0)!,
         Params: sanitizedArgs,
         Path: req.pathOverride,
-        Rename: req.renameTo || rename,
+        Rename: req.renameTo ?? '',
       }]
     })
   }
