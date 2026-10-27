@@ -36,6 +36,13 @@ The workflow builds both architectures, checksums them and publishes. The
 version in the binary comes from the tag, so it cannot disagree with the
 release.
 
+There is exactly one copy of the number. `frontend/package.json` has no
+version field: it would only be a second place to forget to change, and
+nothing reads it — the interface shows whatever the server reports, and the
+server reads the tag. If a file starts needing the version at build time, take
+it from `git describe` the way `scripts/build.sh` does, rather than writing it
+down.
+
 Pushing a tag that already exists does not trigger the workflow — GitHub fires
 on tag creation. To rebuild a release, dispatch the workflow by hand with the
 tag and `replace: true`; without that flag it refuses, because the assets of an

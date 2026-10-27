@@ -1,6 +1,5 @@
 {
   "name": "happy-downloader",
-  "version": "3.2.6",
   "description": "Frontend component of Happy Downloader",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
