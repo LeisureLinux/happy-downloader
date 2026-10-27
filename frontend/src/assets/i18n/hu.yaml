@@ -61,7 +61,6 @@ keys:
   connectionLostTitle: 'A kiszolgáló nem érhető el'
   containerFormatLabel: 'Konténer'
   cookieCount: 'Sütik'
-  cookieCreatedAt: 'Létrehozva'
   cookieExpired: 'Lejárt'
   cookieLoaded: 'Sütifájl betöltve'
   cookieMissingLogin: 'Hiányoznak a YouTube bejelentkezési sütik'

@@ -72,7 +72,6 @@ keys:
   profileFallbackNote: '主機名留空 = 兜底，匹配所有未命中的地址'
   profilesIgnoreConfigNote: '服務端會傳入 --ignore-config，因此本機 yt-dlp 的配置檔案不會影響下載，只使用本表中的設定。'
   cookieSourcePath: 'Cookie 原始檔'
-  cookieCreatedAt: '建立時間'
   cookieModifiedAt: '最後修改'
   close: '關閉'
   statusPending: '準備中'

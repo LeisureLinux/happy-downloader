@@ -61,7 +61,6 @@ keys:
   connectionLostTitle: 'Server irraggiungibile'
   containerFormatLabel: 'Contenitore'
   cookieCount: 'Cookie'
-  cookieCreatedAt: 'Creato'
   cookieExpired: 'Scaduto'
   cookieLoaded: 'File dei cookie caricato'
   cookieMissingLogin: 'Mancano i cookie di accesso a YouTube'

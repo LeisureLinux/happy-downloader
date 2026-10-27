@@ -59,7 +59,6 @@ keys:
   connectionLostTitle: 'Serwer nieosiągalny'
   containerFormatLabel: 'Kontener'
   cookieCount: 'Ciasteczka'
-  cookieCreatedAt: 'Utworzono'
   cookieExpired: 'Wygasło'
   cookieLoaded: 'Wczytano plik ciasteczek'
   cookieMissingLogin: 'Brak ciasteczek logowania do YouTube'

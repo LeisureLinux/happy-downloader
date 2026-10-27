@@ -34,11 +34,18 @@ if [ ! -f frontend/dist/index.html ]; then
   exit 1
 fi
 
-# Cross-compiling needs the environment set explicitly. Without it the build
-# silently produces a binary for whatever machine ran the script, and deploying
-# it to another architecture fails with "Exec format error" at the far end.
-GOARCH=${GOARCH:-$(go env GOARCH)}
-GOOS=${GOOS:-$(go env GOOS)}
+# The target architecture has to be stated. It is not defaulted: a default
+# means a cross-compile that forgets to set it produces a working binary for
+# the wrong machine, and deploying that fails at the far end with "Exec format
+# error" — after the transfer, where the error says nothing about the cause.
+# This bit twice.
+#
+#   GOARCH=arm64 GOOS=linux ./scripts/build.sh
+if [ -z "${GOARCH:-}" ] || [ -z "${GOOS:-}" ]; then
+  echo "GOOS and GOARCH must be set, e.g." >&2
+  echo "  GOARCH=arm64 GOOS=linux $0 [output]" >&2
+  exit 1
+fi
 export GOARCH GOOS
 
 echo "==> building binary ($VERSION, $GOOS/$GOARCH)"

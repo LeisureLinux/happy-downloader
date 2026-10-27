@@ -59,7 +59,6 @@ keys:
   connectionLostTitle: 'Servidor inaccessible'
   containerFormatLabel: 'Contenidor'
   cookieCount: 'Cookies'
-  cookieCreatedAt: 'Creat'
   cookieExpired: 'Caducat'
   cookieLoaded: 'Fitxer de cookies carregat'
   cookieMissingLogin: 'Falten les cookies d’inici de sessió de YouTube'

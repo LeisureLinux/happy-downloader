@@ -71,7 +71,6 @@ keys:
   profileFallbackNote: 'empty host = fallback for every unmatched URL'
   profilesIgnoreConfigNote: 'The server passes --ignore-config, so nothing from the host yt-dlp config file affects downloads. Only what is in this table is used.'
   cookieSourcePath: 'Cookie source file'
-  cookieCreatedAt: 'Created'
   cookieModifiedAt: 'Last modified'
   close: 'Close'
   statusPending: 'Preparing'

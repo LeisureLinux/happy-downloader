@@ -61,7 +61,6 @@ keys:
   connectionLostTitle: 'Servern nås inte'
   containerFormatLabel: 'Behållare'
   cookieCount: 'Kakor'
-  cookieCreatedAt: 'Skapad'
   cookieExpired: 'Utgången'
   cookieLoaded: 'Kakfilen är inläst'
   cookieMissingLogin: 'Inloggningskakor för YouTube saknas'

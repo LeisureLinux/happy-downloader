@@ -65,7 +65,10 @@ export default function Filebrowser() {
       const res = await fetch(`${serverAddr}/filebrowser/downloaded`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subdir: dir })
+        // Newest first. The server sorts by modification time, which for a
+        // finished download is when yt-dlp wrote the file — close enough to
+        // when it completed to be what the user means by "downloaded at".
+        body: JSON.stringify({ subdir: dir, orderBy: 'modtime' })
       })
       if (!res.ok) throw new Error(await res.text())
       const data: DirectoryEntry[] = await res.json()

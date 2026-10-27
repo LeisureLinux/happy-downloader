@@ -61,7 +61,6 @@ keys:
   connectionLostTitle: 'Servidor inacessível'
   containerFormatLabel: 'Contêiner'
   cookieCount: 'Cookies'
-  cookieCreatedAt: 'Criado'
   cookieExpired: 'Expirado'
   cookieLoaded: 'Arquivo de cookies carregado'
   cookieMissingLogin: 'Faltam os cookies de login do YouTube'

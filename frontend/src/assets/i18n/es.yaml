@@ -59,7 +59,6 @@ keys:
   connectionLostTitle: 'Servidor inaccesible'
   containerFormatLabel: 'Contenedor'
   cookieCount: 'Cookies'
-  cookieCreatedAt: 'Creado'
   cookieExpired: 'Caducado'
   cookieLoaded: 'Archivo de cookies cargado'
   cookieMissingLogin: 'Faltan las cookies de sesión de YouTube'

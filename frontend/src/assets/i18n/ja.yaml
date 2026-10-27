@@ -60,7 +60,6 @@ keys:
   connectionLostTitle: 'サーバーに接続できません'
   containerFormatLabel: 'コンテナ'
   cookieCount: 'Cookie 数'
-  cookieCreatedAt: '作成日時'
   cookieExpired: '期限切れ'
   cookieLoaded: 'Cookie ファイルを読み込みました'
   cookieMissingLogin: 'YouTube のログイン Cookie がありません'

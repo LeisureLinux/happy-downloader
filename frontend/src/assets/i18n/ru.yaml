@@ -59,7 +59,6 @@ keys:
   connectionLostTitle: 'Сервер недоступен'
   containerFormatLabel: 'Контейнер'
   cookieCount: 'Cookies'
-  cookieCreatedAt: 'Создан'
   cookieExpired: 'Просрочен'
   cookieLoaded: 'Файл cookies загружен'
   cookieMissingLogin: 'Нет cookies для входа в YouTube'

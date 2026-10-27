@@ -61,7 +61,6 @@ keys:
   connectionLostTitle: 'Server nicht erreichbar'
   containerFormatLabel: 'Container'
   cookieCount: 'Cookies'
-  cookieCreatedAt: 'Erstellt'
   cookieExpired: 'Abgelaufen'
   cookieLoaded: 'Cookie-Datei geladen'
   cookieMissingLogin: 'YouTube-Anmelde-Cookies fehlen'

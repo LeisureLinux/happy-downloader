@@ -59,7 +59,6 @@ keys:
   connectionLostTitle: '서버에 연결할 수 없습니다'
   containerFormatLabel: '컨테이너'
   cookieCount: '쿠키 수'
-  cookieCreatedAt: '생성'
   cookieExpired: '만료됨'
   cookieLoaded: '쿠키 파일을 불러왔습니다'
   cookieMissingLogin: 'YouTube 로그인 쿠키가 없습니다'

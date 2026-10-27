@@ -47,7 +47,6 @@ type CookieStat = {
   expired?: number
   missing?: string[]
   modifiedAt?: string
-  birthAt?: string
 }
 
 type Preview = {
@@ -186,14 +185,12 @@ const DownloadCredentials: React.FC = () => {
         <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
           {stat?.sourcePath || '—'}
         </Typography>
-        <Stack direction="row" spacing={2} sx={{ mt: 0.5 }} flexWrap="wrap">
-          <Typography variant="caption">
-            {i18n.t('cookieCreatedAt')}: <b>{stat?.birthAt ?? '—'}</b>
-          </Typography>
-          <Typography variant="caption">
-            {i18n.t('cookieModifiedAt')}: <b>{stat?.modifiedAt ?? '—'}</b>
-          </Typography>
-        </Stack>
+        {/* Only the last-modified time. The creation time of a file that gets
+            replaced every ten minutes is the moment the first export was
+            written, which says nothing about the session in use. */}
+        <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
+          {i18n.t('cookieModifiedAt')}: <b>{stat?.modifiedAt ?? '—'}</b>
+        </Typography>
       </Paper>
 
       {stat?.exists && !hasLogin && (

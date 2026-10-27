@@ -33,6 +33,9 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Build
+        env:
+          GOARCH: amd64
+          GOOS: linux
         run: ./scripts/build.sh happy-downloader
 
       - name: gofmt
