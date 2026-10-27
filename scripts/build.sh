@@ -34,7 +34,14 @@ if [ ! -f frontend/dist/index.html ]; then
   exit 1
 fi
 
-echo "==> building binary ($VERSION)"
+# Cross-compiling needs the environment set explicitly. Without it the build
+# silently produces a binary for whatever machine ran the script, and deploying
+# it to another architecture fails with "Exec format error" at the far end.
+GOARCH=${GOARCH:-$(go env GOARCH)}
+GOOS=${GOOS:-$(go env GOOS)}
+export GOARCH GOOS
+
+echo "==> building binary ($VERSION, $GOOS/$GOARCH)"
 CGO_ENABLED=0 go build -trimpath \
   -ldflags "-s -w \
     -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerVersion=${VERSION} \
