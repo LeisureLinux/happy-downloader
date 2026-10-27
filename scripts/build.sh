@@ -17,7 +17,21 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 
-VERSION=${VERSION:-$(git describe --tags --always 2>/dev/null || echo dev)}
+# The version comes from the tag, and only from the tag.
+#
+# It used to be settable from the environment, which is how the deployed
+# binary ended up reporting 4.10.0 while the newest release was 4.6.0: a
+# number typed on a command line, drifting away from what was published. There
+# is now one source, and a version that exists nowhere else cannot be built.
+#
+# A build with no tag is a development build and says so.
+VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
+VERSION=${VERSION#v}
+
+if [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+  echo "note: the working tree has uncommitted changes; this is not a release build" >&2
+fi
+
 BUILT_AT=$(date +%s)
 OUT=${1:-happy-downloader}
 

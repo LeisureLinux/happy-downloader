@@ -460,6 +460,15 @@ Releases are built by GitHub Actions rather than by hand: push a tag and the
 workflow compiles both architectures, checksums them and publishes. See
 [`.github/workflows/release.yml`](.github/workflows/release.yml).
 
+```sh
+git tag v4.6.1
+git push origin v4.6.1
+```
+
+The version in the binary comes from the tag, so it cannot report a number that
+was never published. [VERSIONING.md](VERSIONING.md) says which number to
+bump: the third one for a fix, the second for a new feature.
+
 ## HTTP API
 
 The frontend talks to the backend over JSON-RPC at `POST /rpc/http` (and

@@ -46,6 +46,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The tag being released, so that git describe — which is where the
+          # version number comes from — names that tag and not whatever the
+          # default branch points at.
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
       - uses: actions/setup-go@v5
         with:
@@ -65,6 +70,14 @@ jobs:
       - name: Test
         run: go test ./...
 
+      # The version number is checked before anything is built, so a mistake
+      # costs a minute rather than a release.
+      - name: Check the version number
+        run: |
+          set -eu
+          tag="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          ./scripts/check-version.sh "$tag"
+
       # scripts/build.sh builds the frontend and then the binary, and removes
       # frontend/dist first so a stale bundle cannot be embedded silently.
       - name: Build
@@ -72,11 +85,10 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           GOOS: linux
           CGO_ENABLED: '0'
-          VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           set -eu
-          # The leading v is stripped inside the script, so the binary reports
-          # "4.6.0" and matches the tag without the decoration.
+          # The version comes from the checked-out tag, so the binary cannot
+          # report anything but what is being released.
           ./scripts/build.sh "happy-downloader_${{ matrix.suffix }}"
 
           # A binary that embedded no frontend still compiles, so check the

@@ -380,6 +380,14 @@ GOARCH=arm64 GOOS=linux ./scripts/build.sh happy-downloader_linux-arm64
 发布版由 GitHub Actions 编译，不是手工构建：推一个 tag，工作流就编两个架构、
 算校验和并发布。见 [`.github/workflows/release.yml`](.github/workflows/release.yml)。
 
+```sh
+git tag v4.6.1
+git push origin v4.6.1
+```
+
+二进制里的版本号来自 tag，所以不可能报出一个从没发布过的号。
+[VERSIONING.md](VERSIONING.md) 说明该改哪个数字：修 bug 改第三个，加功能改第二个。
+
 ## HTTP 接口
 
 前端通过 JSON-RPC 和后端通信：`POST /rpc/http`（实时状态走 `/rpc/ws`）。另有几个普通端点：
