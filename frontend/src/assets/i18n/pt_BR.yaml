@@ -1,5 +1,18 @@
 keys:
   appName: 'Baixador Feliz'
+  cancel: 'Cancelar'
+  captionsFor: 'Legendas para'
+  captionsLoading: 'Verificando quais idiomas a fonte oferece...'
+  captionsUnavailable: 'Esta fonte não oferece legendas.'
+  captionsHint: 'Escolha os idiomas para baixar.'
+  captionsFilter: 'Filtrar idiomas'
+  captionsDownload: 'Baixar'
+  captionsDownloading: 'Baixando...'
+  captionsDownloaded: '{count} arquivo(s) de legenda baixado(s)'
+  captionsNone: 'Nenhum arquivo de legenda foi gerado'
+  captionsSkipped: '{count} idioma(s) não oferecidos pela fonte'
+  captionsAutomatic: 'geradas'
+  captionsButton: 'Legendas'
   sourceCode: 'Código-fonte'
   urlInput: URL do vídeo (uma por linha)
   selectFormatButton: 'Escolher formato'

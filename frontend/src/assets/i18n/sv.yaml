@@ -1,5 +1,18 @@
 keys:
   appName: 'Glad Nedladdare'
+  cancel: 'Avbryt'
+  captionsFor: 'Undertexter för'
+  captionsLoading: 'Kontrollerar vilka språk källan erbjuder...'
+  captionsUnavailable: 'Den här källan erbjuder inga undertexter.'
+  captionsHint: 'Välj de språk som ska laddas ner.'
+  captionsFilter: 'Filtrera språk'
+  captionsDownload: 'Ladda ner'
+  captionsDownloading: 'Laddar ner...'
+  captionsDownloaded: 'Laddade ner {count} undertextfil(er)'
+  captionsNone: 'Ingen undertextfil skapades'
+  captionsSkipped: '{count} språk erbjuder källan inte'
+  captionsAutomatic: 'genererade'
+  captionsButton: 'Undertexter'
   sourceCode: 'Källkod'
   urlInput: Videolänk (en per rad)
   selectFormatButton: 'Välj format'

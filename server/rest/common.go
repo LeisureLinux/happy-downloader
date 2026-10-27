@@ -13,4 +13,7 @@ type ContainerArgs struct {
 	MDB *kv.Store
 	MQ  *queue.MessageQueue
 	LM  *livestream.Monitor
+	// SourceIndex remembers where the downloaded files came from, so their
+	// captions can be fetched later.
+	SourceIndex *kv.SourceIndex
 }

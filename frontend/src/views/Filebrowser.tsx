@@ -22,6 +22,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import SmartDisplayIcon from '@mui/icons-material/SmartDisplay'
+import SubtitleIcon from '@mui/icons-material/Subtitles'
 import FolderIcon from '@mui/icons-material/Folder'
 import { matchW } from 'fp-ts/lib/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
@@ -34,6 +35,7 @@ import { base64URLEncode, formatDuration, formatSize } from '../utils'
 import { useAtomValue } from 'jotai'
 import { activeDownloadsState } from '../atoms/downloads'
 import Player from '../components/Player'
+import CaptionsDialog from '../components/CaptionsDialog'
 
 // A row is a file or a folder. Selection is by path, which is unique within a
 // listing, unlike the name the previous implementation keyed on.
@@ -56,6 +58,8 @@ export default function Filebrowser() {
   // The file being played, if any. The player is a dialog over the list, so
   // the list stays where it was.
   const [playing, setPlaying] = useState<Row | null>(null)
+  // The file whose captions are being fetched.
+  const [captioning, setCaptioning] = useState<Row | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [subdir, setSubdir] = useState('')
   const [loading, setLoading] = useState(true)
@@ -276,6 +280,15 @@ export default function Filebrowser() {
                             <SmartDisplayIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        {/* 字幕单独下载：YouTube 限流字幕端点比视频严格得多，
+                            把它和视频绑在一起会让限流毁掉整个下载。 */}
+                        {f.isVideo && (
+                          <Tooltip title={i18n.t('captionsButton')}>
+                            <IconButton size="small" onClick={() => setCaptioning(f)}>
+                              <SubtitleIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         <Tooltip title={i18n.t('downloadSelected')}>
                           <IconButton size="small" onClick={() => downloadFile(serverAddr, f.path)}>
                             <FileDownloadIcon fontSize="small" />
@@ -295,6 +308,14 @@ export default function Filebrowser() {
           </TableContainer>
         )}
       </Paper>
+
+      <CaptionsDialog
+        open={captioning !== null}
+        path={captioning?.path ?? ''}
+        name={captioning?.name ?? ''}
+        onClose={() => setCaptioning(null)}
+        onDone={() => { void list(subdir) }}
+      />
 
       <Player
         open={playing !== null}

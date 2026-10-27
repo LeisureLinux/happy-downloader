@@ -1,5 +1,18 @@
 keys:
   appName: 'Весёлый Загрузчик'
+  cancel: 'Отмена'
+  captionsFor: 'Субтитры для'
+  captionsLoading: 'Проверяем, какие языки предлагает источник...'
+  captionsUnavailable: 'Источник не предлагает субтитров.'
+  captionsHint: 'Выберите языки для загрузки.'
+  captionsFilter: 'Фильтр языков'
+  captionsDownload: 'Скачать'
+  captionsDownloading: 'Загрузка...'
+  captionsDownloaded: 'Скачано файлов субтитров: {count}'
+  captionsNone: 'Файл субтитров не создан'
+  captionsSkipped: '{count} язык(ов) источник не предлагает'
+  captionsAutomatic: 'сгенерированные'
+  captionsButton: 'Субтитры'
   sourceCode: 'Исходный код'
   urlInput: URL-адрес YouTube или любого другого поддерживаемого сервиса
   startButton: Начать

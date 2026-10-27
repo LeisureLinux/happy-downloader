@@ -1,5 +1,18 @@
 keys:
   appName: 'Downloader Felice'
+  cancel: 'Annulla'
+  captionsFor: 'Sottotitoli per'
+  captionsLoading: 'Verifica delle lingue offerte dalla fonte...'
+  captionsUnavailable: 'Questa fonte non offre sottotitoli.'
+  captionsHint: 'Scegli le lingue da scaricare.'
+  captionsFilter: 'Filtra le lingue'
+  captionsDownload: 'Scarica'
+  captionsDownloading: 'Scaricamento...'
+  captionsDownloaded: '{count} file(s) di sottotitoli scaricato(i)'
+  captionsNone: 'Nessun file di sottotitoli prodotto'
+  captionsSkipped: '{count} lingua/e non offerte dalla fonte'
+  captionsAutomatic: 'generati'
+  captionsButton: 'Sottotitoli'
   sourceCode: 'Codice sorgente'
   urlInput: URL Video (uno per linea)
   selectFormatButton: 'Scegli formato'

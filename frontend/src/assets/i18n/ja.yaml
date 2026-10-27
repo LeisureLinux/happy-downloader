@@ -1,5 +1,18 @@
 keys:
   appName: 'ハッピーダウンローダー'
+  cancel: 'キャンセル'
+  captionsFor: '字幕：'
+  captionsLoading: 'ソースが提供する言語を確認しています...'
+  captionsUnavailable: 'このソースには字幕がありません。'
+  captionsHint: '取得する言語を選んでください。'
+  captionsFilter: '言語で絞り込む'
+  captionsDownload: 'ダウンロード'
+  captionsDownloading: 'ダウンロード中...'
+  captionsDownloaded: '字幕ファイルを {count} 件ダウンロードしました'
+  captionsNone: '字幕ファイルは生成されませんでした'
+  captionsSkipped: '{count} 言語はソースが提供していません'
+  captionsAutomatic: '自動生成'
+  captionsButton: '字幕'
   sourceCode: 'ソースコード'
   urlInput: YouTubeまたはサポート済み動画のURL
   selectFormatButton: '形式を選択'

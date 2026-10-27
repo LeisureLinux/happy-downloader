@@ -106,6 +106,12 @@ export type DLFormat = {
   ext?: string
 }
 
+export type CaptionTrack = {
+  language: string
+  name?: string
+  automatic?: boolean
+}
+
 export type SubtitleFile = {
   path: string
   language: string

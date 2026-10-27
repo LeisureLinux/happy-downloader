@@ -28,5 +28,12 @@ func ApplyRouter(args *ContainerArgs) func(chi.Router) {
 		r.Patch("/template", h.UpdateTemplate())
 		r.Get("/template/all", h.GetTemplates())
 		r.Delete("/template/{id}", h.DeleteTemplate())
+
+		// Captions for a file that was already downloaded. Separate from the
+		// download because YouTube rate-limits the caption endpoint far
+		// harder, and a throttled caption request must not cost the video.
+		captions := NewCaptionsHandler(args.SourceIndex)
+		r.Post("/captions", captions.Download)
+		r.Get("/captions", captions.Available)
 	}
 }

@@ -1,5 +1,18 @@
 keys:
   appName: 'Descargador Feliz'
+  cancel: 'Cancelar'
+  captionsFor: 'Subtítulos para'
+  captionsLoading: 'Comprobando qué idiomas ofrece la fuente...'
+  captionsUnavailable: 'Esta fuente no ofrece subtítulos.'
+  captionsHint: 'Elige los idiomas a descargar.'
+  captionsFilter: 'Filtrar idiomas'
+  captionsDownload: 'Descargar'
+  captionsDownloading: 'Descargando...'
+  captionsDownloaded: '{count} archivo(s) de subtítulo descargado(s)'
+  captionsNone: 'No se generó ningún archivo de subtítulo'
+  captionsSkipped: '{count} idioma(s) no los ofrece la fuente'
+  captionsAutomatic: 'generados'
+  captionsButton: 'Subtítulos'
   sourceCode: 'Código fuente'
   urlInput: URL de YouTube u otro servicio compatible
   startButton: Iniciar

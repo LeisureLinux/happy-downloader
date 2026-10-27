@@ -48,6 +48,31 @@ export const languageNames: Record<Language, string> = {
   ukrainian: 'Українська',
 }
 
+// The YouTube caption code for each interface language.
+//
+// The two are not the same thing: YouTube uses "zh-Hans" and "zh-Hant" where
+// the interface distinguishes "chinese" and "chinese-traditional", and it
+// uses "pt" where the interface says "portuguese-br". The caption request
+// needs YouTube's spelling, so the mapping is explicit rather than guessed.
+export const youtubeCaptionLang: Record<Language, string> = {
+  catalan: 'ca',
+  chinese: 'zh-Hans',
+  'chinese-traditional': 'zh-Hant',
+  english: 'en',
+  french: 'fr',
+  german: 'de',
+  hungarian: 'hu',
+  italian: 'it',
+  japanese: 'ja',
+  korean: 'ko',
+  polish: 'pl',
+  'portuguese-br': 'pt',
+  russian: 'ru',
+  spanish: 'es',
+  swedish: 'sv',
+  ukrainian: 'uk',
+}
+
 export type Theme = 'light' | 'dark' | 'system'
 export type ThemeNarrowed = 'light' | 'dark'
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -184,6 +185,9 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The file is gone, so its source record has nothing to point at.
+	forgetSource(req.Path)
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode("ok")
 }
@@ -244,21 +248,89 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 
 	root := config.Instance().Paths.DownloadPath
 
-	if strings.Contains(filepath.Dir(filepath.Clean(filename)), filepath.Clean(root)) {
-		w.Header().Add("Content-Disposition", "inline; filename=\""+filepath.Base(filename)+"\"")
-		w.Header().Set("Content-Type", "application/octet-stream")
-
-		fd, err := os.Open(filename)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		io.Copy(w, fd)
+	if !strings.Contains(filepath.Dir(filepath.Clean(filename)), filepath.Clean(root)) {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	w.WriteHeader(http.StatusUnauthorized)
+	// The captions belong to the video. Taking the video alone and leaving
+	// the subtitles on the server is the wrong answer to "download this", so
+	// they go into the same download.
+	captions := subtitlesFor(filepath.Dir(filepath.Clean(filename)), filepath.Base(filename))
+
+	if len(captions) == 0 {
+		serveSingleFile(w, filename)
+		return
+	}
+
+	serveArchive(w, filename, captions)
+}
+
+// serveSingleFile sends one file as it is.
+func serveSingleFile(w http.ResponseWriter, filename string) {
+	w.Header().Add("Content-Disposition", "inline; filename=\""+filepath.Base(filename)+"\"")
+	w.Header().Set("Content-Type", "application/octet-stream")
+
+	fd, err := os.Open(filename)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	defer fd.Close()
+
+	if _, err := io.Copy(w, fd); err != nil {
+		slog.Error("could not send the file", slog.String("path", filename), slog.Any("err", err))
+	}
+}
+
+// serveArchive sends the video and its captions as one zip.
+//
+// A zip rather than several downloads, because the browser would either block
+// the second one or leave the captions in a folder of their own, and the point
+// is that the captions travel with the video.
+func serveArchive(w http.ResponseWriter, filename string, captions []SubtitleFile) {
+	w.Header().Add(
+		"Content-Disposition",
+		"attachment; filename=\""+strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))+".zip\"",
+	)
+	w.Header().Set("Content-Type", "application/zip")
+
+	zipWriter := zip.NewWriter(w)
+
+	add := func(path string) error {
+		wr, err := zipWriter.Create(filepath.Base(path))
+		if err != nil {
+			return err
+		}
+
+		fd, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+
+		defer fd.Close()
+
+		_, err = io.Copy(wr, fd)
+
+		return err
+	}
+
+	if err := add(filename); err != nil {
+		slog.Error("could not add the video to the archive", slog.Any("err", err))
+		return
+	}
+
+	for _, c := range captions {
+		if err := add(c.Path); err != nil {
+			slog.Error("could not add a caption file to the archive",
+				slog.String("path", c.Path), slog.Any("err", err))
+		}
+	}
+
+	if err := zipWriter.Close(); err != nil {
+		slog.Error("could not finish the archive", slog.Any("err", err))
+	}
 }
 
 // SendSubtitle serves a caption file to the player.
@@ -374,6 +446,24 @@ func convertTiming(line string) string {
 	return strings.Replace(start, ",", ".", 1) + " --> " + strings.Replace(end, ",", ".", 1)
 }
 
+// sourceForgetter is told when a file is deleted, so the source index does
+// not keep entries for files that are no longer there.
+//
+// A function rather than an interface so this package does not have to depend
+// on the store.
+var sourceForgetter func(path string)
+
+// SetSourceForgetter installs the callback.
+func SetSourceForgetter(fn func(path string)) {
+	sourceForgetter = fn
+}
+
+func forgetSource(path string) {
+	if sourceForgetter != nil {
+		sourceForgetter(path)
+	}
+}
+
 func BulkDownload(mdb *kv.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ps := slices.DeleteFunc(*mdb.All(), func(e internal.ProcessSnapshot) bool {
@@ -393,21 +483,39 @@ func BulkDownload(mdb *kv.Store) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/zip")
 
 		for _, p := range ps {
-			wr, err := zipWriter.Create(filepath.Base(p.Output.SavedFilePath))
-			if err != nil {
+			add := func(path string) error {
+				wr, err := zipWriter.Create(filepath.Base(path))
+				if err != nil {
+					return err
+				}
+
+				fd, err := os.Open(path)
+				if err != nil {
+					return err
+				}
+
+				defer fd.Close()
+
+				_, err = io.Copy(wr, fd)
+
+				return err
+			}
+
+			if err := add(p.Output.SavedFilePath); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			fd, err := os.Open(p.Output.SavedFilePath)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			if _, err := io.Copy(wr, fd); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+			// The captions travel with the video, as they do for a single
+			// download.
+			for _, c := range subtitlesFor(
+				filepath.Dir(filepath.Clean(p.Output.SavedFilePath)),
+				filepath.Base(p.Output.SavedFilePath),
+			) {
+				if err := add(c.Path); err != nil {
+					slog.Error("could not add a caption file to the archive",
+						slog.String("path", c.Path), slog.Any("err", err))
+				}
 			}
 		}
 

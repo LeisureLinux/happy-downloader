@@ -51,6 +51,7 @@ type serverConfig struct {
 	taskRunner    task.TaskRunner
 	twitchMonitor *twitch.Monitor
 	profileStore  *profiles.Store
+	sourceIndex   *kv.SourceIndex
 }
 
 // TODO: change scope
@@ -65,6 +66,20 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	}
 
 	mdb, err := kv.NewStore(boltdb, time.Second*15)
+	if err != nil {
+		slog.Error("could not open the download store", slog.Any("err", err))
+		os.Exit(1)
+	}
+
+	// The index of where downloaded files came from. It outlives the download
+	// records, which are transient: a finished download leaves the queue and
+	// its record goes with it, but the file stays and keeps needing to be
+	// connected to its source.
+	sourceIndex, err := kv.NewSourceIndex(boltdb)
+	if err != nil {
+		slog.Error("could not open the source index", slog.Any("err", err))
+		os.Exit(1)
+	}
 	if err != nil {
 		return err
 	}
@@ -107,6 +122,12 @@ func Run(ctx context.Context, rc *RunConfig) error {
 		return err
 	}
 	mq.SetupConsumers()
+	// The source index is filled from the postprocessing events, so the
+	// recorder has to be installed before any download starts.
+	recorder := &kv.SourceRecorder{Index: sourceIndex}
+	downloaders.SetSourceRecorder(recorder.Record)
+	filebrowser.SetSourceForgetter(sourceIndex.Forget)
+
 	go mdb.Restore(mq)
 	go mdb.EventListener()
 
@@ -170,6 +191,7 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	scfg := serverConfig{
 		frontend:      rc.App,
 		mdb:           mdb,
+		sourceIndex:   sourceIndex,
 		db:            boltdb,
 		mq:            mq,
 		lm:            lm,
@@ -259,10 +281,11 @@ func newServer(c serverConfig) *http.Server {
 	r.Route("/api/v1/profiles", profiles.NewRestHandler(c.profileStore, downloaders.Preview))
 
 	r.Route("/api/v1", rest.ApplyRouter(&rest.ContainerArgs{
-		DB:  c.db,
-		MDB: c.mdb,
-		MQ:  c.mq,
-		LM:  c.lm,
+		DB:          c.db,
+		MDB:         c.mdb,
+		MQ:          c.mq,
+		LM:          c.lm,
+		SourceIndex: c.sourceIndex,
 	}))
 
 	// Logging

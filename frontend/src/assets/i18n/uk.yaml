@@ -1,5 +1,18 @@
 keys:
   appName: 'Веселий Завантажувач'
+  cancel: 'Скасувати'
+  captionsFor: 'Субтитри для'
+  captionsLoading: 'Перевіряємо, які мови пропонує джерело...'
+  captionsUnavailable: 'Це джерело не має субтитрів.'
+  captionsHint: 'Виберіть мови для завантаження.'
+  captionsFilter: 'Фільтр мов'
+  captionsDownload: 'Завантажити'
+  captionsDownloading: 'Завантаження...'
+  captionsDownloaded: 'Завантажено файлів субтитрів: {count}'
+  captionsNone: 'Файл субтитрів не створено'
+  captionsSkipped: '{count} мов(и) джерело не пропонує'
+  captionsAutomatic: 'згенеровані'
+  captionsButton: 'Субтитри'
   sourceCode: 'Вихідний код'
   urlInput: URL-адреса YouTube або будь-якого іншого підтримуваного сервісу
   startButton: Почати

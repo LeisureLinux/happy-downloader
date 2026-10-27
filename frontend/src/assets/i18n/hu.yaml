@@ -1,5 +1,18 @@
 keys:
   appName: 'Vidám Letöltő'
+  cancel: 'Mégse'
+  captionsFor: 'Feliratok ehhez:'
+  captionsLoading: 'Annak ellenőrzése, milyen nyelveket kínál a forrás...'
+  captionsUnavailable: 'Ez a forrás nem kínál feliratot.'
+  captionsHint: 'Válaszd ki a letöltendő nyelveket.'
+  captionsFilter: 'Nyelvek szűrése'
+  captionsDownload: 'Letöltés'
+  captionsDownloading: 'Letöltés...'
+  captionsDownloaded: '{count} feliratfájl letöltve'
+  captionsNone: 'Nem jött létre feliratfájl'
+  captionsSkipped: '{count} nyelvet nem kínál a forrás'
+  captionsAutomatic: 'generált'
+  captionsButton: 'Feliratok'
   sourceCode: 'Forráskód'
   urlInput: Video URL (soronként egy)
   selectFormatButton: 'Formátum választása'

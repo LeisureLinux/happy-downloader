@@ -56,6 +56,7 @@ func (j *JSONLogConsumer) ParseLogEntry(entry []byte, d Downloader) {
 
 	if err := json.Unmarshal(sanitizeProgressJSON(entry), &postprocess); err == nil {
 		d.UpdateSavedFilePath(postprocess.FilePath)
+		rememberSource(d, postprocess.FilePath)
 		if postprocess.Width > 0 && postprocess.Height > 0 {
 			d.UpdateOutputDimensions(postprocess.Width, postprocess.Height)
 		}
@@ -82,4 +83,26 @@ func (f *FFMpegLogConsumer) ParseLogEntry(entry []byte, d Downloader) {
 		slog.String("url", d.GetUrl()),
 		slog.String("output", string(entry)),
 	)
+}
+
+// sourceRecorder is notified when a file is written, so the source index can
+// remember where the file came from.
+//
+// It is a function rather than an interface so that this package does not
+// depend on the store: the server sets it at startup, and the tests that do
+// not care about it leave it unset.
+var sourceRecorder func(d Downloader, path string)
+
+// SetSourceRecorder installs the callback that records where a file came from.
+func SetSourceRecorder(fn func(d Downloader, path string)) {
+	sourceRecorder = fn
+}
+
+// rememberSource records the file's source, if anything is listening.
+func rememberSource(d Downloader, path string) {
+	if sourceRecorder == nil || path == "" {
+		return
+	}
+
+	sourceRecorder(d, path)
 }

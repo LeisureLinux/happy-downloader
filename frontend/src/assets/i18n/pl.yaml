@@ -1,5 +1,18 @@
 keys:
   appName: 'Wesoły Pobieracz'
+  cancel: 'Anuluj'
+  captionsFor: 'Napisy dla'
+  captionsLoading: 'Sprawdzanie, jakie języki oferuje źródło...'
+  captionsUnavailable: 'To źródło nie ma napisów.'
+  captionsHint: 'Wybierz języki do pobrania.'
+  captionsFilter: 'Filtruj języki'
+  captionsDownload: 'Pobierz'
+  captionsDownloading: 'Pobieranie...'
+  captionsDownloaded: 'Pobrano plików napisów: {count}'
+  captionsNone: 'Nie utworzono pliku napisów'
+  captionsSkipped: '{count} język(ów) źródło nie oferuje'
+  captionsAutomatic: 'wygenerowane'
+  captionsButton: 'Napisy'
   sourceCode: 'Kod źródłowy'
   urlInput: Adres URL YouTube lub innej obsługiwanej usługi
   startButton: Początek

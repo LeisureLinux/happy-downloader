@@ -1,5 +1,18 @@
 keys:
   appName: 'Téléchargeur Joyeux'
+  cancel: 'Annuler'
+  captionsFor: 'Sous-titres pour'
+  captionsLoading: 'Vérification des langues proposées par la source...'
+  captionsUnavailable: 'Cette source ne propose pas de sous-titres.'
+  captionsHint: 'Choisissez les langues à récupérer.'
+  captionsFilter: 'Filtrer les langues'
+  captionsDownload: 'Télécharger'
+  captionsDownloading: 'Téléchargement...'
+  captionsDownloaded: '{count} fichier(s) de sous-titres téléchargé(s)'
+  captionsNone: 'Aucun fichier de sous-titres n''a été produit'
+  captionsSkipped: '{count} langue(s) non proposées par la source'
+  captionsAutomatic: 'générés'
+  captionsButton: 'Sous-titres'
   sourceCode: 'Code source'
   urlInput: URL vidéo de YouTube ou d'un autre service pris en charge
   selectFormatButton: 'Choisir le format'

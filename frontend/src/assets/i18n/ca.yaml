@@ -1,5 +1,18 @@
 keys:
   appName: 'Descarregador Feliç'
+  cancel: 'Cancel·la'
+  captionsFor: 'Subtítols per a'
+  captionsLoading: 'Comprovant quin·s idiomes ofereix la font...'
+  captionsUnavailable: 'Aquesta font no ofereix subtítols.'
+  captionsHint: 'Tria els idiomes per descarregar.'
+  captionsFilter: 'Filtra els idiomes'
+  captionsDownload: 'Descarrega'
+  captionsDownloading: 'Descarregant...'
+  captionsDownloaded: '{count} fitxer(s) de subtíts descarregat(s)'
+  captionsNone: 'No s''ha generat cap fitxer de subtítols'
+  captionsSkipped: '{count} idioma(es) que la font no ofereix'
+  captionsAutomatic: 'generats'
+  captionsButton: 'Subtítols'
   sourceCode: 'Codi font'
   urlInput: URL de YouTube o d'un altre servei compatible
   startButton: Iniciar

@@ -1,5 +1,18 @@
 keys:
   appName: 'Fröhlicher Downloader'
+  cancel: 'Abbrechen'
+  captionsFor: 'Untertitel für'
+  captionsLoading: 'Prüfe, welche Sprachen die Quelle anbietet...'
+  captionsUnavailable: 'Diese Quelle bietet keine Untertitel.'
+  captionsHint: 'Wähle die Sprachen zum Laden.'
+  captionsFilter: 'Sprachen filtern'
+  captionsDownload: 'Herunterladen'
+  captionsDownloading: 'Wird geladen...'
+  captionsDownloaded: '{count} Untertiteldatei(en) geladen'
+  captionsNone: 'Es wurde keine Untertiteldatei erzeugt'
+  captionsSkipped: '{count} Sprache(n) wurden von der Quelle nicht angeboten'
+  captionsAutomatic: 'generiert'
+  captionsButton: 'Untertitel'
   sourceCode: 'Quelltext'
   urlInput: Video URL
   selectFormatButton: 'Format wählen'
