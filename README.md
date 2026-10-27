@@ -456,14 +456,17 @@ To build for another architecture, set `GOARCH` and `GOOS`:
 GOARCH=arm64 GOOS=linux ./scripts/build.sh happy-downloader_linux-arm64
 ```
 
-Releases are built by GitHub Actions rather than by hand: push a tag and the
-workflow compiles both architectures, checksums them and publishes. See
-[`.github/workflows/release.yml`](.github/workflows/release.yml).
+A release is a tag and a release with the same number, and nothing else. A
+patch is built where it is deployed and published from there; a minor or a
+release that is being announced is built by GitHub Actions, which compiles both
+architectures and checksums them:
 
 ```sh
-git tag v4.6.1
-git push origin v4.6.1
+gh workflow run release.yml -f tag=v4.8.0
 ```
+
+See [`.github/workflows/release.yml`](.github/workflows/release.yml) and
+[VERSIONING.md](VERSIONING.md), which also says who decides the number.
 
 The version in the binary comes from the tag, so it cannot report a number that
 was never published. [VERSIONING.md](VERSIONING.md) says which number to

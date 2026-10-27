@@ -54,6 +54,23 @@ jobs:
       - run: go build ./...
       - run: go test ./...
 
+  # Tags and releases are the same list. The check needs the whole tag set and
+  # the GitHub API, so it is its own job rather than a step in the build.
+  releases:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Every tag has a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/check-releases.sh
+
   frontend:
     runs-on: ubuntu-latest
     steps:

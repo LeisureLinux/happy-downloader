@@ -25,28 +25,72 @@ rather than taken from a tag, and nothing noticed. The build now reads the
 version from the tag and refuses to be told otherwise, so a build can only ever
 report a version that was published.
 
-## Releasing
+## Who decides
+
+A PATCH does not need to be approved. It is a fix, it is what most releases
+are, and asking about every one of them wastes the time of the person being
+asked.
+
+A MINOR and a MAJOR are asked for first. They are announcements: a new thing
+the user can see, or a change that breaks an existing setup. The number is the
+cheap part of that decision — what ships, and what the release notes say, is
+the expensive part.
+
+So: patch, go ahead. Minor or major, ask.
+
+## How a release is built
+
+By default a release is built on the machine that is deploying it and
+published from there. That is the normal case, it is a PATCH, and it does not
+wait for a runner:
 
 ```sh
-git tag v4.6.1
-git push origin v4.6.1
+./scripts/build.sh                                  # must be a clean tree
+git tag v4.7.1
+GOOS=linux GOARCH=amd64 ./scripts/build.sh happy-downloader_linux-amd64
+GOOS=linux GOARCH=arm64 ./scripts/build.sh happy-downloader_linux-arm64
+sha256sum happy-downloader_linux-* > SHA256SUMS
+git push origin v4.7.1
+gh release create v4.7.1 \
+  happy-downloader_linux-amd64 happy-downloader_linux-arm64 SHA256SUMS
 ```
 
-The workflow builds both architectures, checksums them and publishes. The
-version in the binary comes from the tag, so it cannot disagree with the
-release.
+GitHub Actions is for the releases that have to be reproducible by someone
+else, or that are being announced: every MINOR, every MAJOR, and any release
+asked for explicitly. That is what "发版" means — the workflow builds both
+architectures and publishes them, and nothing is uploaded from a laptop:
 
-There is exactly one copy of the number. `frontend/package.json` has no
+```sh
+gh workflow run release.yml -f tag=v4.8.0
+```
+
+The tag is cut first either way, and the version in the binary comes from the
+tag, so a build can only report a version that exists.
+
+## One set of numbers
+
+A tag and a release are the same thing seen twice: the tag is what can be
+built, the release is what can be downloaded. Having one without the other is
+how the numbers drift apart — a tag nobody released, or a release nobody can
+rebuild.
+
+`scripts/check-releases.sh` compares the two lists and fails when they
+disagree. It runs on every push to master and after every publish. Tags before
+`v4.1.0` predate the workflow and are exempt; they are history, not drift.
+
+There is also exactly one copy of the number. `frontend/package.json` has no
 version field: it would only be a second place to forget to change, and
 nothing reads it — the interface shows whatever the server reports, and the
 server reads the tag. If a file starts needing the version at build time, take
 it from `git describe` the way `scripts/build.sh` does, rather than writing it
 down.
 
-Pushing a tag that already exists does not trigger the workflow — GitHub fires
-on tag creation. To rebuild a release, dispatch the workflow by hand with the
-tag and `replace: true`; without that flag it refuses, because the assets of an
-existing release are replaced rather than merged.
+Rebuilding a release that already exists needs `replace: true`, because the
+assets of an existing release are replaced rather than merged:
+
+```sh
+gh workflow run release.yml -f tag=v4.7.1 -f replace=true
+```
 
 ## Choosing the number
 

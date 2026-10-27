@@ -1,18 +1,19 @@
 name: Release
 
-# Tag-driven. Pushing a tag that looks like a version builds both
-# architectures on GitHub's runners and publishes the result; nothing is
-# compiled on a laptop and uploaded by hand.
+# Built here, not on a laptop, but started deliberately.
 #
-#   git tag v4.6.0 && git push origin v4.6.0
+# A patch is small and goes out from the machine that is deploying it, so this
+# workflow is not the default path; see VERSIONING.md. It is for the releases
+# that have to be reproducible and announced: every minor, and any release
+# asked for explicitly. Both are started by hand:
 #
-# The alternative — cross-compiling locally and attaching the files — makes the
-# artefact depend on whoever's machine happened to build it, and there is no
-# record of how. Here the build is the workflow, and it can be re-run.
+#   gh workflow run release.yml -f tag=v4.8.0
+#
+# It used to fire on a tag push. That made every tag a release whether or not
+# anybody meant it, and left no way to publish a patch without waiting for a
+# runner. The number of tags and the number of releases are still kept equal —
+# scripts/check-releases.sh checks that — but the trigger is now a decision.
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
   # Rebuild a release whose runner was broken, or whose assets are wrong.
   #
   # The assets of an existing release are replaced, not merged, so this
@@ -50,7 +51,7 @@ jobs:
           # The tag being released, so that git describe — which is where the
           # version number comes from — names that tag and not whatever the
           # default branch points at.
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          ref: ${{ inputs.tag }}
 
       - uses: actions/setup-go@v5
         with:
@@ -72,7 +73,7 @@ jobs:
       - name: Check the version number
         run: |
           set -eu
-          tag="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          tag="${{ inputs.tag }}"
           ./scripts/check-version.sh "$tag"
 
       # scripts/build.sh builds the frontend and then the binary, and removes
@@ -134,7 +135,7 @@ jobs:
           ls -l
 
       - name: Refuse to overwrite an existing release
-        if: github.event_name == 'workflow_dispatch' && !inputs.replace
+        if: ${{ !inputs.replace }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -151,7 +152,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
-          tag="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          tag="${{ inputs.tag }}"
           echo "publishing $tag"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "note: $tag already has a release; its assets will be replaced" >&2
@@ -159,10 +160,30 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          tag_name: ${{ inputs.tag }}
           files: |
             dist/happy-downloader_linux-amd64
             dist/happy-downloader_linux-arm64
             dist/SHA256SUMS
           generate_release_notes: true
           fail_on_unmatched_files: true
+
+  # A publish that half-worked — the tag exists, the release does not — is the
+  # drift that put 4.10.0 on a binary whose newest release was 4.6.0. Checking
+  # it here means the run that created the tag is the run that reports it.
+  verify:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Every tag, so the audit sees the whole set rather than the one
+          # being released.
+          fetch-depth: 0
+
+      - name: Every tag has a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/check-releases.sh
