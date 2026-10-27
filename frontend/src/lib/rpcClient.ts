@@ -132,6 +132,22 @@ export class RPCClient {
     })
   }
 
+  // Stop a running download but keep it in the queue, so it can be resumed.
+  public pause(id: string) {
+    return this.sendHTTP({
+      method: 'Service.Pause',
+      params: [id],
+    })
+  }
+
+  // Start a paused download again, with the arguments it was created with.
+  public resume(id: string) {
+    return this.sendHTTP({
+      method: 'Service.Resume',
+      params: [id],
+    })
+  }
+
   public clear(id: string) {
     return this.sendHTTP({
       method: 'Service.Clear',

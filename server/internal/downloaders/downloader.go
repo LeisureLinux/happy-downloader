@@ -17,6 +17,10 @@ type Downloader interface {
 
 	IsCompleted() bool
 
+	// IsPaused reports whether this download was stopped on purpose and is
+	// waiting to be resumed.
+	IsPaused() bool
+
 	UpdateSavedFilePath(path string)
 	UpdateOutputDimensions(width, height float64)
 	SetDuration(seconds float64)

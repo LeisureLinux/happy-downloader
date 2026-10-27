@@ -17,6 +17,8 @@ keys:
   captionsSkipped: '{count} язык(ов) источник не предлагает'
   captionsAutomatic: 'сгенерированные'
   captionsButton: 'Субтитры'
+  playbackUnsupported: 'Этот браузер не может воспроизвести этот файл'
+  playbackUnsupportedBody: 'Файл использует {codecs}, что этот браузер или это устройство не может декодировать. Скачайте его снова в контейнере H.264 / AAC (вариант MP4), чтобы воспроизвести его здесь.'
   sourceCode: 'Исходный код'
   urlInput: URL-адрес YouTube или любого другого поддерживаемого сервиса
   startButton: Начать
@@ -130,9 +132,12 @@ keys:
   statusCompleted: 'Готово'
   statusDownloading: 'Загрузка'
   statusErrored: 'Ошибка'
+  statusPaused: 'Приостановлено'
   statusMetadata: 'Чтение метаданных'
   statusPending: 'Подготовка'
   stopDownload: 'Остановить'
+  pauseDownload: 'Пауза'
+  continueDownload: 'Продолжить'
   subtitleLangsLabel: 'Языки субтитров'
   subtitlesAuto: 'Автоматические'
   subtitlesLabel: 'Субтитры'

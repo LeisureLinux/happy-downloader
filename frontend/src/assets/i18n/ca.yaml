@@ -17,6 +17,8 @@ keys:
   captionsSkipped: '{count} idioma(es) que la font no ofereix'
   captionsAutomatic: 'generats'
   captionsButton: 'Subtítols'
+  playbackUnsupported: 'Aquest navegador no pot reproduir aquest fitxer'
+  playbackUnsupportedBody: 'El fitxer utilitza {codecs}, que aquest navegador o dispositiu no pot descodificar. Descarrega''l de nou amb un contenidor H.264 / AAC (l''opció MP4) per poder-lo reproduir aquí.'
   sourceCode: 'Codi font'
   urlInput: URL de YouTube o d'un altre servei compatible
   startButton: Iniciar
@@ -130,9 +132,12 @@ keys:
   statusCompleted: 'Completat'
   statusDownloading: 'Descarregant'
   statusErrored: 'Fallit'
+  statusPaused: 'En pausa'
   statusMetadata: 'Llegint metadades'
   statusPending: 'Preparant'
   stopDownload: 'Atura'
+  pauseDownload: 'Pausa'
+  continueDownload: 'Continua'
   subtitleLangsLabel: 'Idiomes dels subtítols'
   subtitlesAuto: 'Generats automàticament'
   subtitlesLabel: 'Subtítols'

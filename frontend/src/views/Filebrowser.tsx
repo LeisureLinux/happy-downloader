@@ -360,6 +360,8 @@ export default function Filebrowser() {
         path={playing?.path ?? ''}
         name={playing?.name ?? ''}
         subtitles={playing?.subtitles}
+        videoCodec={playing?.videoCodec}
+        audioCodec={playing?.audioCodec}
         onClose={() => setPlaying(null)}
       />
     </Container>

@@ -210,6 +210,11 @@ func (l *LiveStreamDownloader) RestoreFromSnapshot(snap *internal.ProcessSnapsho
 
 func (l *LiveStreamDownloader) IsCompleted() bool { return l.Completed }
 
+// IsPaused reports whether this download was stopped on purpose. A live
+// stream cannot be resumed — it is gone by the time anyone asks — so it is
+// never paused.
+func (l *LiveStreamDownloader) IsPaused() bool { return false }
+
 func (l *LiveStreamDownloader) hasFileWriter() bool {
 	return slices.ContainsFunc(l.pipes, func(p pipes.Pipe) bool {
 		return p.Name() == "file-writer"

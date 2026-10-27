@@ -17,6 +17,8 @@ keys:
   captionsSkipped: '{count} idioma(s) no los ofrece la fuente'
   captionsAutomatic: 'generados'
   captionsButton: 'Subtítulos'
+  playbackUnsupported: 'Este navegador no puede reproducir este archivo'
+  playbackUnsupportedBody: 'El archivo usa {codecs}, que este navegador o este dispositivo no puede decodificar. Descárgalo de nuevo con un contenedor H.264 / AAC (la opción MP4) para reproducirlo aquí.'
   sourceCode: 'Código fuente'
   urlInput: URL de YouTube u otro servicio compatible
   startButton: Iniciar
@@ -130,9 +132,12 @@ keys:
   statusCompleted: 'Completado'
   statusDownloading: 'Descargando'
   statusErrored: 'Fallido'
+  statusPaused: 'En pausa'
   statusMetadata: 'Leyendo metadatos'
   statusPending: 'Preparando'
   stopDownload: 'Detener'
+  pauseDownload: 'Pausar'
+  continueDownload: 'Continuar'
   subtitleLangsLabel: 'Idiomas de subtítulos'
   subtitlesAuto: 'Generados automáticamente'
   subtitlesLabel: 'Subtítulos'

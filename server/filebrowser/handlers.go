@@ -53,10 +53,23 @@ func isMedia(d fs.DirEntry) bool {
 	return isVideo(d) || isAudio(d)
 }
 
+// isValidEntry reports whether a file in the download directory is something
+// the user might want to see.
+//
+// The partial files are excluded because a download in progress is not a
+// finished file: yt-dlp writes ".part" while it downloads and ".ytdl" while
+// it tracks the fragments of a segmented stream, and ".temp" while it merges
+// and post-processes. Listing any of them makes a half-written file look
+// like a download that had finished.
+//
+// They are kept out of the download directory in the first place now — the
+// partial files live in their own directory — but a file from an older
+// download, or one that was moved there by hand, is still filtered out.
 func isValidEntry(d fs.DirEntry) bool {
 	return !strings.HasPrefix(d.Name(), ".") &&
 		!strings.HasSuffix(d.Name(), ".part") &&
-		!strings.HasSuffix(d.Name(), ".ytdl")
+		!strings.HasSuffix(d.Name(), ".ytdl") &&
+		!strings.HasSuffix(d.Name(), ".temp")
 }
 
 // isCaptionFile reports whether a file is a caption track rather than media.
@@ -78,6 +91,15 @@ type DirectoryEntry struct {
 
 	// Duration in seconds, for media files. Zero when it cannot be determined.
 	Duration float64 `json:"duration,omitempty"`
+
+	// The codecs of the file, as ffprobe names them: "av1", "h264", "opus",
+	// "aac". The browser cannot decode a file it does not understand, and it
+	// cannot tell from the name that it will not: a file named ".mp4" can hold
+	// AV1, which is exactly what the downloader produces by default and what
+	// a phone without an AV1 decoder cannot play. The player checks these
+	// before it plays and says so, instead of showing a black rectangle.
+	VideoCodec string `json:"videoCodec,omitempty"`
+	AudioCodec string `json:"audioCodec,omitempty"`
 
 	// Subtitles are the caption files sitting next to this one, matched by
 	// language. A download with captions produces one file per language, named
@@ -127,7 +149,10 @@ func walkDir(root string) (*[]DirectoryEntry, error) {
 
 		// Only media files carry a length and can have captions beside them.
 		if !entry.IsDirectory && isMedia(d) {
-			entry.Duration = mediaDuration(path)
+			info := mediaInfoFor(path)
+			entry.Duration = info.duration
+			entry.VideoCodec = info.videoCodec
+			entry.AudioCodec = info.audioCodec
 			entry.Subtitles = subtitlesFor(root, d.Name())
 		}
 

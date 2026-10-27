@@ -17,6 +17,8 @@ keys:
   captionsSkipped: '소스가 제공하지 않는 언어 {count}개'
   captionsAutomatic: '자동 생성'
   captionsButton: '자막'
+  playbackUnsupported: '이 브라우저는 이 파일을 재생할 수 없습니다'
+  playbackUnsupportedBody: '이 파일은 {codecs}를 사용하며 이 브라우저 또는 기기에서는 디코딩할 수 없습니다. H.264 / AAC 컨테이너(MP4 옵션)로 다시 다운로드하면 여기서 재생할 수 있습니다.'
   sourceCode: '소스 코드'
   urlInput: YouTube나 다른 지원되는 사이트의 URL
   startButton: 시작
@@ -130,9 +132,12 @@ keys:
   statusCompleted: '완료'
   statusDownloading: '다운로드 중'
   statusErrored: '실패'
+  statusPaused: '일시 중지됨'
   statusMetadata: '메타데이터 읽는 중'
   statusPending: '준비 중'
   stopDownload: '중지'
+  pauseDownload: '일시 중지'
+  continueDownload: '계속'
   subtitleLangsLabel: '자막 언어'
   subtitlesAuto: '자동 생성'
   subtitlesLabel: '자막'

@@ -158,6 +158,15 @@ func (m *Store) Restore(mq *queue.MessageQueue) {
 			}
 			restored = d
 			m.table[snap.Id] = restored
+
+			// A paused download stays paused across a restart. It was
+			// stopped on purpose, and restarting the server is not a
+			// request to start it again — the partial file is still there
+			// for when the user asks.
+			if snap.Progress.Status == internal.StatusPaused {
+				continue
+			}
+
 			if !restored.(*downloaders.GenericDownloader).DownloaderBase.Completed {
 				mq.Publish(restored)
 			}

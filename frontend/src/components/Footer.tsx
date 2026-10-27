@@ -10,6 +10,7 @@ import { useI18n } from '../hooks/useI18n'
 import { formatSpeedMiB } from '../utils'
 import CookieIndicator from './CookieIndicator'
 import FreeSpaceIndicator from './FreeSpaceIndicator'
+import YtdlpIndicator from './YtdlpIndicator'
 import { useAtomValue } from 'jotai'
 
 const Footer: React.FC = () => {
@@ -76,9 +77,13 @@ const Footer: React.FC = () => {
             <FreeSpaceIndicator />
           </Suspense>
           <Divider orientation="vertical" flexItem />
-          {/* The cookie export's timestamp, beside the disk figure: both answer
-              "can this download work right now", and both are the first thing
-              to look at when one fails. */}
+          {/* The yt-dlp version, then the cookie export's timestamp. Both are
+              answers to "can this download work right now": yt-dlp breaks
+              YouTube every few weeks, and a stale cookie fails the same way. */}
+          <Suspense fallback={null}>
+            <YtdlpIndicator />
+          </Suspense>
+          <Divider orientation="vertical" flexItem />
           <Suspense fallback={null}>
             <CookieIndicator />
           </Suspense>

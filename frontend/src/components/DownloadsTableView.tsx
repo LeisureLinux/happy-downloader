@@ -1,7 +1,8 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadDoneIcon from '@mui/icons-material/DownloadDone'
 import ReplayIcon from '@mui/icons-material/Replay'
-import StopCircleIcon from '@mui/icons-material/StopCircle'
+import PauseIcon from '@mui/icons-material/Pause'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import {
   Box,
   Button,
@@ -135,6 +136,8 @@ const DownloadsTableView: React.FC = () => {
         return i18n.t('statusCompleted')
       case ProcessStatus.ERRORED:
         return i18n.t('statusErrored')
+      case ProcessStatus.PAUSED:
+        return i18n.t('statusPaused')
       default:
         return ''
     }
@@ -173,9 +176,16 @@ const DownloadsTableView: React.FC = () => {
   // 不是重新猜一遍要什么格式。
   const resume = (r: RPCResult) => client.retry(r.id)
 
+  // A paused download is resumed rather than retried: it is the same
+  // download, and yt-dlp continues the partial file it left behind, so it
+  // picks up where it stopped instead of starting over.
+  const continuePaused = (r: RPCResult) => client.resume(r.id)
+
+  // Stopping keeps the entry in the queue. It used to remove it, which lost
+  // the row and put a file that was never written into the file browser.
   const stop = (r: RPCResult) => r.progress.process_status === ProcessStatus.COMPLETED
     ? client.clear(r.id)
-    : client.kill(r.id)
+    : client.pause(r.id)
 
   // process_status is authoritative. percentage === '-1' only matched items
   // that never reported progress, so completed downloads kept the stop icon
@@ -252,10 +262,25 @@ const DownloadsTableView: React.FC = () => {
                   </IconButton>
                 </Tooltip>
               </>
+            ) : download.progress.process_status === ProcessStatus.PAUSED ? (
+              <>
+                {/* 暂停的行：继续和删除。继续是真的继续——yt-dlp 留着
+                    下载了一半的文件，所以它接着下，而不是从头再来。 */}
+                <Tooltip title={i18n.t('continueDownload')}>
+                  <IconButton size="small" color="primary" onClick={() => continuePaused(download)}>
+                    <PlayArrowIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={i18n.t('removeFromQueue')}>
+                  <IconButton size="small" onClick={() => client.clear(download.id)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </>
             ) : (
-              <Tooltip title={i18n.t('stopDownload')}>
+              <Tooltip title={i18n.t('pauseDownload')}>
                 <IconButton size="small" onClick={() => stop(download)}>
-                  <StopCircleIcon fontSize="small" />
+                  <PauseIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
             )}

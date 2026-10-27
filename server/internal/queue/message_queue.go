@@ -85,7 +85,19 @@ func (m *MessageQueue) downloadWorker(workerId int) {
 
 			// A rejected argument used to vanish here: the download sat at
 			// "preparing" forever with nothing in the log to explain it.
+			//
+			// A download that was stopped on purpose also ends with an error
+			// — the process was killed — and that is not a failure. Reporting
+			// it as one turned a paused download into a failed one, and the
+			// button became "download again" instead of "continue".
 			if err := p.Start(); err != nil {
+				if p.IsPaused() {
+					slog.Info("download paused",
+						slog.String("id", p.GetId()),
+					)
+					continue
+				}
+
 				slog.Error("failed to start download",
 					slog.String("id", p.GetId()),
 					slog.String("err", err.Error()),

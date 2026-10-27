@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/go-chi/chi/v5"
 )
@@ -225,6 +226,11 @@ func (h *Handler) GetVersion() http.HandlerFunc {
 		RPCVersion   string `json:"rpcVersion"`
 		RPCBuiltAt   string `json:"rpcBuiltAt"`
 		YtdlpVersion string `json:"ytdlpVersion"`
+		// YtdlpPath is where yt-dlp was found. The version alone does not
+		// say which binary produced a file, and "which yt-dlp is this" is
+		// the first question when a download behaves differently than it did
+		// yesterday.
+		YtdlpPath string `json:"ytdlpPath"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -242,6 +248,7 @@ func (h *Handler) GetVersion() http.HandlerFunc {
 			RPCVersion:   rpcVersion,
 			RPCBuiltAt:   builtAt,
 			YtdlpVersion: ytdlpVersion,
+			YtdlpPath:    config.Instance().Paths.DownloaderPath,
 		}
 
 		if err := json.NewEncoder(w).Encode(res); err != nil {

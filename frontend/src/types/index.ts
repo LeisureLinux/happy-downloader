@@ -1,6 +1,8 @@
 export type RPCMethods =
   | "Service.Exec"
   | "Service.Kill"
+  | "Service.Pause"
+  | "Service.Resume"
   | "Service.Clear"
   | "Service.Retry"
   | "Service.Running"
@@ -48,6 +50,10 @@ export enum ProcessStatus {
   COMPLETED,
   ERRORED,
   LIVESTREAM,
+  // A download that was stopped on purpose and is waiting to be resumed. It
+  // stays in the queue: it has not produced a file, so it is not in the file
+  // browser, and it can be resumed where it left off.
+  PAUSED,
 }
 
 type DownloadProgress = {
@@ -127,6 +133,12 @@ export type DirectoryEntry = {
   isDirectory: boolean
   // Length in seconds, for media files. Absent when it cannot be determined.
   duration?: number
+  // The codecs of the file, as the server read them with ffprobe. The browser
+  // cannot decode a file it does not understand, and it cannot tell from the
+  // name: a ".mp4" can hold AV1, which is what the downloader produces by
+  // default and what a phone without an AV1 decoder cannot play.
+  videoCodec?: string
+  audioCodec?: string
   // The caption files sitting next to this one.
   subtitles?: SubtitleFile[]
 }
@@ -158,6 +170,9 @@ export type RPCVersion = {
   rpcVersion: string
   rpcBuiltAt: string
   ytdlpVersion: string
+  // Where yt-dlp was found. The version alone does not say which binary
+  // produced a file.
+  ytdlpPath?: string
 }
 
 export type ArchiveEntry = {

@@ -18,11 +18,22 @@ import (
 // file never changes.
 //
 // So the lengths are cached, keyed by path and modification time: a file that
-// has not been touched keeps its answer, and a file that was replaced is read
+// has not been touched keeps its answer, and a file that is replaced is read
 // again.
 
-type probeCacheEntry struct {
+// mediaInfo is what the browser needs to know about a file before it tries to
+// play it.
+type mediaInfo struct {
+	// duration in seconds; zero when it cannot be determined
 	duration float64
+	// videoCodec is ffprobe's name for the video codec, e.g. "av1" or "h264"
+	videoCodec string
+	// audioCodec is ffprobe's name for the audio codec, e.g. "opus" or "aac"
+	audioCodec string
+}
+
+type probeCacheEntry struct {
+	info     mediaInfo
 	storedAt time.Time
 }
 
@@ -35,64 +46,97 @@ var (
 	probeGroup singleflight.Group
 )
 
-// mediaDuration returns the length of a media file in seconds, or zero when it
-// cannot be determined.
+// mediaInfoFor returns the length and the codecs of a media file.
+//
+// The codecs matter as much as the length: the browser asks whether it can
+// decode the file before playing it, and "av1" on a phone without an AV1
+// decoder is a black screen with no message. The browser cannot find that out
+// from the file name, so it has to be told.
 //
 // ffprobe is used rather than parsing the container by hand: it is already a
 // dependency of ffmpeg, which yt-dlp needs for merging anyway, and it answers
 // the question for every container.
-func mediaDuration(path string) float64 {
+func mediaInfoFor(path string) mediaInfo {
 	probeMu.RLock()
 	entry, ok := probeCache[path]
 	probeMu.RUnlock()
 
 	if ok && time.Since(entry.storedAt) < time.Hour {
-		return entry.duration
+		return entry.info
 	}
 
 	value, _, _ := probeGroup.Do(path, func() (any, error) {
-		return runFFprobeDuration(path), nil
+		return runFFprobe(path), nil
 	})
 
-	duration, _ := value.(float64)
+	info, _ := value.(mediaInfo)
 
 	probeMu.Lock()
-	probeCache[path] = probeCacheEntry{duration: duration, storedAt: time.Now()}
+	probeCache[path] = probeCacheEntry{info: info, storedAt: time.Now()}
 	probeMu.Unlock()
 
-	return duration
+	return info
 }
 
-func runFFprobeDuration(path string) float64 {
+func runFFprobe(path string) mediaInfo {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "ffprobe",
 		"-v", "error",
-		"-show_entries", "format=duration",
+		// The disposition is what tells an attached picture — the cover art
+		// some containers carry — from a real video stream. A file with a
+		// cover image reports two video streams, and the first one is the
+		// artwork.
+		"-show_entries", "stream=codec_type,codec_name,disposition:format=duration",
 		"-of", "json",
 		path,
 	)
 
 	out, err := cmd.Output()
 	if err != nil {
-		return 0
+		return mediaInfo{}
 	}
 
 	var parsed struct {
+		Streams []struct {
+			CodecType   string `json:"codec_type"`
+			CodecName   string `json:"codec_name"`
+			Disposition struct {
+				AttachedPic int `json:"attached_pic"`
+			} `json:"disposition"`
+		} `json:"streams"`
 		Format struct {
 			Duration string `json:"duration"`
 		} `json:"format"`
 	}
 
 	if err := json.Unmarshal(out, &parsed); err != nil {
-		return 0
+		return mediaInfo{}
 	}
 
-	seconds, err := strconv.ParseFloat(strings.TrimSpace(parsed.Format.Duration), 64)
-	if err != nil || seconds <= 0 {
-		return 0
+	info := mediaInfo{}
+
+	for _, s := range parsed.Streams {
+		switch s.CodecType {
+		case "video":
+			// Skip the artwork.
+			if s.Disposition.AttachedPic == 1 || info.videoCodec != "" {
+				continue
+			}
+			info.videoCodec = strings.ToLower(s.CodecName)
+		case "audio":
+			if info.audioCodec != "" {
+				continue
+			}
+			info.audioCodec = strings.ToLower(s.CodecName)
+		}
 	}
 
-	return seconds
+	seconds, _ := strconv.ParseFloat(strings.TrimSpace(parsed.Format.Duration), 64)
+	if seconds > 0 {
+		info.duration = seconds
+	}
+
+	return info
 }

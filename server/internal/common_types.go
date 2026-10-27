@@ -121,4 +121,12 @@ const (
 	StatusCompleted
 	StatusErrored
 	StatusLiveStream
+	// StatusPaused is a download that was stopped on purpose and is waiting
+	// to be resumed.
+	//
+	// It is a status of its own rather than a flag, because "stopped" and
+	// "finished" have to be told apart: a stopped download has not produced a
+	// file, and treating it as finished put it in the browser as a file that
+	// was never written.
+	StatusPaused
 )

@@ -39,8 +39,17 @@ func (j *JSONLogConsumer) ParseLogEntry(entry []byte, d Downloader) {
 
 	if err := json.Unmarshal(sanitizeProgressJSON(entry), &progress); err == nil {
 		if progress.Percentage != "" {
+			// A download that was paused keeps its status. yt-dlp's last
+			// progress line arrives after the kill, and it said
+			// "downloading", which turned the pause back into a download —
+			// the row showed a running bar for something that was stopped.
+			status := internal.StatusDownloading
+			if d.Status().Progress.Status == internal.StatusPaused {
+				status = internal.StatusPaused
+			}
+
 			d.SetProgress(internal.DownloadProgress{
-				Status:     internal.StatusDownloading,
+				Status:     status,
 				Percentage: progress.Percentage,
 				Speed:      progress.Speed,
 				ETA:        progress.Eta,

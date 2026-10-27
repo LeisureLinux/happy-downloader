@@ -232,6 +232,89 @@ func (s *Service) Retry(args string, result *string) error {
 	return nil
 }
 
+// Pause stops a running download but keeps it in the queue.
+//
+// The entry stays where it is, with the progress it had, and the button on
+// its row becomes Resume. The partial file yt-dlp left behind is what makes
+// the resume cheap: yt-dlp continues a partial download by default.
+func (s *Service) Pause(args string, paused *string) error {
+	slog.Info("pausing download", slog.String("id", args))
+
+	download, err := s.db.Get(args)
+	if err != nil {
+		return err
+	}
+
+	if download == nil {
+		return errors.New("nil process")
+	}
+
+	if err := download.Stop(); err != nil {
+		slog.Info("failed pausing download",
+			slog.String("id", download.GetId()),
+			slog.Any("err", err))
+		return err
+	}
+
+	*paused = args
+
+	return nil
+}
+
+// Resume starts a paused download again.
+//
+// It re-queues the same URL with the same arguments, so the resumed download
+// is the same one that was paused — and because yt-dlp keeps the partial
+// file, it continues rather than starting over. The old entry is replaced
+// rather than kept alongside, so there is one row for one download.
+//
+// A download that is not paused is left alone: resuming something that is
+// already running would start a second copy of it.
+func (s *Service) Resume(args string, resumed *string) error {
+	slog.Info("resuming download", slog.String("id", args))
+
+	old, err := s.db.Get(args)
+	if err != nil {
+		return err
+	}
+
+	if old == nil {
+		return errors.New("nil process")
+	}
+
+	snapshot := old.Status()
+
+	if snapshot.Progress.Status != internal.StatusPaused {
+		return errors.New("this download is not paused")
+	}
+
+	url := old.GetUrl()
+	if url == "" {
+		return errors.New("this entry has no URL recorded, so it cannot be resumed")
+	}
+
+	s.db.Delete(args)
+
+	d := downloaders.NewGenericDownload(url, downloaders.StripOutputArgs(snapshot.Params))
+	d.SetOutput(internal.DownloadOutput{
+		Path:     snapshot.Output.Path,
+		Filename: snapshot.Output.Filename,
+	})
+
+	s.db.Set(d)
+	s.mq.Publish(d)
+
+	slog.Info("resumed download",
+		slog.String("old", args),
+		slog.String("new", d.GetId()),
+		slog.String("url", url),
+	)
+
+	*resumed = d.GetId()
+
+	return nil
+}
+
 // Remove a process from the db rendering it unusable if active
 func (s *Service) Clear(args string, killed *string) error {
 	slog.Info("Clearing process with id", slog.String("id", args))

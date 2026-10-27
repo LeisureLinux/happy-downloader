@@ -17,6 +17,8 @@ keys:
   captionsSkipped: '{count} język(ów) źródło nie oferuje'
   captionsAutomatic: 'wygenerowane'
   captionsButton: 'Napisy'
+  playbackUnsupported: 'Ta przeglądarka nie może odtworzyć tego pliku'
+  playbackUnsupportedBody: 'Plik używa {codecs}, czego ta przeglądarka lub urządzenie nie potrafi zdekodować. Pobierz go ponownie w kontenerze H.264 / AAC (opcja MP4), aby odtworzyć go tutaj.'
   sourceCode: 'Kod źródłowy'
   urlInput: Adres URL YouTube lub innej obsługiwanej usługi
   startButton: Początek
@@ -130,9 +132,12 @@ keys:
   statusCompleted: 'Ukończono'
   statusDownloading: 'Pobieranie'
   statusErrored: 'Niepowodzenie'
+  statusPaused: 'Wstrzymane'
   statusMetadata: 'Odczyt metadanych'
   statusPending: 'Przygotowanie'
   stopDownload: 'Zatrzymaj'
+  pauseDownload: 'Wstrzymaj'
+  continueDownload: 'Wznów'
   subtitleLangsLabel: 'Języki napisów'
   subtitlesAuto: 'Generowane automatycznie'
   subtitlesLabel: 'Napisy'
