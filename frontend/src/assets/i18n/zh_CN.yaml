@@ -9,6 +9,8 @@ keys:
   captionsFilter: '过滤语言'
   captionsDownload: '下载'
   captionsDownloading: '下载中...'
+  captionsFailed: '字幕下载失败，原因在日志里。'
+  captionsInBackground: '即使关闭这个窗口，下载也会在服务器上继续。'
   captionsDownloaded: '下载了 {count} 个字幕文件'
   captionsNone: '没有生成字幕文件'
   captionsSkipped: '{count} 种语言源站没有提供'

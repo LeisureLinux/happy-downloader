@@ -55,6 +55,7 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('')
+  const [jobId, setJobId] = useState('')
 
   // Which caption languages the source has.
   //
@@ -126,6 +127,12 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
     }
   }, [open, load])
 
+  // A job that is already running keeps its button busy when the dialog is
+  // opened again.
+  useEffect(() => {
+    if (jobId) setBusy(true)
+  }, [jobId])
+
   // The filter matches both the language code and the name, so "zh" finds
   // Chinese and "auto" finds the generated ones.
   const filtered = useMemo(() => {
@@ -148,8 +155,12 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
     if (selected.size === 0) return
 
     setBusy(true)
+    setError('')
 
     try {
+      // The job runs on the server. Closing this dialog, clicking elsewhere or
+      // losing the connection does not stop it — the captions arrive whether
+      // or not anyone is watching.
       const res = await fetch(`${serverAddr}/api/v1/captions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -160,28 +171,65 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
         throw new Error(await res.text())
       }
 
-      const result = await res.json()
+      const job = await res.json()
 
-      const written = result.written?.length ?? 0
-      const skipped = Object.keys(result.skipped ?? {}).length
-
-      pushMessage(
-        written > 0
-          ? i18n.t('captionsDownloaded').replace('{count}', String(written))
-          : i18n.t('captionsNone'),
-        written > 0 ? 'success' : 'info'
-      )
-
-      if (skipped > 0) {
-        pushMessage(i18n.t('captionsSkipped').replace('{count}', String(skipped)), 'info')
-      }
-
-      onDone()
+      setJobId(job.id)
       onClose()
+
+      // The toast appears when the job finishes, wherever the user is by
+      // then.
+      void watchJob(job.id)
     } catch (e) {
       setError(String(e))
-    } finally {
       setBusy(false)
+    }
+  }
+
+  // watchJob polls until the job finishes.
+  //
+  // The poll survives the dialog being closed, because it lives in the
+  // component's state and the component stays mounted while the file browser
+  // is on screen. Navigating away from the browser loses it, which is why the
+  // toast is the last word rather than the only word.
+  const watchJob = async (id: string) => {
+    for (let attempt = 0; attempt < 300; attempt++) {
+      await new Promise(r => setTimeout(r, 2000))
+
+      try {
+        const res = await fetch(`${serverAddr}/api/v1/captions/status/${id}`)
+        if (!res.ok) return
+
+        const job = await res.json()
+
+        if (job.state === 'failed') {
+          pushMessage(i18n.t('captionsFailed'), 'error')
+          setBusy(false)
+          return
+        }
+
+        if (job.state === 'succeeded') {
+          const written = job.written?.length ?? 0
+          const skipped = Object.keys(job.skipped ?? {}).length
+
+          pushMessage(
+            written > 0
+              ? i18n.t('captionsDownloaded').replace('{count}', String(written))
+              : i18n.t('captionsNone'),
+            written > 0 ? 'success' : 'info'
+          )
+
+          if (skipped > 0) {
+            pushMessage(i18n.t('captionsSkipped').replace('{count}', String(skipped)), 'info')
+          }
+
+          setBusy(false)
+          setJobId('')
+          onDone()
+          return
+        }
+      } catch {
+        // A dropped poll is not a failed job; the server is still working.
+      }
     }
   }
 
@@ -269,6 +317,17 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
           {busy ? i18n.t('captionsDownloading') : i18n.t('captionsDownload')}
         </Button>
       </DialogActions>
+
+      {/* The job runs on the server, so it continues whatever happens to this
+          dialog. The note says so rather than letting the user think that
+          closing it stopped the work. */}
+      {busy && (
+        <DialogContent sx={{ pt: 0 }}>
+          <Typography variant="caption" color="text.secondary">
+            {i18n.t('captionsInBackground')}
+          </Typography>
+        </DialogContent>
+      )}
     </Dialog>
   )
 }

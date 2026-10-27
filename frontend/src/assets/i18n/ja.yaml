@@ -9,6 +9,8 @@ keys:
   captionsFilter: '言語で絞り込む'
   captionsDownload: 'ダウンロード'
   captionsDownloading: 'ダウンロード中...'
+  captionsFailed: '字幕のダウンロードに失敗しました。理由はログにあります。'
+  captionsInBackground: 'このウィンドウを閉じても、ダウンロードはサーバー側で続きます。'
   captionsDownloaded: '字幕ファイルを {count} 件ダウンロードしました'
   captionsNone: '字幕ファイルは生成されませんでした'
   captionsSkipped: '{count} 言語はソースが提供していません'

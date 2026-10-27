@@ -9,6 +9,8 @@ keys:
   captionsFilter: 'Sprachen filtern'
   captionsDownload: 'Herunterladen'
   captionsDownloading: 'Wird geladen...'
+  captionsFailed: 'Der Untertitel-Download ist fehlgeschlagen. Der Grund steht im Protokoll.'
+  captionsInBackground: 'Der Download läuft auf dem Server weiter, auch wenn dieses Fenster geschlossen wird.'
   captionsDownloaded: '{count} Untertiteldatei(en) geladen'
   captionsNone: 'Es wurde keine Untertiteldatei erzeugt'
   captionsSkipped: '{count} Sprache(n) wurden von der Quelle nicht angeboten'

@@ -11,11 +11,13 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
+	"github.com/go-chi/chi/v5"
 )
 
 // Captions for a file that was already downloaded.
@@ -51,20 +53,94 @@ type CaptionResult struct {
 	Skipped map[string]string `json:"skipped,omitempty"`
 }
 
+// A caption download takes twenty seconds or more: yt-dlp has to resolve the
+// source before it can ask for a caption. So it runs in the background and the
+// browser asks how it is going.
+//
+// Running it in the foreground meant that closing the dialog — or clicking
+// anywhere else, or losing the network for a moment — left the request
+// cancelled and the captions half-written. The work does not belong to the
+// page that asked for it.
+
+// CaptionJob is one caption download in progress.
+type CaptionJob struct {
+	ID      string            `json:"id"`
+	Path    string            `json:"path"`
+	State   string            `json:"state"`
+	Written []string          `json:"written,omitempty"`
+	Skipped map[string]string `json:"skipped,omitempty"`
+	Error   string            `json:"error,omitempty"`
+
+	started  time.Time
+	finished time.Time
+}
+
+// The states a job goes through.
+const (
+	jobRunning   = "running"
+	jobSucceeded = "succeeded"
+	jobFailed    = "failed"
+)
+
 // captionLocks serialises caption downloads per file. Two requests for the
 // same file would otherwise write the same file at once.
 var captionLocks sync.Map
 
-// CaptionsHandler serves the caption download endpoint.
+// captionJobs holds the jobs that are running or have just finished.
+type captionJobs struct {
+	mu   sync.RWMutex
+	jobs map[string]*CaptionJob
+}
+
+func newCaptionJobs() *captionJobs {
+	return &captionJobs{jobs: map[string]*CaptionJob{}}
+}
+
+// put stores a job.
+func (j *captionJobs) put(job *CaptionJob) {
+	j.mu.Lock()
+	j.jobs[job.ID] = job
+	j.mu.Unlock()
+}
+
+// get returns a job.
+func (j *captionJobs) get(id string) (*CaptionJob, bool) {
+	j.mu.RLock()
+	job, ok := j.jobs[id]
+	j.mu.RUnlock()
+	return job, ok
+}
+
+// sweep removes the jobs that finished long ago, so the map does not grow
+// without bound.
+func (j *captionJobs) sweep() {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	for id, job := range j.jobs {
+		if !job.finished.IsZero() && time.Since(job.finished) > 10*time.Minute {
+			delete(j.jobs, id)
+		}
+	}
+}
+
+// CaptionsHandler serves the caption endpoints.
 type CaptionsHandler struct {
 	index *kv.SourceIndex
+	jobs  *captionJobs
 }
 
 func NewCaptionsHandler(index *kv.SourceIndex) *CaptionsHandler {
-	return &CaptionsHandler{index: index}
+	return &CaptionsHandler{
+		index: index,
+		jobs:  newCaptionJobs(),
+	}
 }
 
-// Download fetches captions for a file that is already on disk.
+// Download starts a caption download and returns immediately.
+//
+// The job runs on its own. The browser can close the dialog, navigate away
+// or lose the connection and the captions still arrive.
 func (h *CaptionsHandler) Download(w http.ResponseWriter, r *http.Request) {
 	var req CaptionRequest
 
@@ -78,24 +154,76 @@ func (h *CaptionsHandler) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	job := &CaptionJob{
+		ID:      newJobID(),
+		Path:    req.Path,
+		State:   jobRunning,
+		Skipped: map[string]string{},
+		started: time.Now(),
+	}
+
+	h.jobs.put(job)
+	h.jobs.sweep()
+
+	go h.run(job, req)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+
+	if err := json.NewEncoder(w).Encode(job); err != nil {
+		slog.Error("could not report the caption job", slog.Any("err", err))
+	}
+}
+
+// Status reports how a job is going.
+func (h *CaptionsHandler) Status(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	job, ok := h.jobs.get(id)
+	if !ok {
+		http.Error(w, "no such job", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(job); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+// run does the work of one job.
+func (h *CaptionsHandler) run(job *CaptionJob, req CaptionRequest) {
 	result, err := h.fetch(req)
+
+	h.jobs.mu.Lock()
+	defer h.jobs.mu.Unlock()
+
+	job.finished = time.Now()
+
 	if err != nil {
+		job.State = jobFailed
+		job.Error = err.Error()
+
 		slog.Error("could not fetch the captions",
 			slog.String("path", req.Path),
 			slog.Any("languages", req.Languages),
 			slog.Any("err", err),
 		)
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	job.State = jobSucceeded
+	job.Written = result.Written
+	job.Skipped = result.Skipped
 
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	slog.Info("captions fetched",
+		slog.String("path", req.Path),
+		slog.Int("written", len(result.Written)),
+		slog.Int("skipped", len(result.Skipped)),
+	)
 }
 
 // fetch does the work, and is separate so it can be tested without a server.
@@ -133,7 +261,14 @@ func (h *CaptionsHandler) fetch(req CaptionRequest) (*CaptionResult, error) {
 
 	args := []string{
 		"--skip-download",
+		// Both kinds of caption. --write-subs alone gets only the authored
+		// tracks, and most videos have none of those: YouTube offers a
+		// generated track for nearly every video, and often for a hundred
+		// languages. Asking for only the authored ones produced "there are no
+		// subtitles for the requested languages" on a video that plainly had
+		// them.
 		"--write-subs",
+		"--write-auto-subs",
 		"--convert-subs", "srt",
 		"--sub-langs", strings.Join(req.Languages, ","),
 		"-o", stem + ".%(ext)s",
@@ -173,12 +308,6 @@ func (h *CaptionsHandler) fetch(req CaptionRequest) (*CaptionResult, error) {
 		result.Written = append(result.Written, found)
 	}
 
-	slog.Info("captions fetched",
-		slog.String("path", clean),
-		slog.Int("written", len(result.Written)),
-		slog.Int("skipped", len(result.Skipped)),
-	)
-
 	return result, nil
 }
 
@@ -196,10 +325,11 @@ func (h *CaptionsHandler) sourceURL(path string) (string, bool) {
 		}
 	}
 
-	// A file downloaded before the index existed, or one put there by hand,
-	// still carries its source in the metadata: yt-dlp's --embed-metadata
-	// writes the page URL into the comment field. Reading it means the old
-	// files work too, rather than only the ones fetched since.
+	// A file downloaded before the index existed, or one put there by hand
+	// with the same tool, still carries its source in the metadata:
+	// yt-dlp's --embed-metadata writes the page URL into the comment field.
+	// Reading it means the old files work too, rather than only the ones
+	// fetched since.
 	if url, ok := sourceFromMetadata(path); ok {
 		return url, true
 	}
@@ -208,10 +338,6 @@ func (h *CaptionsHandler) sourceURL(path string) (string, bool) {
 }
 
 // AvailableCaptions lists the caption languages a file's source offered.
-//
-// It comes from the probe, which is kept for ten minutes after a download, so
-// this is only reliable for recent files. For older ones the languages are
-// found by asking yt-dlp, which is slower but always right.
 func (h *CaptionsHandler) Available(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
 	if path == "" {
@@ -223,9 +349,7 @@ func (h *CaptionsHandler) Available(w http.ResponseWriter, r *http.Request) {
 
 	url, ok := h.sourceURL(clean)
 	if !ok {
-		slog.Warn("no source for this file",
-			slog.String("path", clean),
-		)
+		slog.Warn("no source for this file", slog.String("path", clean))
 
 		http.Error(w, "this file has no remembered source", http.StatusNotFound)
 		return
@@ -282,34 +406,6 @@ func probeCaptionLanguages(url string) ([]internal.CaptionTrack, error) {
 	return captionTracks(parsed.Subtitles, parsed.AutomaticCaptions), nil
 }
 
-// captionName pulls the human-readable name out of yt-dlp's caption data.
-//
-// The value for a language is a list of formats, and the first one carries the
-// name — "English (auto-generated)" and the like. Without it the list shows
-// 165 bare codes, which is not a list anyone can choose from.
-func captionName(value any) string {
-	list, ok := value.([]any)
-	if !ok {
-		return ""
-	}
-
-	// The name is not on every entry: a hand-written track has it on the
-	// second format while the first carries only a URL. So the list is
-	// searched rather than taking the first entry.
-	for _, entry := range list {
-		item, ok := entry.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		if name, ok := item["name"].(string); ok && name != "" {
-			return name
-		}
-	}
-
-	return ""
-}
-
 // captionTracks flattens yt-dlp's caption maps into a list.
 func captionTracks(subtitles, automatic map[string]any) []internal.CaptionTrack {
 	var tracks []internal.CaptionTrack
@@ -343,4 +439,37 @@ func captionTracks(subtitles, automatic map[string]any) []internal.CaptionTrack 
 	})
 
 	return tracks
+}
+
+// captionName pulls the human-readable name out of yt-dlp's caption data.
+//
+// The value for a language is a list of formats, and the name is on one of
+// them — not always the first. Without it the list shows 165 bare codes,
+// which is not a list anyone can choose from.
+func captionName(value any) string {
+	list, ok := value.([]any)
+	if !ok {
+		return ""
+	}
+
+	// The name is not on every entry: a hand-written track has it on the
+	// second format while the first carries only a URL. So the list is
+	// searched rather than taking the first entry.
+	for _, entry := range list {
+		item, ok := entry.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		if name, ok := item["name"].(string); ok && name != "" {
+			return name
+		}
+	}
+
+	return ""
+}
+
+// newJobID makes an identifier for a job.
+func newJobID() string {
+	return fmt.Sprintf("%d", time.Now().UnixNano())
 }

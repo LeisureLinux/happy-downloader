@@ -9,6 +9,8 @@ keys:
   captionsFilter: 'Nyelvek szűrése'
   captionsDownload: 'Letöltés'
   captionsDownloading: 'Letöltés...'
+  captionsFailed: 'A felirat letöltése nem sikerült. Az ok a naplóban van.'
+  captionsInBackground: 'A letöltés a kiszolgálón folytatódik, akkor is, ha bezárod ezt az ablakot.'
   captionsDownloaded: '{count} feliratfájl letöltve'
   captionsNone: 'Nem jött létre feliratfájl'
   captionsSkipped: '{count} nyelvet nem kínál a forrás'

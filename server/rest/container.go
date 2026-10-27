@@ -35,5 +35,6 @@ func ApplyRouter(args *ContainerArgs) func(chi.Router) {
 		captions := NewCaptionsHandler(args.SourceIndex)
 		r.Post("/captions", captions.Download)
 		r.Get("/captions", captions.Available)
+		r.Get("/captions/status/{id}", captions.Status)
 	}
 }

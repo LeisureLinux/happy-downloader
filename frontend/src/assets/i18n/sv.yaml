@@ -9,6 +9,8 @@ keys:
   captionsFilter: 'Filtrera språk'
   captionsDownload: 'Ladda ner'
   captionsDownloading: 'Laddar ner...'
+  captionsFailed: 'Undertextnedladdningen misslyckades. Anledningen finns i loggen.'
+  captionsInBackground: 'Nedladdningen fortsätter på servern även om det här fönstret stängs.'
   captionsDownloaded: 'Laddade ner {count} undertextfil(er)'
   captionsNone: 'Ingen undertextfil skapades'
   captionsSkipped: '{count} språk erbjuder källan inte'

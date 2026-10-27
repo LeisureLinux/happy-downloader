@@ -9,6 +9,8 @@ keys:
   captionsFilter: '언어 필터'
   captionsDownload: '다운로드'
   captionsDownloading: '다운로드 중...'
+  captionsFailed: '자막 다운로드에 실패했습니다. 이유는 로그에 있습니다.'
+  captionsInBackground: '이 창을 닫아도 서버에서 다운로드가 계속됩니다.'
   captionsDownloaded: '자막 파일 {count}개를 다운로드했습니다'
   captionsNone: '자막 파일이 생성되지 않았습니다'
   captionsSkipped: '소스가 제공하지 않는 언어 {count}개'

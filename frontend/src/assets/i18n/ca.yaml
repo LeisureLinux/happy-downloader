@@ -9,6 +9,8 @@ keys:
   captionsFilter: 'Filtra els idiomes'
   captionsDownload: 'Descarrega'
   captionsDownloading: 'Descarregant...'
+  captionsFailed: 'La descàrrega de subtítols ha fallat. El motiu és al registre.'
+  captionsInBackground: 'La descàrrega continua al servidor encara que es tanqui aquesta finestra.'
   captionsDownloaded: '{count} fitxer(s) de subtíts descarregat(s)'
   captionsNone: 'No s''ha generat cap fitxer de subtítols'
   captionsSkipped: '{count} idioma(es) que la font no ofereix'

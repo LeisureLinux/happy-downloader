@@ -9,6 +9,8 @@ keys:
   captionsFilter: 'Filter languages'
   captionsDownload: 'Download'
   captionsDownloading: 'Downloading...'
+  captionsFailed: 'The caption download failed. The log has the reason.'
+  captionsInBackground: 'The download continues on the server even if this dialog is closed.'
   captionsDownloaded: 'Downloaded {count} caption file(s)'
   captionsNone: 'No caption file was produced'
   captionsSkipped: '{count} language(s) were not offered by the source'
