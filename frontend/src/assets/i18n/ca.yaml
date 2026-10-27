@@ -4,6 +4,7 @@ keys:
   captionsFor: 'Subtítols per a'
   captionsLoading: 'Comprovant quin·s idiomes ofereix la font...'
   captionsUnavailable: 'Aquesta font no ofereix subtítols.'
+  captionsNoSource: 'Aquest fitxer no te cap font memoritzada, axi que no se''n poden trobar els subtitols. Els fitxers descarregats abans d''aquesta funcio potser que s''hagin de tornar a descarregar.'
   captionsHint: 'Tria els idiomes per descarregar.'
   captionsFilter: 'Filtra els idiomes'
   captionsDownload: 'Descarrega'

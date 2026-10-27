@@ -4,6 +4,7 @@ keys:
   captionsFor: 'Untertitel für'
   captionsLoading: 'Prüfe, welche Sprachen die Quelle anbietet...'
   captionsUnavailable: 'Diese Quelle bietet keine Untertitel.'
+  captionsNoSource: 'Diese Datei hat keine gespeicherte Quelle, daher koennen ihre Untertitel nicht gefunden werden. Dateien, die vor dieser Funktion heruntergeladen wurden, muessen moeglicherweise erneut geladen werden.'
   captionsHint: 'Wähle die Sprachen zum Laden.'
   captionsFilter: 'Sprachen filtern'
   captionsDownload: 'Herunterladen'

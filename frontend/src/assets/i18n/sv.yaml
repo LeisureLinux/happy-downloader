@@ -4,6 +4,7 @@ keys:
   captionsFor: 'Undertexter för'
   captionsLoading: 'Kontrollerar vilka språk källan erbjuder...'
   captionsUnavailable: 'Den här källan erbjuder inga undertexter.'
+  captionsNoSource: 'Den har filen har ingen sparad kalla, sa dess undertexter gar inte att hitta. Filer som laddats ner fore den har funktionen kan behova laddas ner igen.'
   captionsHint: 'Välj de språk som ska laddas ner.'
   captionsFilter: 'Filtrera språk'
   captionsDownload: 'Ladda ner'

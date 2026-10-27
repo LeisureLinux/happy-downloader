@@ -4,6 +4,7 @@ keys:
   captionsFor: 'Napisy dla'
   captionsLoading: 'Sprawdzanie, jakie języki oferuje źródło...'
   captionsUnavailable: 'To źródło nie ma napisów.'
+  captionsNoSource: 'Ten plik nie ma zapisanego zrodla, wiec nie mozna znalezc jego napisow. Pliki pobrane przed dodaniem tej funkcji moga wymagac ponownego pobrania.'
   captionsHint: 'Wybierz języki do pobrania.'
   captionsFilter: 'Filtruj języki'
   captionsDownload: 'Pobierz'

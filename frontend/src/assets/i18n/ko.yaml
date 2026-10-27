@@ -4,6 +4,7 @@ keys:
   captionsFor: '자막:'
   captionsLoading: '소스가 제공하는 언어를 확인하는 중...'
   captionsUnavailable: '이 소스에는 자막이 없습니다.'
+  captionsNoSource: '이 파일에는 출처가 기록되어 있지 않아 자막을 찾을 수 없습니다. 이 기능이 추가되기 전에 다운로드한 파일은 다시 받아야 할 수 있습니다.'
   captionsHint: '받을 언어를 선택하세요.'
   captionsFilter: '언어 필터'
   captionsDownload: '다운로드'

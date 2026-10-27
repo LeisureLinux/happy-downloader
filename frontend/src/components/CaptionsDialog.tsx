@@ -103,7 +103,17 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
       // English and the interface's own language, pre-selected.
       setSelected(new Set(found.filter(t => preferredSet.has(t.language)).map(t => t.language)))
     } catch (e) {
-      setError(String(e))
+      // The server's message is plain English and says nothing about what to
+      // do. A file with no remembered source cannot get captions, and the
+      // useful thing to say is that, rather than "404".
+      const message = String(e)
+
+      setError(
+        message.includes('no remembered source')
+          ? i18n.t('captionsNoSource')
+          : message
+      )
+
       setTracks([])
     } finally {
       setLoading(false)

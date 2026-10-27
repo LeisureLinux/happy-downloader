@@ -4,6 +4,7 @@ keys:
   captionsFor: 'Feliratok ehhez:'
   captionsLoading: 'Annak ellenőrzése, milyen nyelveket kínál a forrás...'
   captionsUnavailable: 'Ez a forrás nem kínál feliratot.'
+  captionsNoSource: 'Ennek a fajlnek nincs megjegyzett forrasa, ezert a felirata nem talalhato. A funkcio bevezetese elott letoltott fajlokat ujra le kell tolteni.'
   captionsHint: 'Válaszd ki a letöltendő nyelveket.'
   captionsFilter: 'Nyelvek szűrése'
   captionsDownload: 'Letöltés'

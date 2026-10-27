@@ -4,6 +4,7 @@ keys:
   captionsFor: 'Captions for'
   captionsLoading: 'Checking which languages the source offers...'
   captionsUnavailable: 'This source offers no captions.'
+  captionsNoSource: 'This file has no remembered source, so its captions cannot be found. Files downloaded before this feature was added may need to be downloaded again.'
   captionsHint: 'Pick the languages to fetch.'
   captionsFilter: 'Filter languages'
   captionsDownload: 'Download'

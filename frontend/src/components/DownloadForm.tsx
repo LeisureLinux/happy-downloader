@@ -138,7 +138,6 @@ const DownloadForm: React.FC = () => {
 
         <Stack direction="row" spacing={1} alignItems="flex-start">
           <TextField
-            fullWidth
             multiline
             minRows={1}
             maxRows={6}
@@ -151,11 +150,16 @@ const DownloadForm: React.FC = () => {
                 void probe()
               }
             }}
+            // The field gives up its width to the button rather than the
+            // other way round: "选择格式" wrapped onto two lines, and a URL
+            // box that is a little shorter is not a problem.
+            sx={{ flexGrow: 1, minWidth: 0 }}
           />
           <Button
             variant="contained"
             disabled={!url.trim() || probing}
             onClick={() => void probe()}
+            sx={{ flexShrink: 0, whiteSpace: 'nowrap', minWidth: 118 }}
           >
             {probing ? `${i18n.t('probing')} ${elapsed}s` : i18n.t('selectFormatButton')}
           </Button>

@@ -4,6 +4,7 @@ keys:
   captionsFor: '字幕：'
   captionsLoading: 'ソースが提供する言語を確認しています...'
   captionsUnavailable: 'このソースには字幕がありません。'
+  captionsNoSource: 'このファイルには出典が記録されていないため、字幕を見つけられません。この機能追加前にダウンロードしたファイルは、再ダウンロードが必要な場合があります。'
   captionsHint: '取得する言語を選んでください。'
   captionsFilter: '言語で絞り込む'
   captionsDownload: 'ダウンロード'

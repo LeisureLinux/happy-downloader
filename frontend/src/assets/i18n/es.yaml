@@ -4,6 +4,7 @@ keys:
   captionsFor: 'Subtítulos para'
   captionsLoading: 'Comprobando qué idiomas ofrece la fuente...'
   captionsUnavailable: 'Esta fuente no ofrece subtítulos.'
+  captionsNoSource: 'Este archivo no tiene una fuente guardada, asi que no se pueden encontrar sus subtitulos. Los archivos descargados antes de esta funcion puede que necesiten descargarse de nuevo.'
   captionsHint: 'Elige los idiomas a descargar.'
   captionsFilter: 'Filtrar idiomas'
   captionsDownload: 'Descargar'

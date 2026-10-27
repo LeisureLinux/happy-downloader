@@ -80,6 +80,12 @@ func (h *CaptionsHandler) Download(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.fetch(req)
 	if err != nil {
+		slog.Error("could not fetch the captions",
+			slog.String("path", req.Path),
+			slog.Any("languages", req.Languages),
+			slog.Any("err", err),
+		)
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -183,16 +189,22 @@ func (h *CaptionsHandler) fetch(req CaptionRequest) (*CaptionResult, error) {
 // its captions cannot be found — which is worth saying plainly rather than
 // failing with something cryptic.
 func (h *CaptionsHandler) sourceURL(path string) (string, bool) {
-	if h.index == nil {
-		return "", false
+	if h.index != nil {
+		rec, ok := h.index.Lookup(path)
+		if ok && rec.URL != "" {
+			return rec.URL, true
+		}
 	}
 
-	rec, ok := h.index.Lookup(path)
-	if !ok {
-		return "", false
+	// A file downloaded before the index existed, or one put there by hand,
+	// still carries its source in the metadata: yt-dlp's --embed-metadata
+	// writes the page URL into the comment field. Reading it means the old
+	// files work too, rather than only the ones fetched since.
+	if url, ok := sourceFromMetadata(path); ok {
+		return url, true
 	}
 
-	return rec.URL, rec.URL != ""
+	return "", false
 }
 
 // AvailableCaptions lists the caption languages a file's source offered.
@@ -211,15 +223,33 @@ func (h *CaptionsHandler) Available(w http.ResponseWriter, r *http.Request) {
 
 	url, ok := h.sourceURL(clean)
 	if !ok {
+		slog.Warn("no source for this file",
+			slog.String("path", clean),
+		)
+
 		http.Error(w, "this file has no remembered source", http.StatusNotFound)
 		return
 	}
 
 	languages, err := probeCaptionLanguages(url)
 	if err != nil {
+		// The probe takes twenty seconds and fails for reasons the user
+		// cannot see from a 500. The message goes to the log, where it is
+		// readable, and a short one goes to the browser.
+		slog.Error("could not read the caption languages",
+			slog.String("path", clean),
+			slog.String("url", url),
+			slog.Any("err", err),
+		)
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	slog.Info("caption languages listed",
+		slog.String("path", clean),
+		slog.Int("count", len(languages)),
+	)
 
 	w.Header().Set("Content-Type", "application/json")
 

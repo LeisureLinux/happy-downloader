@@ -4,6 +4,7 @@ keys:
   captionsFor: 'Legendas para'
   captionsLoading: 'Verificando quais idiomas a fonte oferece...'
   captionsUnavailable: 'Esta fonte não oferece legendas.'
+  captionsNoSource: 'Este arquivo nao tem fonte registrada, entao suas legendas nao podem ser encontradas. Arquivos baixados antes deste recurso talvez precisem ser baixados de novo.'
   captionsHint: 'Escolha os idiomas para baixar.'
   captionsFilter: 'Filtrar idiomas'
   captionsDownload: 'Baixar'

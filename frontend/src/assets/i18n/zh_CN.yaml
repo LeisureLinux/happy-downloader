@@ -4,6 +4,7 @@ keys:
   captionsFor: '字幕：'
   captionsLoading: '正在查询源站提供的语言...'
   captionsUnavailable: '这个视频没有字幕。'
+  captionsNoSource: '这个文件没有记录来源，所以找不到字幕。此功能加入之前下载的文件可能需要重新下载。'
   captionsHint: '选择要下载的语言。'
   captionsFilter: '过滤语言'
   captionsDownload: '下载'

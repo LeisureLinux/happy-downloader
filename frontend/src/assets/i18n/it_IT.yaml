@@ -4,6 +4,7 @@ keys:
   captionsFor: 'Sottotitoli per'
   captionsLoading: 'Verifica delle lingue offerte dalla fonte...'
   captionsUnavailable: 'Questa fonte non offre sottotitoli.'
+  captionsNoSource: 'Questo file non ha una sorgente memorizzata, quindi i suoi sottotitoli non possono essere trovati. I file scaricati prima di questa funzione potrebbero dover essere scaricati di nuovo.'
   captionsHint: 'Scegli le lingue da scaricare.'
   captionsFilter: 'Filtra le lingue'
   captionsDownload: 'Scarica'
