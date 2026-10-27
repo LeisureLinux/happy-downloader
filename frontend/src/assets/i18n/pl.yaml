@@ -9,6 +9,7 @@ keys:
   captionsFilter: 'Filtruj języki'
   captionsDownload: 'Pobierz'
   captionsDownloading: 'Pobieranie...'
+  captionsDownloadingFor: 'Pobieranie {count} napisów...'
   captionsFailed: 'Pobieranie napisów nie powiodło się. Przyczyna jest w dzienniku.'
   captionsInBackground: 'Pobieranie trwa na serwerze nawet po zamknięciu tego okna.'
   captionsDownloaded: 'Pobrano plików napisów: {count}'

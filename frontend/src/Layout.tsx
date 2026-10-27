@@ -18,6 +18,7 @@ import AppVersion from './components/AppVersion'
 import Footer from './components/Footer'
 import LogPanel from './components/LogPanel'
 import SettingsPanel from './components/SettingsPanel'
+import CaptionJobWatcher from './components/CaptionJobWatcher'
 import SocketSubscriber from './components/SocketSubscriber'
 import { useI18n } from './hooks/useI18n'
 import Toaster from './providers/ToasterProvider'
@@ -85,6 +86,10 @@ export default function Layout() {
     <ThemeProvider theme={theme}>
       <title>{productName}</title>
       <SocketSubscriber />
+      {/* The caption downloads are watched here, not in the dialog that starts
+          them: the dialog is gone by the time the work finishes, and the file
+          browser has to be able to say what is happening to the row. */}
+      <CaptionJobWatcher />
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
         <AppBar position="absolute">

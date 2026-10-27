@@ -34,6 +34,7 @@ import { DirectoryEntry, ProcessStatus } from '../types'
 import { base64URLEncode, formatDuration, formatSize } from '../utils'
 import { useAtomValue } from 'jotai'
 import { activeDownloadsState } from '../atoms/downloads'
+import { captionDoneCountState, captionJobsState } from '../atoms/captions'
 import Player from '../components/Player'
 import CaptionsDialog from '../components/CaptionsDialog'
 
@@ -113,6 +114,28 @@ export default function Filebrowser() {
       void list(subdir)
     }
   }, [completedCount, list, subdir])
+
+  // The caption downloads that are running, by file path. The row says what is
+  // happening to it while the server works, which is the only place the wait
+  // is visible: the dialog closed as soon as the request was accepted.
+  const captionJobs = useAtomValue(captionJobsState)
+
+  // The caption files land on disk when the job finishes, so the directory has
+  // to be listed again — otherwise the new subtitle files stay invisible until
+  // the page is reloaded.
+  const captionDoneCount = useAtomValue(captionDoneCountState)
+  const seenCaptionDone = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (seenCaptionDone.current === null) {
+      seenCaptionDone.current = captionDoneCount
+      return
+    }
+    if (captionDoneCount !== seenCaptionDone.current) {
+      seenCaptionDone.current = captionDoneCount
+      void list(subdir)
+    }
+  }, [captionDoneCount, list, subdir])
 
   const files = useMemo(() => rows.filter(r => !r.isDirectory), [rows])
   const folders = useMemo(() => rows.filter(r => r.isDirectory), [rows])
@@ -262,6 +285,20 @@ export default function Filebrowser() {
                             size="small"
                             variant="outlined"
                             label={`${f.subtitles.length} ${i18n.t('subtitleCount')}`}
+                            sx={{ height: 20, fontSize: 11 }}
+                          />
+                        )}
+                        {/* 字幕正在下载：跟在文件名后面，等它结束这一行就恢复
+                            原样，和别的行一样。 */}
+                        {captionJobs[f.path] && (
+                          <Chip
+                            size="small"
+                            color="primary"
+                            icon={<CircularProgress size={11} sx={{ color: 'inherit' }} />}
+                            label={i18n.t('captionsDownloadingFor').replace(
+                              '{count}',
+                              String(captionJobs[f.path].languages.length)
+                            )}
                             sx={{ height: 20, fontSize: 11 }}
                           />
                         )}

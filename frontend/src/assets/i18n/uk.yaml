@@ -9,6 +9,7 @@ keys:
   captionsFilter: 'Фільтр мов'
   captionsDownload: 'Завантажити'
   captionsDownloading: 'Завантаження...'
+  captionsDownloadingFor: 'Завантаження {count} субтитрів...'
   captionsFailed: 'Не вдалося завантажити субтитри. Причина в журналі.'
   captionsInBackground: 'Завантаження триває на сервері, навіть якщо закрити це вікно.'
   captionsDownloaded: 'Завантажено файлів субтитрів: {count}'

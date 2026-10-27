@@ -9,6 +9,7 @@ keys:
   captionsFilter: '篩選語言'
   captionsDownload: '下載'
   captionsDownloading: '下載中...'
+  captionsDownloadingFor: '{count} 個字幕下載中...'
   captionsFailed: '字幕下載失敗，原因在日誌裡。'
   captionsInBackground: '即使關閉這個視窗，下載也會在伺服器上繼續。'
   captionsDownloaded: '下載了 {count} 個字幕檔案'

@@ -9,6 +9,7 @@ keys:
   captionsFilter: 'Filtra le lingue'
   captionsDownload: 'Scarica'
   captionsDownloading: 'Scaricamento...'
+  captionsDownloadingFor: '{count} sottotitoli in download...'
   captionsFailed: 'Il download dei sottotitoli è fallito. Il motivo è nel registro.'
   captionsInBackground: 'Il download continua sul server anche se questa finestra viene chiusa.'
   captionsDownloaded: '{count} file(s) di sottotitoli scaricato(i)'

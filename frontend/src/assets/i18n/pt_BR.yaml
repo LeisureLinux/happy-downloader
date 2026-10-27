@@ -9,6 +9,7 @@ keys:
   captionsFilter: 'Filtrar idiomas'
   captionsDownload: 'Baixar'
   captionsDownloading: 'Baixando...'
+  captionsDownloadingFor: '{count} legendas baixando...'
   captionsFailed: 'O download de legendas falhou. O motivo está no log.'
   captionsInBackground: 'O download continua no servidor mesmo que esta janela seja fechada.'
   captionsDownloaded: '{count} arquivo(s) de legenda baixado(s)'

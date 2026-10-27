@@ -9,6 +9,7 @@ keys:
   captionsFilter: 'Filtrer les langues'
   captionsDownload: 'Télécharger'
   captionsDownloading: 'Téléchargement...'
+  captionsDownloadingFor: '{count} sous-titres en cours de téléchargement...'
   captionsFailed: 'Le téléchargement des sous-titres a échoué. La raison est dans le journal.'
   captionsInBackground: 'Le téléchargement continue sur le serveur même si cette fenêtre est fermée.'
   captionsDownloaded: '{count} fichier(s) de sous-titres téléchargé(s)'

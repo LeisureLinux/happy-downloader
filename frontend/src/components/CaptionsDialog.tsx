@@ -18,10 +18,10 @@ import {
   Typography
 } from '@mui/material'
 import SubtitleIcon from '@mui/icons-material/Subtitles'
-import { useAtomValue } from 'jotai'
+import { useAtomValue, useSetAtom } from 'jotai'
+import { captionJobsState } from '../atoms/captions'
 import { languageState, serverURL, youtubeCaptionLang } from '../atoms/settings'
 import { useI18n } from '../hooks/useI18n'
-import { useToast } from '../hooks/toast'
 import { CaptionTrack } from '../types'
 
 // Captions for a file that was already downloaded.
@@ -47,7 +47,7 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
   const serverAddr = useAtomValue(serverURL)
   const language = useAtomValue(languageState)
   const { i18n } = useI18n()
-  const { pushMessage } = useToast()
+  const setJobs = useSetAtom(captionJobsState)
 
   const [tracks, setTracks] = useState<CaptionTrack[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -55,7 +55,6 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('')
-  const [jobId, setJobId] = useState('')
 
   // Which caption languages the source has.
   //
@@ -128,10 +127,14 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
   }, [open, load])
 
   // A job that is already running keeps its button busy when the dialog is
-  // opened again.
+  // opened again. The job list is shared with the file browser, so the row
+  // already says the captions are on their way.
+  const runningJob = useAtomValue(captionJobsState)[path]
+
   useEffect(() => {
-    if (jobId) setBusy(true)
-  }, [jobId])
+    if (runningJob) setBusy(true)
+    else setBusy(false)
+  }, [runningJob])
 
   // The filter matches both the language code and the name, so "zh" finds
   // Chinese and "auto" finds the generated ones.
@@ -173,63 +176,18 @@ const CaptionsDialog: React.FC<Props> = ({ open, path, name, onClose, onDone }) 
 
       const job = await res.json()
 
-      setJobId(job.id)
-      onClose()
+      // The job is recorded by the file it belongs to, so the file browser can
+      // say what is happening to this row, and so the poll survives this
+      // dialog being closed.
+      setJobs(prev => ({
+        ...prev,
+        [path]: { path, languages: [...selected], jobId: job.id },
+      }))
 
-      // The toast appears when the job finishes, wherever the user is by
-      // then.
-      void watchJob(job.id)
+      onClose()
     } catch (e) {
       setError(String(e))
       setBusy(false)
-    }
-  }
-
-  // watchJob polls until the job finishes.
-  //
-  // The poll survives the dialog being closed, because it lives in the
-  // component's state and the component stays mounted while the file browser
-  // is on screen. Navigating away from the browser loses it, which is why the
-  // toast is the last word rather than the only word.
-  const watchJob = async (id: string) => {
-    for (let attempt = 0; attempt < 300; attempt++) {
-      await new Promise(r => setTimeout(r, 2000))
-
-      try {
-        const res = await fetch(`${serverAddr}/api/v1/captions/status/${id}`)
-        if (!res.ok) return
-
-        const job = await res.json()
-
-        if (job.state === 'failed') {
-          pushMessage(i18n.t('captionsFailed'), 'error')
-          setBusy(false)
-          return
-        }
-
-        if (job.state === 'succeeded') {
-          const written = job.written?.length ?? 0
-          const skipped = Object.keys(job.skipped ?? {}).length
-
-          pushMessage(
-            written > 0
-              ? i18n.t('captionsDownloaded').replace('{count}', String(written))
-              : i18n.t('captionsNone'),
-            written > 0 ? 'success' : 'info'
-          )
-
-          if (skipped > 0) {
-            pushMessage(i18n.t('captionsSkipped').replace('{count}', String(skipped)), 'info')
-          }
-
-          setBusy(false)
-          setJobId('')
-          onDone()
-          return
-        }
-      } catch {
-        // A dropped poll is not a failed job; the server is still working.
-      }
     }
   }
 
