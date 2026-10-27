@@ -13,12 +13,21 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
-  # Lets a tag be rebuilt without deleting it, when a runner was broken.
+  # Rebuild a release whose runner was broken, or whose assets are wrong.
+  #
+  # The assets of an existing release are replaced, not merged, so this
+  # overwrites what was published under that tag. It is a deliberate action and
+  # the workflow refuses to run when the release already exists without
+  # "replace" being asked for explicitly.
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to build and publish'
+        description: 'Tag to build and publish'
         required: true
+      replace:
+        description: 'Replace the assets of an existing release'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -124,6 +133,30 @@ jobs:
           # none, so the file is checked against itself before it ships.
           sha256sum -c SHA256SUMS
           ls -l
+
+      - name: Refuse to overwrite an existing release
+        if: github.event_name == 'workflow_dispatch' && !inputs.replace
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          tag="${{ inputs.tag }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release $tag already exists." >&2
+            echo "Its assets would be replaced. Re-run with replace=true if that is what you want." >&2
+            exit 1
+          fi
+
+      - name: Report the release being written
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          tag="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          echo "publishing $tag"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "note: $tag already has a release; its assets will be replaced" >&2
+          fi
 
       - uses: softprops/action-gh-release@v2
         with:
