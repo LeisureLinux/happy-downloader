@@ -67,9 +67,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
-      - name: Test
-        run: go test ./...
-
       # The version number is checked before anything is built, so a mistake
       # costs a minute rather than a release.
       - name: Check the version number
@@ -80,6 +77,9 @@ jobs:
 
       # scripts/build.sh builds the frontend and then the binary, and removes
       # frontend/dist first so a stale bundle cannot be embedded silently.
+      #
+      # It has to run before the tests: the frontend is embedded with go:embed,
+      # so the root package does not even compile until frontend/dist exists.
       - name: Build
         env:
           GOARCH: ${{ matrix.goarch }}
@@ -95,11 +95,14 @@ jobs:
           # artefact is plausible rather than trusting the exit code.
           test -x "happy-downloader_${{ matrix.suffix }}"
           size=$(stat -c %s "happy-downloader_${{ matrix.suffix }}")
-          echo "built ${{ matrix.suffix }}: ${size} bytes"
+          echo "built ${{ matrix.suffix }}, ${size} bytes"
           if [ "$size" -lt 8000000 ]; then
             echo "binary is too small — the frontend was probably not embedded" >&2
             exit 1
           fi
+
+      - name: Test
+        run: go test ./...
 
       - uses: actions/upload-artifact@v4
         with:
