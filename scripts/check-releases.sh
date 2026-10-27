@@ -13,8 +13,9 @@
 #   - a release with no tag, which is a version that cannot be rebuilt
 #
 # Tags before v4.1.0 predate the tag-driven workflow — they were pushed by hand
-# onto a history that had no releases at all. They are history, not drift, and
-# are not reported. Everything from v4.1.0 on is checked.
+# onto a history that had no releases at all. They were deleted on 2026-10-27,
+# leaving one tag per release; the baseline stays as a guard, so a clone that
+# still carries them cannot fail a build.
 #
 # Usage:
 #
@@ -27,6 +28,8 @@
 
 set -eu
 
+# The first version that was released through the workflow. Everything below
+# it was a tag with nothing behind it, and has been removed.
 BASELINE=4.1.0
 EXCLUDE=
 

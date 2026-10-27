@@ -76,7 +76,8 @@ rebuild.
 
 `scripts/check-releases.sh` compares the two lists and fails when they
 disagree. It runs on every push to master and after every publish. Tags before
-`v4.1.0` predate the workflow and are exempt; they are history, not drift.
+`v4.1.0` predate the workflow and were removed on 2026-10-27; the check still
+ignores that range, so a clone that never saw the deletion cannot fail a build.
 
 There is also exactly one copy of the number. `frontend/package.json` has no
 version field: it would only be a second place to forget to change, and
