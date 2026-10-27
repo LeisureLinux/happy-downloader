@@ -1,16 +1,20 @@
 [Unit]
 Description=Refresh the YouTube cookie export when it stops working
-Documentation=file:%h/github/happy-downloader/scripts/refresh-cookies.sh
+Documentation=file:@REPO@/scripts/refresh-cookies.sh
 
 [Service]
 Type=oneshot
-# EDIT these two paths.
-# EDIT these paths. --deploy copies the result to the machine that serves the
-# downloads: a headless host has no browser and cannot refresh its own cookies.
-ExecStart=%h/github/happy-downloader/scripts/refresh-cookies.sh \
-    --output %h/.config/happy-downloader/youtube-cookie.json \
-    --browser chrome \
-    --deploy axu@wpad.lan:/home/axu/.config/happy-downloader/youtube-cookie.json
+
+# The paths below are filled in by scripts/install-cookie-timer.sh. They are
+# absolute because a user unit starts with no working directory — and that is
+# exactly what broke: the unit named a repository path that had been renamed,
+# and every run failed with 203/EXEC, which shows up nowhere in a timer list.
+# Regenerating the unit is one command now, so moving the checkout costs nothing.
+#
+# The deploy argument is "--deploy user@host:/path" when the server is another
+# machine, and empty when the refresh happens on the host that serves the
+# downloads.
+ExecStart=@REPO@/scripts/refresh-cookies.sh --output @OUTPUT@ --browser @BROWSER@ @DEPLOY_ARG@
 
 # The script exits 1 when the export could not be refreshed. That is worth
 # knowing but not worth restarting over: the next run will try again.

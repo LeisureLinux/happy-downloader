@@ -145,8 +145,10 @@ scripts/refresh-cookies.sh \
   --deploy user@server:/home/user/.config/happy-downloader/youtube-cookie.json
 ```
 
-A matching systemd timer is in [`packaging/systemd/`](packaging/systemd/); the
-notes there explain the keyring requirement.
+A matching systemd timer is in [`packaging/systemd/`](packaging/systemd/), and
+`scripts/install-cookie-timer.sh` installs it with this checkout's path filled
+in — the notes there explain why it must not be copied by hand, and the keyring
+requirement.
 
 ## Installing for an AI agent
 

@@ -1,11 +1,16 @@
 # systemd user units for the cookie refresher.
 #
 # Install:
-#   mkdir -p ~/.config/systemd/user
-#   cp packaging/systemd/happy-downloader-cookies.* ~/.config/systemd/user/
-#   # edit the ExecStart path and --output to match your setup
-#   systemctl --user daemon-reload
-#   systemctl --user enable --now happy-downloader-cookies.timer
+#   scripts/install-cookie-timer.sh \
+#       --deploy user@server:/home/user/.config/happy-downloader/youtube-cookie.json
+#
+# The script fills in this checkout's absolute path and enables the timer. Do
+# not copy the units by hand and edit the path: a user unit has no working
+# directory, so the path is a copy of where the repository happens to live, and
+# it goes stale — silently — the moment the directory is renamed. The timer
+# keeps firing, the service fails with 203/EXEC, and the only visible symptom is
+# that the cookie file's timestamp stops moving. Re-run the script after moving
+# the checkout; that is the whole repair.
 #
 # Why a user unit rather than a system one: reading the browser's cookie
 # database needs the login keyring, which only exists inside the user's session.
