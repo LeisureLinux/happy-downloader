@@ -20,8 +20,8 @@ keys:
   downloadDialogTitle: 'Baixa'
   downloadVideoOnly: 'El fitxer de vídeo'
   downloadFile: 'Baixa'
-  playbackUnsupported: 'Aquest navegador no pot reproduir aquest fitxer'
-  playbackUnsupportedBody: 'El fitxer utilitza {codecs}, que aquest navegador o dispositiu no pot descodificar. Descarrega''l de nou amb un contenidor H.264 / AAC (l''opció MP4) per poder-lo reproduir aquí.'
+  playbackUnsupported: 'Aquest navegador no pot reproduir aquest vídeo'
+  playbackUnsupportedBody: 'El vídeo utilitza {codecs}, que aquest navegador o dispositiu no pot descodificar. Baixa''l i obre''l amb un reproductor compatible amb {codecs} — VLC al telèfon en és un.'
   sourceCode: 'Codi font'
   urlInput: URL de YouTube o d'un altre servei compatible
   startButton: Iniciar

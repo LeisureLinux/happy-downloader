@@ -20,8 +20,8 @@ keys:
   downloadDialogTitle: 'Letöltés'
   downloadVideoOnly: 'A videófájl'
   downloadFile: 'Letöltés'
-  playbackUnsupported: 'Ez a böngésző nem tudja lejátszani ezt a fájlt'
-  playbackUnsupportedBody: 'A fájl {codecs} kódolást használ, amit ez a böngésző vagy eszköz nem tud dekódolni. Töltse le újra H.264 / AAC konténerrel (az MP4 opcióval), hogy itt lejátszható legyen.'
+  playbackUnsupported: 'Ez a böngésző nem tudja lejátszani ezt a videót'
+  playbackUnsupportedBody: 'A videó {codecs} kódolást használ, amit ez a böngésző vagy eszköz nem tud dekódolni. Töltse le, és nyissa meg egy {codecs} támogató lejátszóval — a telefonon a VLC ilyen.'
   sourceCode: 'Forráskód'
   urlInput: Video URL (soronként egy)
   selectFormatButton: 'Formátum választása'

@@ -1,6 +1,7 @@
 import {
   Box,
   Checkbox,
+  Container,
   FormControl,
   FormControlLabel,
   Grid,
@@ -337,5 +338,24 @@ export function SettingsContent() {
           </Grid>
       </Grid>
     </Box>
+  )
+}
+
+// The settings page.
+//
+// The content used to be shown in a panel over whatever was on the screen,
+// and this is now a destination like Browse and Downloads — so the header
+// highlights it when it is open, the browser history moves, and going back
+// goes back.
+export default function Settings() {
+  const { i18n } = useI18n()
+
+  return (
+    <Container maxWidth="xl" sx={{ mt: 2, mb: 8 }}>
+      <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
+        {i18n.t('settingsButtonLabel')}
+      </Typography>
+      <SettingsContent />
+    </Container>
   )
 }

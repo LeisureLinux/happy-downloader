@@ -20,8 +20,8 @@ keys:
   downloadDialogTitle: 'Baixar'
   downloadVideoOnly: 'O arquivo de vídeo'
   downloadFile: 'Baixar'
-  playbackUnsupported: 'Este navegador não pode reproduzir este arquivo'
-  playbackUnsupportedBody: 'O arquivo usa {codecs}, que este navegador ou este dispositivo não consegue decodificar. Baixe-o novamente com um contêiner H.264 / AAC (a opção MP4) para reproduzi-lo aqui.'
+  playbackUnsupported: 'Este navegador não pode reproduzir este vídeo'
+  playbackUnsupportedBody: 'O vídeo usa {codecs}, que este navegador ou este dispositivo não consegue decodificar. Baixe-o e abra com um player compatível com {codecs} — o VLC no celular faz isso.'
   sourceCode: 'Código-fonte'
   urlInput: URL do vídeo (uma por linha)
   selectFormatButton: 'Escolher formato'

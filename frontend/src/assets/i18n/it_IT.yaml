@@ -20,8 +20,8 @@ keys:
   downloadDialogTitle: 'Scarica'
   downloadVideoOnly: 'Il file video'
   downloadFile: 'Scarica'
-  playbackUnsupported: 'Questo browser non può riprodurre questo file'
-  playbackUnsupportedBody: 'Il file usa {codecs}, che questo browser o questo dispositivo non riesce a decodificare. Scaricalo di nuovo con un contenitore H.264 / AAC (l''opzione MP4) per riprodurlo qui.'
+  playbackUnsupported: 'Questo browser non può riprodurre questo video'
+  playbackUnsupportedBody: 'Il video usa {codecs}, che questo browser o questo dispositivo non riesce a decodificare. Scaricalo e aprilo con un lettore compatibile con {codecs} — VLC sul telefono lo fa.'
   sourceCode: 'Codice sorgente'
   urlInput: URL Video (uno per linea)
   selectFormatButton: 'Scegli formato'

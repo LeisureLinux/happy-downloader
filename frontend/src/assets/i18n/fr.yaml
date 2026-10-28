@@ -20,8 +20,8 @@ keys:
   downloadDialogTitle: 'Télécharger'
   downloadVideoOnly: 'Le fichier vidéo'
   downloadFile: 'Télécharger'
-  playbackUnsupported: 'Ce navigateur ne peut pas lire ce fichier'
-  playbackUnsupportedBody: 'Le fichier utilise {codecs}, que ce navigateur ou cet appareil ne sait pas décoder. Retéléchargez-le avec un conteneur H.264 / AAC (l''option MP4) pour le lire ici.'
+  playbackUnsupported: 'Ce navigateur ne peut pas lire cette vidéo'
+  playbackUnsupportedBody: 'La vidéo utilise {codecs}, que ce navigateur ou cet appareil ne sait pas décoder. Téléchargez-la et ouvrez-la avec un lecteur compatible {codecs} — VLC sur le téléphone le fait.'
   sourceCode: 'Code source'
   urlInput: URL vidéo de YouTube ou d'un autre service pris en charge
   selectFormatButton: 'Choisir le format'

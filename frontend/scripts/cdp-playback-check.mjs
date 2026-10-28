@@ -1,14 +1,16 @@
-// Check what the player does with a file the browser cannot decode.
+// Check what the player says when the browser cannot decode the file.
 //
-// The browser is asked to pretend it has no AV1 decoder — which is what an
-// iPhone 12 is — by stubbing canPlayType before the page loads. The player
-// should then show the message instead of a black rectangle.
+// The AV1 decoder is stubbed out, which is what an iPhone 12 is: no AV1
+// hardware decoder, and Safari has no software one either.
 //
 //   node scripts/cdp-playback-check.mjs <url>
 
 const url = process.argv[2]
 
-const list = await (await fetch('http://127.0.0.1:9222/json/new?' + encodeURIComponent(url), {
+// The page is opened blank, not at the target: the script that stubs the
+// decoder has to be installed before the document is created, and a page that
+// has already loaded will not run it.
+const list = await (await fetch('http://127.0.0.1:9222/json/new?about:blank', {
   method: 'PUT',
 })).json()
 
@@ -55,8 +57,8 @@ await new Promise(r => setTimeout(r, 4000))
 const result = await send('Runtime.evaluate', {
   expression: `(() => {
     const rows = [...document.querySelectorAll('tbody tr')]
-    const target = rows.find(r => r.innerText.includes('fridge situation'))
-    if (!target) return { error: 'row not found', rows: rows.map(r => r.innerText.slice(0, 30)) }
+    const target = rows.find(r => r.innerText.includes('Rick Astley'))
+    if (!target) return { error: 'row not found' }
     const buttons = [...target.querySelectorAll('button')]
     buttons[0].click()
     return { clicked: true }
@@ -72,19 +74,28 @@ const after = await send('Runtime.evaluate', {
   expression: `(() => {
     const dlg = document.querySelector('[role=dialog]')
     if (!dlg) return { error: 'no dialog' }
-    const video = dlg.querySelector('video')
     const alert = dlg.querySelector('.MuiAlert-message')
+    const link = dlg.querySelector('a[download]')
     return {
-      hasVideo: !!video,
-      alertText: alert ? alert.innerText : null,
-      alertSeverity: dlg.querySelector('.MuiAlert-root')?.getAttribute('class') || null,
-      dialogText: dlg.innerText.slice(0, 400),
+      hasVideo: !!dlg.querySelector('video'),
+      title: dlg.querySelector('.MuiAlert-title')?.innerText
+        ?? dlg.querySelector('.MuiAlert-message')?.firstElementChild?.innerText ?? null,
+      body: alert?.innerText ?? null,
+      downloadButton: link ? link.innerText : null,
+      downloadHref: link ? link.getAttribute('href')?.slice(0, 60) : null,
     }
   })()`,
   returnByValue: true,
 })
 
 console.log('step2:', JSON.stringify(after.result.value, null, 2))
+
+// A picture of the message, which is the only way to see whether it reads
+// well rather than merely says the right words.
+const shot = await send('Page.captureScreenshot', { format: 'png' })
+const { writeFileSync } = await import('node:fs')
+writeFileSync('/tmp/hd-playback-msg.png', Buffer.from(shot.data, 'base64'))
+console.log('screenshot: /tmp/hd-playback-msg.png')
 
 await send('Page.close').catch(() => {})
 ws.close()

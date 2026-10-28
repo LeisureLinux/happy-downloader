@@ -20,8 +20,8 @@ keys:
   downloadDialogTitle: 'ダウンロード'
   downloadVideoOnly: '動画ファイル'
   downloadFile: 'ダウンロード'
-  playbackUnsupported: 'このブラウザではこのファイルを再生できません'
-  playbackUnsupportedBody: 'このファイルは {codecs} を使用しており、このブラウザまたはこの端末ではデコードできません。再ダウンロード時に H.264 / AAC のコンテナ（MP4 オプション）を選ぶと、ここで再生できます。'
+  playbackUnsupported: '現在のブラウザは動画形式に対応していません'
+  playbackUnsupportedBody: 'この動画は {codecs} を使っており、現在のブラウザや端末ではデコードできません。ダウンロードして、{codecs} に対応したプレーヤーで開いてください——スマホの VLC なら再生できます。'
   sourceCode: 'ソースコード'
   urlInput: YouTubeまたはサポート済み動画のURL
   selectFormatButton: '形式を選択'

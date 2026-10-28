@@ -11,12 +11,11 @@ import { useAtom, useAtomValue } from 'jotai'
 import { useMemo } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { settingsState } from './atoms/settings'
-import { logPanelOpenAtom, settingsPanelOpenAtom } from './atoms/ui'
+import { logPanelOpenAtom } from './atoms/ui'
 import AppBar from './components/AppBar'
 import AppVersion from './components/AppVersion'
 import Footer from './components/Footer'
 import LogPanel from './components/LogPanel'
-import SettingsPanel from './components/SettingsPanel'
 import CaptionJobWatcher from './components/CaptionJobWatcher'
 import SocketSubscriber from './components/SocketSubscriber'
 import { useI18n } from './hooks/useI18n'
@@ -29,7 +28,6 @@ import { getAccentValue } from './utils'
 export default function Layout() {
   const settings = useAtomValue(settingsState)
   const [logOpen, setLogOpen] = useAtom(logPanelOpenAtom)
-  const [settingsOpen, setSettingsOpen] = useAtom(settingsPanelOpenAtom)
 
   const mode = settings.theme
   const theme = useMemo(() =>
@@ -55,27 +53,17 @@ export default function Layout() {
   // permanent 240px column for three links, and it cost the page that width on
   // every screen.
   //
-  // Logs and settings are toggles rather than destinations: both are things you
-  // consult while watching the page underneath, so they overlay it instead of
-  // replacing it. Only Browse and Downloads are places you go.
+  // The log is a toggle rather than a destination: reading the log is done
+  // while watching a download, and a page would hide the download list. It
+  // lives in the footer.
   // The log button lives in the footer, not here: on a phone the header had
   // four labelled buttons next to the product name, and they were squeezed
   // into an unreadable row. The log is a thing you consult while watching
   // something else, which is what the footer is for.
-  const toggles = [
-    {
-      key: 'settings',
-      label: i18n.t('settingsButtonLabel'),
-      icon: <SettingsIcon fontSize="small" />,
-      open: settingsOpen,
-      // Both panels occupy the same corner, so opening one closes the other.
-      onToggle: () => { setSettingsOpen(v => !v); setLogOpen(false) },
-    },
-  ]
-
   const destinations = [
     { to: '/filebrowser', label: i18n.t('browseButtonLabel'), icon: <Dashboard fontSize="small" /> },
     { to: '/', label: i18n.t('downloadsButtonLabel'), icon: <CloudDownloadIcon fontSize="small" /> },
+    { to: '/settings', label: i18n.t('settingsButtonLabel'), icon: <SettingsIcon fontSize="small" /> },
   ]
 
   return (
@@ -124,31 +112,6 @@ export default function Layout() {
                 contrast colour, which is white in dark mode — the accent
                 would never reach them. They use the accent explicitly, dimmed
                 when inactive, so the chosen colour shows on the controls too. */}
-            {toggles.map(t => (
-              <Tooltip key={t.key} title={t.label}>
-                <Button
-                  size="small"
-                  onClick={t.onToggle}
-                  aria-pressed={t.open}
-                  sx={{
-                    color: 'primary.main',
-                    opacity: t.open ? 1 : 0.72,
-                    fontWeight: t.open ? 600 : 400,
-                    '&:hover': { opacity: 1 },
-                    // The label is what does not fit on a phone; the icon is
-                    // the control, and the tooltip names it.
-                    minWidth: { xs: 34, sm: 'auto' },
-                    px: { xs: 0.5, sm: 1 },
-                  }}
-                >
-                  {t.icon}
-                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.5 }}>
-                    {t.label}
-                  </Box>
-                </Button>
-              </Tooltip>
-            ))}
-
             {destinations.map(d => (
               <Tooltip key={d.to} title={d.label}>
                 <Button
@@ -189,7 +152,6 @@ export default function Layout() {
 
 
       <LogPanel open={logOpen} onClose={() => setLogOpen(false)} />
-      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <Footer />
       <Toaster />
     </ThemeProvider>

@@ -13,7 +13,7 @@ import CookieIndicator from './CookieIndicator'
 import FreeSpaceIndicator from './FreeSpaceIndicator'
 import YtdlpIndicator from './YtdlpIndicator'
 import { useAtom, useAtomValue } from 'jotai'
-import { logPanelOpenAtom, settingsPanelOpenAtom } from '../atoms/ui'
+import { logPanelOpenAtom } from '../atoms/ui'
 
 // The bottom bar.
 //
@@ -31,16 +31,11 @@ const Footer: React.FC = () => {
   const totalDownloadSpeed = useAtomValue(totalDownloadSpeedState)
 
   const [logOpen, setLogOpen] = useAtom(logPanelOpenAtom)
-  const [, setSettingsOpen] = useAtom(settingsPanelOpenAtom)
 
   const mode = settings.theme
   const { i18n } = useI18n()
 
-  const toggleLog = () => {
-    setLogOpen(v => !v)
-    // Both panels occupy the same corner, so opening one closes the other.
-    setSettingsOpen(false)
-  }
+  const toggleLog = () => setLogOpen(v => !v)
 
   return (
     <AppBar position="fixed" color="default" sx={{

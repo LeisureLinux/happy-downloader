@@ -20,8 +20,8 @@ keys:
   downloadDialogTitle: 'Завантажити'
   downloadVideoOnly: 'Відеофайл'
   downloadFile: 'Завантажити'
-  playbackUnsupported: 'Цей браузер не може відтворити цей файл'
-  playbackUnsupportedBody: 'Файл використовує {codecs}, який цей браузер або цей пристрій не може декодувати. Завантажте його ще раз у контейнері H.264 / AAC (варіант MP4), щоб відтворити тут.'
+  playbackUnsupported: 'Цей браузер не може відтворити це відео'
+  playbackUnsupportedBody: 'Відео використовує {codecs}, який цей браузер або цей пристрій не може декодувати. Завантажте його та відкрийте в програвачі, що підтримує {codecs} — VLC на телефоні це вміє.'
   sourceCode: 'Вихідний код'
   urlInput: URL-адреса YouTube або будь-якого іншого підтримуваного сервісу
   startButton: Почати

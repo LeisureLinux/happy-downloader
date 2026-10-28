@@ -3,6 +3,7 @@ import {
   Alert,
   AlertTitle,
   Box,
+  Button,
   Dialog,
   DialogContent,
   IconButton,
@@ -12,6 +13,7 @@ import {
   Typography
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import DownloadIcon from '@mui/icons-material/Download'
 import { base64URLEncode } from '../utils'
 import { useI18n } from '../hooks/useI18n'
 import { SubtitleFile } from '../types'
@@ -49,6 +51,14 @@ const Player: React.FC<Props> = ({
 
   const mediaUrl = useMemo(
     () => `${serverAddr}/filebrowser/v/${base64URLEncode(path)}`,
+    [serverAddr, path]
+  )
+
+  // The same file, as a download rather than as a stream. It is the answer
+  // when the browser cannot play it: the file is served as it is, so a player
+  // outside the browser can open it.
+  const downloadUrl = useMemo(
+    () => `${serverAddr}/filebrowser/d/${base64URLEncode(path)}`,
     [serverAddr, path]
   )
 
@@ -160,10 +170,27 @@ const Player: React.FC<Props> = ({
             <Alert severity="warning">
               <AlertTitle>{i18n.t('playbackUnsupported')}</AlertTitle>
               <Typography variant="body2">
+                {/* The codec is named twice in the message — what the file
+                    uses, and what a player has to support — so every
+                    occurrence is replaced, not only the first. */}
                 {i18n.t('playbackUnsupportedBody')
-                  .replace('{codecs}', problem)
-                  .replace('{name}', name)}
+                  .split('{codecs}').join(problem)
+                  .split('{name}').join(name)}
               </Typography>
+
+              {/* The message says "download it", so the button is right
+                  there. The file is served as it is, which is what a player
+                  outside the browser needs. */}
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                component="a"
+                href={downloadUrl}
+                download={name}
+                sx={{ mt: 2 }}
+              >
+                {i18n.t('downloadFile')}
+              </Button>
             </Alert>
           </Box>
         )}

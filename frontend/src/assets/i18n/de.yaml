@@ -20,8 +20,8 @@ keys:
   downloadDialogTitle: 'Herunterladen'
   downloadVideoOnly: 'Die Videodatei'
   downloadFile: 'Herunterladen'
-  playbackUnsupported: 'Dieser Browser kann diese Datei nicht abspielen'
-  playbackUnsupportedBody: 'Die Datei verwendet {codecs}, die dieser Browser oder dieses Gerät nicht dekodieren kann. Lade sie erneut mit einem H.264/AAC-Container (die MP4-Option) herunter, um sie hier abzuspielen.'
+  playbackUnsupported: 'Dieser Browser kann dieses Video nicht abspielen'
+  playbackUnsupportedBody: 'Das Video verwendet {codecs}, die dieser Browser oder dieses Gerät nicht dekodieren kann. Lade es herunter und öffne es mit einem Player, der {codecs} unterstützt — VLC auf dem Handy kann das.'
   sourceCode: 'Quelltext'
   urlInput: Video URL
   selectFormatButton: 'Format wählen'
