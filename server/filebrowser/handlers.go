@@ -297,17 +297,18 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The captions belong to the video. Taking the video alone and leaving
-	// the subtitles on the server is the wrong answer to "download this", so
-	// they go into the same download.
-	captions := subtitlesFor(filepath.Dir(filepath.Clean(filename)), filepath.Base(filename))
-
-	if len(captions) == 0 {
-		serveSingleFile(w, filename)
-		return
-	}
-
-	serveArchive(w, filename, captions)
+	// The file is sent as it is.
+	//
+	// It used to be wrapped in a zip with its captions, because a browser
+	// would either block a second download or leave the captions in a
+	// folder of their own. That was a poor answer on a phone: the video
+	// arrived as a .zip that nothing could play, and unzipping it there is
+	// a chore.
+	//
+	// The captions are separate downloads now, offered as separate buttons.
+	// The interface asks /filebrowser/downloadable what belongs to the file
+	// and shows one button per file.
+	serveSingleFile(w, filename)
 }
 
 // serveSingleFile sends one file as it is.
@@ -325,55 +326,6 @@ func serveSingleFile(w http.ResponseWriter, filename string) {
 
 	if _, err := io.Copy(w, fd); err != nil {
 		slog.Error("could not send the file", slog.String("path", filename), slog.Any("err", err))
-	}
-}
-
-// serveArchive sends the video and its captions as one zip.
-//
-// A zip rather than several downloads, because the browser would either block
-// the second one or leave the captions in a folder of their own, and the point
-// is that the captions travel with the video.
-func serveArchive(w http.ResponseWriter, filename string, captions []SubtitleFile) {
-	w.Header().Add(
-		"Content-Disposition",
-		"attachment; filename=\""+strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))+".zip\"",
-	)
-	w.Header().Set("Content-Type", "application/zip")
-
-	zipWriter := zip.NewWriter(w)
-
-	add := func(path string) error {
-		wr, err := zipWriter.Create(filepath.Base(path))
-		if err != nil {
-			return err
-		}
-
-		fd, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-
-		defer fd.Close()
-
-		_, err = io.Copy(wr, fd)
-
-		return err
-	}
-
-	if err := add(filename); err != nil {
-		slog.Error("could not add the video to the archive", slog.Any("err", err))
-		return
-	}
-
-	for _, c := range captions {
-		if err := add(c.Path); err != nil {
-			slog.Error("could not add a caption file to the archive",
-				slog.String("path", c.Path), slog.Any("err", err))
-		}
-	}
-
-	if err := zipWriter.Close(); err != nil {
-		slog.Error("could not finish the archive", slog.Any("err", err))
 	}
 }
 

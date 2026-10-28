@@ -38,6 +38,7 @@ import { activeDownloadsState } from '../atoms/downloads'
 import { captionDoneCountState, captionJobsState } from '../atoms/captions'
 import Player from '../components/Player'
 import CaptionsDialog from '../components/CaptionsDialog'
+import DownloadDialog from '../components/DownloadDialog'
 import { siteColor, siteIcon } from '../components/SiteIcon'
 
 // A row is a file or a folder. Selection is by path, which is unique within a
@@ -65,6 +66,8 @@ export default function Filebrowser() {
   const [playing, setPlaying] = useState<Row | null>(null)
   // The file whose captions are being fetched.
   const [captioning, setCaptioning] = useState<Row | null>(null)
+  // The file whose download options are being shown.
+  const [downloading, setDownloading] = useState<Row | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [subdir, setSubdir] = useState('')
   const [loading, setLoading] = useState(true)
@@ -348,8 +351,11 @@ export default function Filebrowser() {
                             </IconButton>
                           </Tooltip>
                         )}
+                        {/* 下载按钮给出选择：视频本身，和每一个字幕文件。
+                            以前只有一个按钮，产出的是一个 zip——手机上收到
+                            zip 是没法播放的。 */}
                         <Tooltip title={i18n.t('downloadSelected')}>
-                          <IconButton size="small" onClick={() => downloadFile(serverAddr, f.path)}>
+                          <IconButton size="small" onClick={() => setDownloading(f)}>
                             <FileDownloadIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -367,6 +373,13 @@ export default function Filebrowser() {
           </TableContainer>
         )}
       </Paper>
+
+      <DownloadDialog
+        open={downloading !== null}
+        path={downloading?.path ?? ''}
+        name={downloading?.name ?? ''}
+        onClose={() => setDownloading(null)}
+      />
 
       <CaptionsDialog
         open={captioning !== null}

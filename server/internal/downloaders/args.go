@@ -274,9 +274,18 @@ var stagedMu sync.Mutex
 
 // NewCommand builds an *exec.Cmd in the detached process-group shape the
 // downloaders use, so Stop() can signal the whole tree.
+//
+// This is also where a new attempt at using the imported cookie begins. Every
+// yt-dlp invocation goes through here, and one invocation makes several
+// requests, so yt-dlp reports a rotated cookie once per request — counting
+// each report would have removed the import after one attempt rather than
+// two.
 func NewCommand(args []string) *exec.Cmd {
 	cmd := exec.Command(config.Instance().Paths.DownloaderPath, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	cookies.NewAttempt()
+
 	return cmd
 }
 

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // A valid upload is accepted and becomes the export in use.
@@ -95,8 +96,9 @@ func TestFailedRemovesTheExportAfterTwoRefusals(t *testing.T) {
 		t.Fatalf("Import: %v", err)
 	}
 
-	// The first refusal: counted, but the file stays. One refusal could be
-	// a bad moment.
+	// The first attempt: one refusal, and the file stays. One attempt could
+	// be a bad moment.
+	store.newAttempt()
 	after := store.Failed()
 	if after == nil {
 		t.Fatal("the first refusal removed the export")
@@ -108,19 +110,85 @@ func TestFailedRemovesTheExportAfterTwoRefusals(t *testing.T) {
 		t.Error("the export was forgotten after one refusal")
 	}
 
-	// The second: the export is not working, so it goes.
+	// The second refusal, seconds later: still the same failure that the
+	// interface retried. The export stays.
+	store.newAttempt()
 	after = store.Failed()
-	if after != nil {
-		t.Error("the export survived the second refusal")
+
+	if after == nil {
+		t.Fatal("the export was removed by a retry seconds after the first refusal")
 	}
-	if store.Current() != nil {
-		t.Error("the store still has an export after two refusals")
+	if after.Failures != 2 {
+		t.Errorf("failures = %d, want 2", after.Failures)
 	}
 
-	// The file itself is deleted, not merely ignored: a credential that no
-	// longer works is not left lying around.
-	if _, err := os.Stat(imported.Path); !os.IsNotExist(err) {
-		t.Error("the imported file is still on disk")
+	// The second refusal, long after the first: the export is not working.
+	store.current.FirstRefusal = store.current.FirstRefusal.Add(-refusalSeparation - time.Minute)
+
+	store.newAttempt()
+	after = store.Failed()
+
+	if after != nil {
+		t.Error("the export survived the second, spaced-out refusal")
+	}
+	if store.Current() != nil {
+		t.Error("the store still has an export after two spaced-out refusals")
+	}
+
+	// The file is kept for a while rather than deleted at once: a cookie
+	// that has just expired is fixed by exporting it again, and the person
+	// may well do that within the hour.
+	if _, err := os.Stat(imported.Path); err != nil {
+		t.Errorf("the imported file was deleted at once: %v", err)
+	}
+}
+
+// One attempt counts once, however many warnings it produced.
+//
+// yt-dlp reports a rotated cookie once per request, and a download makes
+// several requests. Counting each report would have removed the export after
+// one attempt rather than two.
+func TestOneAttemptCountsOnce(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(dir)
+
+	upload := `[
+	  {"domain":".youtube.com","expirationDate":1798761600,"httpOnly":true,
+	   "name":"LOGIN_INFO","path":"/","secure":true,"value":"AF1Qiz"},
+	  {"domain":".youtube.com","expirationDate":1798761600,"httpOnly":true,
+	   "name":"HSID","path":"/","secure":true,"value":"AbCdEf"},
+	  {"domain":".youtube.com","expirationDate":1798761600,"httpOnly":true,
+	   "name":"SID","path":"/","secure":true,"value":"g.a000y"},
+	  {"domain":".youtube.com","expirationDate":1798761600,"httpOnly":true,
+	   "name":"__Secure-3PSID","path":"/","secure":true,"value":"g.a000x"}
+	]`
+
+	if _, err := store.Import([]byte(upload)); err != nil {
+		t.Fatalf("Import: %v", err)
+	}
+
+	// The first attempt: three requests, three warnings.
+	store.newAttempt()
+	for i := 0; i < 3; i++ {
+		store.Failed()
+	}
+
+	cur := store.Current()
+	if cur == nil {
+		t.Fatal("the export was removed after one attempt")
+	}
+	if cur.Failures != 1 {
+		t.Errorf("failures = %d, want 1 — one attempt is one failure however many warnings it produced", cur.Failures)
+	}
+
+	// The second attempt, long after the first: removed.
+	store.current.FirstRefusal = store.current.FirstRefusal.Add(-refusalSeparation - time.Minute)
+
+	store.newAttempt()
+	store.Failed()
+
+	if store.Current() != nil {
+		t.Error("the export survived the second attempt")
 	}
 }
 

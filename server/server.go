@@ -300,6 +300,9 @@ func newServer(c serverConfig) *http.Server {
 		r.Get("/v/{id}", filebrowser.SendFile)
 		r.Get("/s/{id}", filebrowser.SendSubtitle)
 		r.Get("/bulk", filebrowser.BulkDownload(c.mdb))
+		// What can be downloaded for one file: the video and each of its
+		// captions, so the interface can offer them one by one.
+		r.Get("/downloadable", filebrowser.ListDownloadable)
 	})
 
 	// Archive routes

@@ -40,8 +40,12 @@ type Imported struct {
 	Count int `json:"count"`
 	// ModifiedAt is when it was uploaded.
 	ModifiedAt time.Time `json:"modifiedAt"`
-	// Failures is how many times a download using it was refused.
+	// Failures is how many times the export was refused.
 	Failures int `json:"failures"`
+	// Counted says whether the current attempt has already been counted.
+	Counted bool `json:"-"`
+	// FirstRefusal is when the export was first refused.
+	FirstRefusal time.Time `json:"-"`
 }
 
 // The active store.
@@ -165,12 +169,35 @@ func (s *Store) Current() *Imported {
 	return &out
 }
 
-// Failed records that a download using the imported export was refused.
+// How long the export has to keep failing before it is given up on.
 //
-// After two failures the export is removed: it is not working, and the
-// automatic export underneath is a better answer than a credential the site
-// has rejected. The file is deleted rather than merely ignored, so a
-// credential that no longer works is not left lying around.
+// The two refusals have to be apart in time. A caption dialog that fails
+// once is retried — the interface does it by itself, and so does a person
+// clicking again — and those retries are seconds apart. An export that is
+// refused twice within a minute has not been given a chance.
+//
+// The export is also not removed on the spot: it stays for a while, because
+// a cookie that has just expired is a cookie that a fresh export would fix,
+// and the automatic export underneath is not always a session the person
+// using the interface wants.
+const (
+	// The two refusals must be this far apart.
+	refusalSeparation = 5 * time.Minute
+	// How long the export survives after its second refusal.
+	refusalGrace = 30 * time.Minute
+)
+
+// Failed records that the imported export was refused.
+//
+// The export is removed when it has been refused twice, with the two
+// refusals at least a few minutes apart, and it is kept for a while after
+// that so the person can import a fresh one before the automatic export
+// takes over.
+//
+// One failure is one attempt, not one message. yt-dlp reports the rotated
+// cookie once per request, and a download makes several requests, so a
+// single failed download produced several warnings — and counting them
+// would have removed the export after one attempt rather than two.
 func (s *Store) Failed() *Imported {
 	s.mu.Lock()
 
@@ -179,26 +206,81 @@ func (s *Store) Failed() *Imported {
 		return nil
 	}
 
-	s.current.Failures++
-
-	if s.current.Failures < 2 {
+	// The attempt is already counted. The refusal is reported again by the
+	// next request of the same run, and counting that again would make the
+	// second attempt look like the second failure.
+	if s.current.Counted {
 		out := *s.current
 		s.mu.Unlock()
 		return &out
 	}
 
-	// The second failure: the export is not working.
+	s.current.Counted = true
+	s.current.Failures++
+
+	// The first refusal is when the clock starts.
+	if s.current.FirstRefusal.IsZero() {
+		s.current.FirstRefusal = time.Now()
+		out := *s.current
+		s.mu.Unlock()
+		return &out
+	}
+
+	// The second refusal has to be far enough from the first. Two retries
+	// seconds apart are one failure that the interface retried, not two
+	// failures.
+	if time.Since(s.current.FirstRefusal) < refusalSeparation {
+		out := *s.current
+		s.mu.Unlock()
+		return &out
+	}
+
+	// The export is not working. It is kept on disk for a while, so the
+	// person can import a fresh one; it is simply not used in the meantime.
 	path := s.current.Path
 	s.current = nil
 	s.mu.Unlock()
 
-	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		// The file stays on disk if it cannot be removed. The import is
-		// forgotten anyway, so it is not used.
-		fmt.Printf("could not remove the imported cookie file %s: %v\n", path, err)
-	}
+	// The file is removed later, not now: the automatic export underneath
+	// is a fallback, not necessarily the session this person wants.
+	go s.removeLater(path)
 
 	return nil
+}
+
+// removeLater deletes the imported file after the grace period.
+//
+// The file is not deleted at once because the export might be recoverable:
+// a cookie that has just expired is fixed by exporting it again, and the
+// person may well do that within the hour.
+func (s *Store) removeLater(path string) {
+	time.Sleep(refusalGrace)
+
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		fmt.Printf("could not remove the imported cookie file %s: %v\n", path, err)
+	}
+}
+
+// NewAttempt starts counting a new attempt.
+//
+// It is called when a request begins, so that the warnings of one attempt are
+// counted once rather than once each.
+func NewAttempt() {
+	store := ImportedGlobal()
+	if store == nil {
+		return
+	}
+
+	store.newAttempt()
+}
+
+// newAttempt is the store's own part of it.
+func (s *Store) newAttempt() {
+	s.mu.Lock()
+	if s.current != nil {
+		s.current.Counted = false
+	}
+	s.mu.Unlock()
 }
 
 // Forget removes the imported export.

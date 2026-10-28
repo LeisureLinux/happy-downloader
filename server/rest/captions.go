@@ -15,6 +15,7 @@ import (
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
 	"github.com/go-chi/chi/v5"
@@ -283,7 +284,25 @@ func (h *CaptionsHandler) fetch(req CaptionRequest) (*CaptionResult, error) {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
+		// A refused credential is worth more than an error message: it is
+		// the signal that the cookie the user imported is not working.
+		//
+		// The caption fetch is where an expired cookie shows up first —
+		// YouTube rate-limits and invalidates the caption endpoint before
+		// it refuses a video — so a failure here was never counted towards
+		// the two refusals that replace the import.
+		if cookies.LooksRefused(string(out)) {
+			cookies.ReportRefusal()
+		}
+
 		return nil, fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	// A warning rather than an error is still a refusal. yt-dlp reports the
+	// rotated cookie as a warning and carries on with a guest session, so
+	// the command succeeds and the captions are simply not there.
+	if cookies.LooksRefused(string(out)) {
+		cookies.ReportRefusal()
 	}
 
 	for _, lang := range req.Languages {
@@ -389,9 +408,23 @@ func probeCaptionLanguages(url string) ([]internal.CaptionTrack, error) {
 
 	cmd := downloaders.NewCommand(argv)
 
-	out, err := cmd.Output()
+	// The output is captured rather than streamed, so the refusal has to be
+	// recognised from it afterwards. This probe is the first thing that
+	// fails when a cookie has expired — it is what runs when the caption
+	// dialog opens — so a refusal here has to count.
+	out, err := cmd.CombinedOutput()
 	if err != nil {
+		if cookies.LooksRefused(string(out)) {
+			cookies.ReportRefusal()
+		}
+
 		return nil, err
+	}
+
+	// A warning rather than an error is still a refusal: yt-dlp carries on
+	// with a guest session, and the languages it reports are the guest's.
+	if cookies.LooksRefused(string(out)) {
+		cookies.ReportRefusal()
 	}
 
 	var parsed struct {
