@@ -136,14 +136,25 @@ const DownloadForm: React.FC = () => {
       <Stack spacing={2}>
         <Typography variant="h6" color="primary">{i18n.t('downloadsButtonLabel')}</Typography>
 
-        {/* URL 输入框和"选择格式"按钮占页面宽度的七成，居中。
-            它是这一页唯一要填的东西，占满整行反而把它埋在一堆空白
-            里面；居中则一眼就知道该往哪儿填。 */}
+        {/* URL 输入框和"选择格式"按钮，居中，宽度是固定的。
+            不是百分比：七成的宽度在电脑上很好，在手机上就是屏幕的
+            七成，再减去按钮，输入框只剩一条缝。
+            固定宽度在两端都好看 —— 电脑上是一块 Google 那样居中的
+            搜索框。 */}
         <Stack
-          direction="row"
+          direction={{ xs: 'column', sm: 'row' }}
           spacing={1}
           alignItems="flex-start"
-          sx={{ width: '70%', margin: '0 auto' }}
+          sx={{
+            width: '100%',
+            maxWidth: 620,
+            // 居中靠的是 alignSelf，不是 margin: auto。
+            // 外层的 Stack 是 flex 列布局，align-items 默认是 stretch，
+            // 子项的宽度因此是确定的 —— 自动外边距在这种情形下不
+            // 参与计算，于是这一行贴着左边，而不是在页面中间。
+            alignSelf: 'center',
+            mx: 'auto',
+          }}
         >
           <TextField
             multiline
@@ -161,7 +172,12 @@ const DownloadForm: React.FC = () => {
             // The field gives up its width to the button rather than the
             // other way round: "选择格式" wrapped onto two lines, and a URL
             // box that is a little shorter is not a problem.
-            sx={{ flexGrow: 1, minWidth: 0 }}
+            //
+            // On a phone the button is below, so the field takes the whole
+            // row. Without width: 100% a multiline field in a column flex
+            // container shrinks to what its content needs, which on a phone
+            // was a box 181 pixels wide.
+            sx={{ flexGrow: 1, width: { xs: '100%', sm: 'auto' }, minWidth: 0 }}
           />
           <Button
             variant="contained"
@@ -174,6 +190,10 @@ const DownloadForm: React.FC = () => {
               // the row does not jump while the probe runs. The old label was
               // "Reading...", which said what the spinner said and nothing more.
               minWidth: 186,
+              // On a phone the button is on its own line below the field, so
+              // it takes the width of the row. The field needs every pixel
+              // it can get: it was down to a slit.
+              width: { xs: '100%', sm: 'auto' },
               // Probing disables the button so a second request cannot start,
               // but the probe is the thing happening on the page: MUI's grey
               // disabled state made the wait look like an idle button.

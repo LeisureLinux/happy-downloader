@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@emotion/react'
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
+import favicon from './assets/favicon.png'
 import Dashboard from '@mui/icons-material/Dashboard'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { Box, Button, createTheme, Tooltip } from '@mui/material'
@@ -127,7 +127,15 @@ export default function Layout() {
                 </Box>
               </Typography>
 
-              <CloudDownloadIcon fontSize="small" />
+              {/* 顶栏上这个图标，是这个项目自己的红色云下载。
+                  原来用的是 MUI 的云，主题色的蓝色 —— 和页面标题
+                  一样是蓝的，看不出这是一个图标。 */}
+              <Box
+                component="img"
+                src={favicon}
+                alt=""
+                sx={{ width: 22, height: 22, ml: 0.25 }}
+              />
             </Box>
 
             <Box sx={{ flexGrow: 1 }} />

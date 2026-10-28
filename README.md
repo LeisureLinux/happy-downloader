@@ -323,7 +323,10 @@ paths:
 
 ytdlp:
   pot_base_url: http://127.0.0.1:4416
-  # proxy: http://127.0.0.1:8888   # only if the host needs one to reach YouTube
+  # The proxy is a seed for the sites that need one — YouTube, out of here.
+  # It is not a fallback for every site: a site inside China answers a
+  # request from another country with a block rather than with the video.
+  # proxy: http://127.0.0.1:8888
 ```
 
 Install the user unit from [Running it as a user service](#running-it-as-a-user-service)
@@ -416,7 +419,7 @@ paths:
 
 ytdlp:
   pot_base_url: http://127.0.0.1:4416   # bgutil PO Token provider
-  proxy: http://127.0.0.1:8888          # egress proxy, if the host needs one
+  proxy: http://127.0.0.1:8888          # for the sites that need one — YouTube
 
 logging:
   log_path: /var/log/happy-downloader.log

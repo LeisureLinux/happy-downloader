@@ -84,14 +84,18 @@ func BuildArgs(url string, extra ...string) []string {
 		cookieStaging = stageCookieFile(cookieSource)
 	}
 
-	// The proxy is a property of the network, not of a site: whatever reaches
-	// YouTube needs the same egress as everything else. A profile may override
-	// it (one site behind a different route), otherwise the global value
-	// applies, and without one there is no --proxy flag at all.
+	// The proxy is a property of the site, not of the network.
+	//
+	// It used to be the other way round: the global setting was the
+	// fallback for every site a profile did not name, so a proxy that was
+	// there for YouTube was also sent to Bilibili — and Bilibili answers a
+	// request from another country with 412 rather than with the video.
+	//
+	// So a proxy is now something a site asks for, and an empty proxy in a
+	// profile means "reach it directly". The global setting is not a
+	// fallback any more; it is the value the profiles are seeded with, which
+	// is where a proxy for YouTube belongs.
 	proxy := profile.Proxy
-	if proxy == "" {
-		proxy = strings.TrimSpace(config.Instance().YtDlp.Proxy)
-	}
 
 	// POT provider, likewise: global unless the profile names its own.
 	pot := profile.PotBaseURL

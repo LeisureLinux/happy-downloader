@@ -105,6 +105,23 @@ func TestStoreSeedCarriesConfigValues(t *testing.T) {
 	if p3.HostSuffix != "bilibili.com" {
 		t.Errorf("bilibili resolved to %q, want its own profile", p3.Name)
 	}
+
+	// The fallback does not get the proxy.
+	//
+	// It used to, and that sent every site without a profile of its own
+	// through a proxy that was there for YouTube — and Bilibili answers
+	// that with a block rather than with the video. A proxy belongs to the
+	// site that needs it.
+	p4, _ := ForURL("https://example.com/video")
+	if p4.Proxy != "" {
+		t.Errorf("the fallback has the proxy %q, want none", p4.Proxy)
+	}
+
+	// And Bilibili, which has a profile of its own, has no proxy either.
+	p5, _ := ForURL("https://www.bilibili.com/video/BV1xx")
+	if p5.Proxy != "" {
+		t.Errorf("bilibili has the proxy %q, want none", p5.Proxy)
+	}
 }
 
 func TestReplaceKeepsExactlyOneFallback(t *testing.T) {

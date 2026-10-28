@@ -42,6 +42,7 @@ import { captionDoneCountState, captionJobsState } from '../atoms/captions'
 import Player from '../components/Player'
 import CaptionsDialog from '../components/CaptionsDialog'
 import DownloadDialog from '../components/DownloadDialog'
+import FileActions from '../components/FileActions'
 import FolderDialog from '../components/FolderDialog'
 import { siteColor, siteIcon } from '../components/SiteIcon'
 
@@ -232,6 +233,19 @@ export default function Filebrowser() {
   }
 
   const selectedFiles = files.filter(f => selected.has(f.path))
+
+  // The actions on a file, in one place so that the buttons next to the name
+  // on a phone and the ones in the column on a desktop are the same buttons.
+  const actions = {
+    onPlay: (f: Row) => setPlaying(f),
+    onCaptions: (f: Row) => setCaptioning(f),
+    onMove: (f: Row) => {
+      setSelected(new Set([f.path]))
+      setFolderDialog('move')
+    },
+    onDownload: (f: Row) => setDownloading(f),
+    onDelete: (f: Row) => { void remove([f.path]) },
+  }
 
   return (
     <Container maxWidth="xl" sx={{ mt: 2, mb: 8 }}>
@@ -473,6 +487,15 @@ export default function Filebrowser() {
                             sx={{ height: 20, fontSize: 11 }}
                           />
                         )}
+
+                        {/* 手机上操作按钮在名字旁边。
+                            表格比手机的屏幕宽，操作那一列在右边，
+                            要划过去才够得着播放按钮 —— 而手本来
+                            就在这一行的名字上。宽屏时这一份不显示，
+                            那一列里有一份。 */}
+                        <Box sx={{ display: { xs: 'flex', md: 'none' }, ml: 'auto' }}>
+                          <FileActions file={f} {...actions} />
+                        </Box>
                       </Stack>
                     </TableCell>
                     <TableCell align="right">{formatDuration(f.duration) || '—'}</TableCell>
@@ -480,47 +503,10 @@ export default function Filebrowser() {
                       {f.modTime ? new Date(f.modTime).toLocaleString() : '—'}
                     </TableCell>
                     <TableCell align="right">{formatSize(f.size)}</TableCell>
-                    <TableCell align="right">
-                      {/* 与下载历史用同一组图标按钮：同一类操作在两处长得一样 */}
-                      <ButtonGroup size="small">
-                        <Tooltip title={i18n.t('playSelected')}>
-                          <IconButton size="small" onClick={() => setPlaying(f)}>
-                            <SmartDisplayIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        {/* 字幕单独下载：YouTube 限流字幕端点比视频严格得多，
-                            把它和视频绑在一起会让限流毁掉整个下载。 */}
-                        {f.isVideo && (
-                          <Tooltip title={i18n.t('captionsButton')}>
-                            <IconButton size="small" onClick={() => setCaptioning(f)}>
-                              <SubtitleIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        {/* 移动到文件夹。 */}
-                        <Tooltip title={i18n.t('folderMoveTitle')}>
-                          <IconButton size="small" onClick={() => {
-                            setSelected(new Set([f.path]))
-                            setFolderDialog('move')
-                          }}>
-                            <DriveFileMoveIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-
-                        {/* 下载按钮给出选择：视频本身，和每一个字幕文件。
-                            以前只有一个按钮，产出的是一个 zip——手机上收到
-                            zip 是没法播放的。 */}
-                        <Tooltip title={i18n.t('downloadSelected')}>
-                          <IconButton size="small" onClick={() => setDownloading(f)}>
-                            <FileDownloadIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={i18n.t('deleteSelected')}>
-                          <IconButton size="small" onClick={() => remove([f.path])}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </ButtonGroup>
+                    {/* 宽屏时操作在这一列；窄屏时它们在名字旁边，
+                        见上面那一处。 */}
+                    <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                      <FileActions file={f} {...actions} />
                     </TableCell>
                   </TableRow>
                 ))}
