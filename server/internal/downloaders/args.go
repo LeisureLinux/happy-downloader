@@ -63,9 +63,25 @@ func BuildArgs(url string, extra ...string) []string {
 
 	profile, matched := profiles.ForURL(url)
 
+	// The cookie the download uses: the one the user imported, if there is
+	// one, and the automatic export otherwise.
+	//
+	// The imported one wins because it is the credential the person using
+	// the interface chose — a browser extension export from their own
+	// machine, signed into their own account. The automatic export belongs to
+	// whoever set up the host, which is not always the same person.
+	cookieSource := profile.CookiePath
+	if matched && cookieSource == "" {
+		cookieSource = config.ResolvedCookieSource()
+	}
+
+	if imported := ImportedCookiePath(); imported != "" {
+		cookieSource = imported
+	}
+
 	cookieStaging := ""
-	if matched && profile.CookiePath != "" {
-		cookieStaging = stageCookieFile(profile.CookiePath)
+	if cookieSource != "" {
+		cookieStaging = stageCookieFile(cookieSource)
 	}
 
 	// The proxy is a property of the network, not of a site: whatever reaches

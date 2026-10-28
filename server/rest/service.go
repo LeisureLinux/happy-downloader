@@ -95,6 +95,31 @@ type CookieStatus struct {
 	Expired    int      `json:"expired"`
 	Missing    []string `json:"missing,omitempty"`
 	ModifiedAt string   `json:"modifiedAt,omitempty"`
+
+	// The cookie the downloads are actually using.
+	//
+	// The imported export takes precedence over the automatic one, and this
+	// says which is in effect — otherwise the footer would show the
+	// automatic export's timestamp while the downloads were using
+	// something else entirely.
+	Active string `json:"active,omitempty"`
+
+	// The imported export, when there is one.
+	Imported *ImportedCookie `json:"imported,omitempty"`
+}
+
+// ImportedCookie describes the cookie export the user uploaded.
+type ImportedCookie struct {
+	// Path is where it was written.
+	Path string `json:"path"`
+	// Format is the shape it was recognised as.
+	Format string `json:"format"`
+	// Count is how many cookies it holds.
+	Count int `json:"count"`
+	// ModifiedAt is when it was uploaded.
+	ModifiedAt string `json:"modifiedAt"`
+	// Failures is how many times a download using it was refused.
+	Failures int `json:"failures"`
 }
 
 // CookieStatus reports what the server currently has on disk.
@@ -104,31 +129,58 @@ type CookieStatus struct {
 // missing LOGIN_INFO is the usual cause of a guest request, but no value is
 // ever included: a cookie value is a live credential.
 func (s *Service) CookieStatus() (*CookieStatus, error) {
+	status := &CookieStatus{}
+
+	// The imported export, when there is one.
+	//
+	// It is the cookie the downloads use, so it is reported first and the
+	// automatic export is only the fallback underneath it.
+	if imported := cookies.ImportedGlobal(); imported != nil {
+		cur := imported.Current()
+		if cur != nil {
+			status.Imported = &ImportedCookie{
+				Path:       cur.Path,
+				Format:     cur.Format,
+				Count:      cur.Count,
+				ModifiedAt: cur.ModifiedAt.Format(time.RFC3339),
+				Failures:   cur.Failures,
+			}
+			status.Active = "imported"
+		}
+	}
+
+	// The automatic export: the browser profile read by the refresh script
+	// and copied onto the host by a timer.
 	if w := cookiewatch.Global(); w != nil {
 		st := w.Status()
-		return &CookieStatus{
-			Exists:     st.Exists,
-			SourcePath: st.SourcePath,
-			Format:     st.Format,
-			Count:      st.Count,
-			HttpOnly:   st.HttpOnly,
-			Session:    st.Session,
-			Expired:    st.Expired,
-			Missing:    st.Missing,
-			ModifiedAt: st.ModifiedAt,
-		}, nil
+		status.Exists = st.Exists
+		status.SourcePath = st.SourcePath
+		status.Format = st.Format
+		status.Count = st.Count
+		status.HttpOnly = st.HttpOnly
+		status.Session = st.Session
+		status.Expired = st.Expired
+		status.Missing = st.Missing
+		status.ModifiedAt = st.ModifiedAt
+
+		if status.Active == "" && st.Exists {
+			status.Active = "automatic"
+		}
+
+		return status, nil
 	}
 
 	// No watcher: report on the converted file if an export is configured and
 	// has already been converted.
 	source := config.ResolvedCookieSource()
 	if source == "" {
-		return &CookieStatus{Exists: false}, nil
+		return status, nil
 	}
+
 	path := config.CookiesPath(source)
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
-		return &CookieStatus{Exists: false}, nil
+		return status, nil
 	}
 
 	content, err := os.ReadFile(path)
@@ -138,16 +190,21 @@ func (s *Service) CookieStatus() (*CookieStatus, error) {
 
 	summary := cookies.Summarize(string(content))
 
-	return &CookieStatus{
-		Exists:     true,
-		Format:     string(cookies.Detect(content)),
-		Count:      summary.Total,
-		HttpOnly:   summary.HttpOnly,
-		Session:    summary.Session,
-		Expired:    summary.Expired,
-		Missing:    cookies.Required(summary.Names),
-		ModifiedAt: info.ModTime().Format(time.RFC3339),
-	}, nil
+	status.Exists = true
+	status.SourcePath = source
+	status.Format = string(cookies.Detect(content))
+	status.Count = summary.Total
+	status.HttpOnly = summary.HttpOnly
+	status.Session = summary.Session
+	status.Expired = summary.Expired
+	status.Missing = cookies.Required(summary.Names)
+	status.ModifiedAt = info.ModTime().Format(time.RFC3339)
+
+	if status.Active == "" {
+		status.Active = "automatic"
+	}
+
+	return status, nil
 }
 
 func (s *Service) SaveTemplate(ctx context.Context, template *internal.CustomTemplate) error {

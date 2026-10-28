@@ -12,6 +12,8 @@ export type RPCMethods =
   | "Service.ExecPlaylist"
   | "Service.DirectoryTree"
   | "Service.UpdateExecutable"
+  | "Service.CheckYtdlpUpdate"
+  | "Service.UpdateYtdlp"
   | "Service.GetVersion"
   | "Service.ExecLivestream"
   | "Service.ProgressLivestream"
@@ -139,6 +141,9 @@ export type DirectoryEntry = {
   // default and what a phone without an AV1 decoder cannot play.
   videoCodec?: string
   audioCodec?: string
+  // Where the file came from: the site name and the page it was on.
+  sourceSite?: string
+  sourceURL?: string
   // The caption files sitting next to this one.
   subtitles?: SubtitleFile[]
 }

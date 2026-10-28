@@ -106,6 +106,17 @@ type DirectoryEntry struct {
 	// after the video with the language code appended, and the browser has to
 	// find them on disk rather than be told where they are.
 	Subtitles []SubtitleFile `json:"subtitles,omitempty"`
+
+	// SourceSite is the site the file came from, e.g. "youtube" or
+	// "bilibili".
+	//
+	// The file name says nothing about it, and the answer is worth having:
+	// a row of files is easier to read when each one says where it came
+	// from, and it is what the icon in front of the name is for.
+	SourceSite string `json:"sourceSite,omitempty"`
+
+	// SourceURL is the page the file came from.
+	SourceURL string `json:"sourceURL,omitempty"`
 }
 
 // SubtitleFile is one caption track on disk.
@@ -154,6 +165,14 @@ func walkDir(root string) (*[]DirectoryEntry, error) {
 			entry.VideoCodec = info.videoCodec
 			entry.AudioCodec = info.audioCodec
 			entry.Subtitles = subtitlesFor(root, d.Name())
+
+			// Where it came from, so the row can say so.
+			if sourceLookup != nil {
+				if url, ok := sourceLookup(path); ok {
+					entry.SourceURL = url
+					entry.SourceSite = SiteOf(url)
+				}
+			}
 		}
 
 		files = append(files, entry)
@@ -481,6 +500,18 @@ var sourceForgetter func(path string)
 // SetSourceForgetter installs the callback.
 func SetSourceForgetter(fn func(path string)) {
 	sourceForgetter = fn
+}
+
+// The lookup for a file's source.
+//
+// The index lives in another package, and this package only needs one thing
+// from it: where the file came from. So it is a function rather than an
+// interface, the same way the forgetter is.
+var sourceLookup func(path string) (url string, ok bool)
+
+// SetSourceLookup installs the callback.
+func SetSourceLookup(fn func(path string) (string, bool)) {
+	sourceLookup = fn
 }
 
 func forgetSource(path string) {

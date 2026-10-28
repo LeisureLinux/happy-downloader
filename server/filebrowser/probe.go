@@ -3,6 +3,7 @@ package filebrowser
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -33,8 +34,13 @@ type mediaInfo struct {
 }
 
 type probeCacheEntry struct {
-	info     mediaInfo
-	storedAt time.Time
+	info mediaInfo
+	// modTime and size are the file's own. A file that was replaced — a
+	// download that finished over an older file of the same name — has the
+	// same path, so the path alone is not an identity: the cache has to
+	// notice that the file behind it changed.
+	modTime time.Time
+	size    int64
 }
 
 var (
@@ -57,11 +63,19 @@ var (
 // dependency of ffmpeg, which yt-dlp needs for merging anyway, and it answers
 // the question for every container.
 func mediaInfoFor(path string) mediaInfo {
+	// The file's own identity is read first, so the cache can be checked
+	// against it rather than against the clock. A clock-only cache would
+	// report a stale length for an hour after the file was replaced.
+	info, err := os.Stat(path)
+	if err != nil {
+		return mediaInfo{}
+	}
+
 	probeMu.RLock()
 	entry, ok := probeCache[path]
 	probeMu.RUnlock()
 
-	if ok && time.Since(entry.storedAt) < time.Hour {
+	if ok && entry.modTime.Equal(info.ModTime()) && entry.size == info.Size() {
 		return entry.info
 	}
 
@@ -69,13 +83,17 @@ func mediaInfoFor(path string) mediaInfo {
 		return runFFprobe(path), nil
 	})
 
-	info, _ := value.(mediaInfo)
+	probed, _ := value.(mediaInfo)
 
 	probeMu.Lock()
-	probeCache[path] = probeCacheEntry{info: info, storedAt: time.Now()}
+	probeCache[path] = probeCacheEntry{
+		info:    probed,
+		modTime: info.ModTime(),
+		size:    info.Size(),
+	}
 	probeMu.Unlock()
 
-	return info
+	return probed
 }
 
 func runFFprobe(path string) mediaInfo {

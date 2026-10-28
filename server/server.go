@@ -17,6 +17,7 @@ import (
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/filebrowser"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookiewatch"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
@@ -127,9 +128,39 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	recorder := &kv.SourceRecorder{Index: sourceIndex}
 	downloaders.SetSourceRecorder(recorder.Record)
 	filebrowser.SetSourceForgetter(sourceIndex.Forget)
+	filebrowser.SetSourceLookup(func(path string) (string, bool) {
+		rec, ok := sourceIndex.Lookup(path)
+		if !ok {
+			return "", false
+		}
+		return rec.URL, true
+	})
 
 	go mdb.Restore(mq)
 	go mdb.EventListener()
+
+	// The cookie export the user imported through the interface.
+	//
+	// It takes precedence over the automatic export below: it is the
+	// credential the person using the interface chose. When it has been
+	// refused twice it is removed, and the automatic export takes over
+	// again.
+	importedCookies := cookies.NewStore(rest.ImportedCookieDir(config.Instance().Paths.LocalDatabasePath))
+	importedCookies.Restore()
+	cookies.SetGlobal(importedCookies)
+
+	if cur := importedCookies.Current(); cur != nil {
+		downloaders.SetImportedCookiePath(cur.Path)
+	}
+
+	// A refusal of the imported export is what eventually replaces it.
+	cookies.SetFailureHook(func() {
+		if importedCookies.Failed() == nil {
+			// The export was removed: the automatic one takes over.
+			downloaders.SetImportedCookiePath("")
+			slog.Info("the imported cookie export was refused twice and has been removed")
+		}
+	})
 
 	// Convert paths.cookie_path into the Netscape file yt-dlp reads, and keep
 	// it in sync as the export is replaced. On a headless host this replaces

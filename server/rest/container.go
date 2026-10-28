@@ -36,5 +36,10 @@ func ApplyRouter(args *ContainerArgs) func(chi.Router) {
 		r.Post("/captions", captions.Download)
 		r.Get("/captions", captions.Available)
 		r.Get("/captions/status/{id}", captions.Status)
+
+		// The cookie export the user imported. It takes precedence over the
+		// automatic one while it works.
+		r.Post("/cookies/import", h.ImportCookies())
+		r.Delete("/cookies/import", h.RemoveImportedCookies())
 	}
 }

@@ -1,8 +1,10 @@
 package rpc
 
 import (
+	"context"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/formats"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
@@ -374,6 +376,44 @@ func (s *Service) DirectoryTree(args NoArgs, tree *[]string) error {
 	if dfsTree != nil {
 		*tree = *dfsTree
 	}
+
+	return nil
+}
+
+// CheckYtdlpUpdate reports whether a newer yt-dlp is available.
+//
+// The answer is cached for a while, because it is a network call and the
+// footer asks for it every time the page loads. A day is enough: yt-dlp
+// breaks YouTube every few weeks, and a release that came out an hour ago
+// can wait until tomorrow.
+func (s *Service) CheckYtdlpUpdate(args NoArgs, result *updater.Status) error {
+	updater.CheckOnce(context.Background(), result)
+	return nil
+}
+
+// UpdateYtdlp installs a newer yt-dlp.
+//
+// The binary is replaced rather than upgraded in place: a yt-dlp installed by
+// a package manager refuses to update itself, and says so. The GitHub binary
+// is downloaded and put in place of the current one, atomically, so a download
+// starting at that moment finds either the old binary or the new one.
+func (s *Service) UpdateYtdlp(args NoArgs, updated *bool) error {
+	slog.Info("updating the yt-dlp binary")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	if err := updater.Update(ctx); err != nil {
+		slog.Error("could not update yt-dlp", slog.Any("err", err))
+		*updated = false
+		return err
+	}
+
+	// The cached answer is about the version that was just replaced.
+	updater.Invalidate()
+
+	*updated = true
+	slog.Info("yt-dlp updated")
 
 	return nil
 }

@@ -19,6 +19,7 @@ import {
   Typography
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import CookieImport from './CookieImport'
 import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useAtomValue } from 'jotai'
@@ -47,6 +48,16 @@ type CookieStat = {
   expired?: number
   missing?: string[]
   modifiedAt?: string
+  // Which cookie the downloads are using: "imported" or "automatic".
+  active?: string
+  // The export the user uploaded, when there is one.
+  imported?: {
+    path: string
+    format: string
+    count: number
+    modifiedAt: string
+    failures: number
+  }
 }
 
 type Preview = {
@@ -161,10 +172,14 @@ const DownloadCredentials: React.FC = () => {
         <Stack direction="row" spacing={1} alignItems="flex-start">
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <Typography variant="caption" color="text.secondary">
-              {i18n.t('cookieSourcePath')}
+              {stat?.active === 'imported'
+                ? i18n.t('cookieImportedPath')
+                : i18n.t('cookieSourcePath')}
             </Typography>
             <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
-              {stat?.sourcePath || '—'}
+              {stat?.active === 'imported'
+                ? (stat?.imported?.path || '—')
+                : (stat?.sourcePath || '—')}
             </Typography>
           </Box>
           <Tooltip title={i18n.t('cookieRefreshStatus')}>
@@ -174,6 +189,9 @@ const DownloadCredentials: React.FC = () => {
           </Tooltip>
         </Stack>
       </Paper>
+
+      {/* ── 导入 cookie ─────────────────────────────────────── */}
+      <CookieImport onDone={refresh} />
 
       {stat?.exists && !hasLogin && (
         <Alert severity="warning" icon={false}>

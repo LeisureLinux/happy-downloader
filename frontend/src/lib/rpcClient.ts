@@ -214,6 +214,28 @@ export class RPCClient {
     })
   }
 
+  // Whether a newer yt-dlp is available. The server caches the answer, so
+  // this is cheap enough to call when the page loads.
+  public checkYtdlpUpdate() {
+    return this.sendHTTP<{
+      current: string
+      latest?: string
+      outdated: boolean
+      error?: string
+    }>({
+      method: 'Service.CheckYtdlpUpdate',
+      params: [],
+    })
+  }
+
+  // Install a newer yt-dlp.
+  public updateYtdlp() {
+    return this.sendHTTP({
+      method: 'Service.UpdateYtdlp',
+      params: [],
+    })
+  }
+
   public updateExecutable() {
     return this.sendHTTP({
       method: 'Service.UpdateExecutable',

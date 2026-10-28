@@ -3,15 +3,19 @@ import {
   Box,
   Chip,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   Paper,
   Select,
   Stack,
+  Switch,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography
 } from '@mui/material'
+import DevicesIcon from '@mui/icons-material/Devices'
 import type { DLMetadata } from '../types'
 import { useI18n } from '../hooks/useI18n'
 import {
@@ -120,6 +124,29 @@ const DownloadOptionsPanel: React.FC<Props> = ({ metadata, value, onChange }) =>
             ))}
           </Select>
         </FormControl>
+      </Stack>
+
+      {/* ── 兼容模式 ───────────────────────────────────────── */}
+      <Stack direction="row" spacing={1} alignItems="center">
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={value.compatible}
+              onChange={e => set('compatible', e.target.checked)}
+            />
+          }
+          label={
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <DevicesIcon fontSize="small" />
+              <span>{i18n.t('compatibleMode')}</span>
+            </Stack>
+          }
+        />
+        {/* 代价要说清楚：H.264 的码率 YouTube 给得比 AV1 高，文件可能大很多。 */}
+        <Typography variant="caption" color="text.secondary">
+          {i18n.t('compatibleModeHint')}
+        </Typography>
       </Stack>
 
       {/* ── 字幕 ───────────────────────────────────────────── */}

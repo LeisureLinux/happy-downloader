@@ -91,6 +91,45 @@ describe('buildDownloadArgs', () => {
   })
 })
 
+describe('compatible mode', () => {
+  it('is off by default', () => {
+    expect(defaultOptions.compatible).toBe(false)
+    expect(buildDownloadArgs(defaultOptions).join(' ')).not.toContain('vcodec')
+  })
+
+  it('asks for H.264 and AAC by name', () => {
+    const args = buildDownloadArgs(withOpts({ compatible: true }))
+    const selector = args[args.indexOf('-f') + 1]
+
+    expect(selector).toContain('[vcodec^=avc1]')
+    expect(selector).toContain('[acodec^=mp4a]')
+  })
+
+  it('keeps the height cap', () => {
+    const args = buildDownloadArgs(withOpts({ compatible: true, maxHeight: 720 }))
+    const selector = args[args.indexOf('-f') + 1]
+
+    expect(selector).toContain('[height<=720]')
+    expect(selector).toContain('[vcodec^=avc1]')
+  })
+
+  it('falls back to any format when the source has no H.264', () => {
+    // The fallback matters: without it a source with no H.264 would produce
+    // nothing at all, and a smaller file is better than no file.
+    const args = buildDownloadArgs(withOpts({ compatible: true }))
+    const selector = args[args.indexOf('-f') + 1]
+
+    expect(selector.endsWith('/best')).toBe(true)
+  })
+
+  it('constrains the audio track too', () => {
+    const args = buildDownloadArgs(withOpts({ compatible: true, media: 'audio' }))
+    const selector = args[args.indexOf('-f') + 1]
+
+    expect(selector).toContain('[acodec^=mp4a]')
+  })
+})
+
 describe('renderArgs', () => {
   it('quotes values containing whitespace or commas', () => {
     expect(renderArgs(['--sub-langs', 'en,zh-Hans'])).toBe("--sub-langs 'en,zh-Hans'")

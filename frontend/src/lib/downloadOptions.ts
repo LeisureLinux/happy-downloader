@@ -29,6 +29,18 @@ export type DownloadOptions = {
   container: string
   // thumbnail and metadata written next to the file
   writeMetadata: boolean
+  // ask for H.264 and AAC instead of whatever the source offers
+  //
+  // Not the default: AV1 is what YouTube serves and it is smaller and
+  // better. But a device without an AV1 decoder — an iPhone 12, anything
+  // older — cannot play it at all, and the player says so rather than
+  // showing a black rectangle. This is the way to get a file that plays
+  // there.
+  //
+  // The cost is size, and the amount varies: YouTube encodes the two
+  // versions separately, and on some videos the H.264 one is 2.5 times
+  // bigger, on others it is smaller.
+  compatible: boolean
 }
 
 export const defaultOptions: DownloadOptions = {
@@ -39,6 +51,7 @@ export const defaultOptions: DownloadOptions = {
   embedSubtitles: false,
   container: '',
   writeMetadata: true,
+  compatible: false,
 }
 
 // Resolution presets, in pixels of height. 0 is the "no cap" entry.
@@ -92,17 +105,30 @@ export function buildDownloadArgs(o: DownloadOptions): string[] {
 
   const cap = o.maxHeight > 0 ? `[height<=${o.maxHeight}]` : ''
 
+  // The compatible mode asks for H.264 and AAC by name.
+  //
+  // It has to be in the selector rather than a separate flag: yt-dlp picks
+  // the best format the source offers, and that is AV1 on YouTube. Asking
+  // for the container alone does not help — a merge of AV1 and Opus into an
+  // MP4 is still AV1, and still unplayable on a device without an AV1
+  // decoder.
+  //
+  // The fallback matters: a source with no H.264 at all would otherwise
+  // produce nothing, and a smaller file is better than no file.
+  const compatVideo = o.compatible ? '[vcodec^=avc1]' : ''
+  const compatAudio = o.compatible ? '[acodec^=mp4a]' : ''
+
   switch (o.media) {
     case 'audio':
-      args.push('-f', 'bestaudio/best')
+      args.push('-f', `bestaudio${compatAudio}/bestaudio/best`)
       args.push('--extract-audio')
       break
     case 'videoOnly':
-      args.push('-f', `bestvideo${cap}/bestvideo`)
+      args.push('-f', `bestvideo${cap}${compatVideo}/bestvideo${cap}`)
       break
     case 'video':
     default:
-      args.push('-f', `bestvideo${cap}+bestaudio/best`)
+      args.push('-f', `bestvideo${cap}${compatVideo}+bestaudio${compatAudio}/best`)
       break
   }
 

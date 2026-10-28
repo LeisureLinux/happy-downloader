@@ -201,6 +201,16 @@ export type CookieStatus = {
   expired?: number
   missing?: string[]
   modifiedAt?: string
+  // Which cookie the downloads are using: "imported" or "automatic".
+  active?: string
+  // The export the user uploaded, when there is one.
+  imported?: {
+    path: string
+    format: string
+    count: number
+    modifiedAt: string
+    failures: number
+  }
 }
 
 export const cookieStatusState = atom<Promise<CookieStatus>>(async (get) => await pipe(

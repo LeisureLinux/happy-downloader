@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
 )
 
 var allowedFlags = map[string]bool{
@@ -177,11 +178,20 @@ func printYtDlpErrors(stdout io.Reader, shortId, url string) error {
 	scanner := bufio.NewScanner(stdout)
 
 	for scanner.Scan() {
+		line := scanner.Text()
+
 		slog.Error("yt-dlp process error",
 			slog.String("id", shortId),
 			slog.String("url", url),
-			slog.String("err", scanner.Text()),
+			slog.String("err", line),
 		)
+
+		// A refused credential is worth more than a log line: it is the
+		// signal that the cookie the user imported is not working, and it is
+		// what eventually replaces it with the automatic export.
+		if cookies.LooksRefused(line) {
+			cookies.ReportRefusal()
+		}
 	}
 
 	return scanner.Err()

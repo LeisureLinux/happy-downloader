@@ -33,10 +33,12 @@ import { ffetch } from '../lib/httpClient'
 import { DirectoryEntry, ProcessStatus } from '../types'
 import { base64URLEncode, formatDuration, formatSize } from '../utils'
 import { useAtomValue } from 'jotai'
+import { useTheme } from '@mui/material/styles'
 import { activeDownloadsState } from '../atoms/downloads'
 import { captionDoneCountState, captionJobsState } from '../atoms/captions'
 import Player from '../components/Player'
 import CaptionsDialog from '../components/CaptionsDialog'
+import { siteColor, siteIcon } from '../components/SiteIcon'
 
 // A row is a file or a folder. Selection is by path, which is unique within a
 // listing, unlike the name the previous implementation keyed on.
@@ -54,6 +56,8 @@ export default function Filebrowser() {
   const serverAddr = useAtomValue(serverURL)
   const { i18n } = useI18n()
   const { pushMessage } = useToast()
+  // The accent colour, for a site that has no colour of its own.
+  const theme = useTheme()
 
   const [rows, setRows] = useState<Row[]>([])
   // The file being played, if any. The player is a dialog over the list, so
@@ -244,6 +248,9 @@ export default function Filebrowser() {
                       inputProps={{ 'aria-label': 'select all' }}
                     />
                   </TableCell>
+                  {/* 来源图标列没有表头文字：图标自己说明了一切，写成
+                      "来源"反而占位置。 */}
+                  <TableCell sx={{ width: 36 }} />
                   {/* 表头用主题色：这些是列名，和标题一样是该被强调的东西，
                       默认灰色让表格和页面其他部分的配色脱节。 */}
                   <TableCell sx={{ color: 'primary.main' }}>{i18n.t('colFileName')}</TableCell>
@@ -275,6 +282,21 @@ export default function Filebrowser() {
                         checked={selected.has(f.path)}
                         onChange={() => toggleOne(f.path)}
                       />
+                    </TableCell>
+                    {/* 来源站点的图标：文件名看不出是哪个站下来的，
+                        一列图标一眼就知道。 */}
+                    <TableCell>
+                      <Tooltip title={f.sourceSite ?? ''}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: siteColor(f.sourceSite, theme.palette.primary.main),
+                          }}
+                        >
+                          {siteIcon(f.sourceSite)}
+                        </Box>
+                      </Tooltip>
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1} alignItems="center">
