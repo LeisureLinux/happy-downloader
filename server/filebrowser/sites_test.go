@@ -43,3 +43,35 @@ func TestSiteOf(t *testing.T) {
 		})
 	}
 }
+
+// A link pasted from an app is a short link, and the file that comes out of
+// one is often served from the site's own delivery host.
+//
+// Both were matched on the obvious host only, so a Reddit video was given
+// the name of Reddit's CDN and a Weibo short link the name of the
+// shortener.
+func TestSiteOfShortLinksAndDeliveryHosts(t *testing.T) {
+	cases := []struct {
+		url  string
+		want string
+	}{
+		{"http://t.cn/AXj0v9Ml", "weibo"},
+		{"https://t.cn/AXj0v9Ml", "weibo"},
+		{"https://weibo.cn/sinaurl", "weibo"},
+		{"https://packaged-media.redd.it/g7zinez25abc", "reddit"},
+		{"https://i.redd.it/abc123", "reddit"},
+		{"https://v.redd.it/abc123", "reddit"},
+		{"https://preview.redd.it/abc123", "reddit"},
+		{"https://www.reddit.com/r/x/comments/1", "reddit"},
+		{"https://b23.tv/abc", "bilibili"},
+		{"https://www.bilibili.com/video/BV1", "bilibili"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.url, func(t *testing.T) {
+			if got := SiteOf(c.url); got != c.want {
+				t.Errorf("SiteOf(%q) = %q, want %q", c.url, got, c.want)
+			}
+		})
+	}
+}

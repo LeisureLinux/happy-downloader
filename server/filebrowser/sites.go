@@ -40,6 +40,21 @@ func SiteOf(rawURL string) string {
 	//
 	// A subdomain is not a different site: "music.youtube.com" is YouTube and
 	// "www.bilibili.com" is Bilibili.
+	// The short links and the delivery domains.
+	//
+	// A link pasted from an app is a short link — "t.cn/abc" for Weibo,
+	// "b23.tv/abc" for Bilibili — and the file that comes out of one is
+	// often served from the site's own delivery host: Reddit's videos live
+	// on "packaged-media.redd.it", not on "reddit.com". Matching only the
+	// obvious host gave a Reddit video the name of its CDN, and a Weibo
+	// short link the name of the shortener.
+	switch host {
+	case "t.cn", "weibo.cn":
+		return "weibo"
+	case "packaged-media.redd.it", "redd.it", "i.redd.it", "preview.redd.it", "v.redd.it":
+		return "reddit"
+	}
+
 	switch {
 	case strings.HasSuffix(host, "youtube.com"), strings.HasSuffix(host, "youtu.be"):
 		return "youtube"
