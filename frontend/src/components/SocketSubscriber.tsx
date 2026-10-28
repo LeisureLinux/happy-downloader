@@ -10,6 +10,7 @@ import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
 import { useRPC } from '../hooks/useRPC'
 import { datetimeCompareFunc, isRPCResponse } from '../utils'
+import { RPCResult } from '../types'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 
 interface Props extends React.HTMLAttributes<HTMLBaseElement> { }
@@ -117,11 +118,43 @@ const SocketSubscriber: React.FC<Props> = () => {
     }
   )
 
+  // The queue is also polled, not only pushed.
+  //
+  // The socket carries the list, but a download that starts from another
+  // tab, or one that the server changed on its own, arrives only through the
+  // poll — and the answer was thrown away. So a download that was started
+  // somewhere else appeared in the queue only after the page was reloaded.
+  //
+  // The poll and the push both write the same state, so the last one to
+  // arrive wins and neither is wrong.
   useEffect(() => {
-    if (connected) {
-      const sub = timer(0, STATUS_POLL_MS).subscribe(() => client.running())
-      return () => sub.unsubscribe()
+    if (!connected) { return }
+
+    const apply = (running: RPCResult[]) => {
+      setDownloads(
+        O.of(running
+          .filter(f => !!f.info.url).sort((a, b) => datetimeCompareFunc(
+            b.info.created_at,
+            a.info.created_at,
+          )),
+        )
+      )
     }
+
+    const sub = timer(0, STATUS_POLL_MS).subscribe(() => {
+      client.running()
+        .then(res => {
+          if (res?.result && Array.isArray(res.result)) {
+            apply(res.result)
+          }
+        })
+        .catch(() => {
+          // The poll failing is not worth a message: the socket will say so
+          // if the server is really gone.
+        })
+    })
+
+    return () => sub.unsubscribe()
   }, [connected, client])
 
   return null

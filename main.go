@@ -28,6 +28,10 @@ func main() {
 	flag.StringVar(&configFile, "conf", "./config.yml", "Config file path")
 	flag.Parse()
 
+	// The configuration is written back when the interface changes a setting
+	// that lives in it, so the server has to know where it was read from.
+	config.SetFilePath(configFile)
+
 	v := viper.New()
 	v.SetConfigFile(configFile)
 	v.SetConfigType("yaml")

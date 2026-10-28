@@ -22,6 +22,7 @@ import {
   type DownloadOptions
 } from '../lib/downloadOptions'
 import type { DLMetadata } from '../types'
+import { isLivestreamURL } from '../lib/livestream'
 import { atom, useAtom, useAtomValue } from 'jotai'
 
 // The form's state lives outside the component. Navigating to the log page and
@@ -110,6 +111,20 @@ const DownloadForm: React.FC = () => {
     ]
 
     try {
+      // A livestream does not end, so it does not go down the ordinary path.
+      //
+      // The ordinary download waits for the file to be finished, and a
+      // livestream is never finished: the download sat in the queue at
+      // "preparing" forever, with no file and nothing to say what it was
+      // doing. The monitor waits for the stream to start instead, and it can
+      // be stopped.
+      if (isLivestreamURL(url)) {
+        await client.execLivestream(url.trim())
+        pushMessage(`${i18n.t('livestreamQueued')}: ${url.trim()}`, 'success')
+        setUrl('')
+        return
+      }
+
       await client.download({
         url: url.trim(),
         args: finalArgs,

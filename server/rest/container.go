@@ -41,5 +41,10 @@ func ApplyRouter(args *ContainerArgs) func(chi.Router) {
 		// automatic one while it works.
 		r.Post("/cookies/import", h.ImportCookies())
 		r.Delete("/cookies/import", h.RemoveImportedCookies())
+
+		// The settings that belong to the installation: the PO Token
+		// provider and the proxy.
+		r.Get("/network", h.GetNetworkConfig())
+		r.Put("/network", h.SetNetworkConfig())
 	}
 }

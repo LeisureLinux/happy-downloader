@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
 )
 
@@ -35,12 +36,6 @@ type Profile struct {
 	// youtube.com and youtu.be, and pasting a short link is the normal case.
 	// Empty matches every URL that no other profile matched.
 	HostSuffix string `json:"hostSuffix"`
-	// CookiePath points at a cookie export (JSON or Netscape) to convert.
-	CookiePath string `json:"cookiePath,omitempty"`
-	// PotBaseURL is the bgutil POT provider, e.g. http://127.0.0.1:4416.
-	PotBaseURL string `json:"potBaseUrl,omitempty"`
-	// Proxy is passed as --proxy.
-	Proxy string `json:"proxy,omitempty"`
 	// ExtraArgs are passed through verbatim, one per row in the UI.
 	ExtraArgs []string `json:"extraArgs,omitempty"`
 	// PreferFreeFormats sorts by free codec first, which is the right
@@ -163,7 +158,7 @@ func hostOf(rawURL string) string {
 // The caller supplies the cookie staging path (a copy yt-dlp may rewrite)
 // and the sanitized JS runtime; this function stays free of both the config
 // singleton and the filesystem, which keeps it testable.
-func (p Profile) Argv(cookieStaging, jsRuntime string) []string {
+func (p Profile) Argv(rawURL, cookieStaging, jsRuntime string) []string {
 	args := []string{"--ignore-config"}
 
 	if jsRuntime != "" {
@@ -174,28 +169,29 @@ func (p Profile) Argv(cookieStaging, jsRuntime string) []string {
 		args = append(args, "--cookies", cookieStaging)
 	}
 
-	if p.PotBaseURL != "" && p.isYouTube() {
-		// The provider fetches the BotGuard challenge from YouTube, so it needs
-		// the same egress as the download. Its HTTP server has no --proxy flag;
-		// the proxy travels per request, in the same extractor-args value.
-		//
-		// It is only for YouTube. The provider is asked for a challenge that
-		// only YouTube's extractor understands, so for any other site the
-		// argument is dead weight: the extractor ignores it and the
-		// provider is not called at all.
-		//
-		// The fallback profile carried one, because it was seeded with the
-		// global setting — so every site without a profile of its own was
-		// asked for a YouTube challenge it had no use for.
-		potArg := "youtubepot-bgutilhttp:base_url=" + p.PotBaseURL
-		if p.Proxy != "" {
-			potArg += ";proxy=" + p.Proxy
+	// The PO Token provider, for YouTube.
+	//
+	// It is one setting for the whole application rather than one per site:
+	// the provider fetches a BotGuard challenge that only YouTube's extractor
+	// understands, so there is nothing to configure per site and nothing for
+	// the others to ask for.
+	//
+	// The provider needs the same egress as the download. Its HTTP server has
+	// no --proxy flag, so the proxy travels per request, in the same
+	// extractor-args value.
+	if pot := strings.TrimSpace(config.Instance().YtDlp.PotBaseURL); pot != "" && isYouTubeHost(hostOf(rawURL)) {
+		potArg := "youtubepot-bgutilhttp:base_url=" + pot
+		if proxy := strings.TrimSpace(config.Instance().YtDlp.Proxy); proxy != "" {
+			potArg += ";proxy=" + proxy
 		}
 		args = append(args, "--extractor-args", potArg)
 	}
 
-	if p.Proxy != "" {
-		args = append(args, "--proxy", p.Proxy)
+	// The proxy, chosen by where the site is and whether the direct route
+	// works. It is one setting for the whole application: the per-site
+	// version of it meant the same value was typed into every row.
+	if proxy := ProxyFor(rawURL); proxy != "" {
+		args = append(args, "--proxy", proxy)
 	}
 
 	if p.PreferFreeFormats {

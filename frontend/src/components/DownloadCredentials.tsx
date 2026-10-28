@@ -27,12 +27,15 @@ import { useI18n } from '../hooks/useI18n'
 import { useToast } from '../hooks/toast'
 
 // One site's argument set. Mirrors the server's Profile struct.
+// One site's arguments.
+//
+// The cookie, the PO Token provider and the proxy are not here: they are
+// properties of the installation rather than of a site, and they were three
+// settings that had to be typed into every row of a table. What is left is
+// what genuinely differs per site — the extra arguments.
 type Profile = {
   name: string
   hostSuffix: string
-  cookiePath?: string
-  potBaseUrl?: string
-  proxy?: string
   extraArgs?: string[]
   preferFreeFormats?: boolean
 }
@@ -203,9 +206,6 @@ const DownloadCredentials: React.FC = () => {
             <TableRow>
               <TableCell>{i18n.t('profileName')}</TableCell>
               <TableCell>{i18n.t('profileHost')}</TableCell>
-              <TableCell>{i18n.t('profileCookie')}</TableCell>
-              <TableCell>{i18n.t('profilePot')}</TableCell>
-              <TableCell>{i18n.t('profileProxy')}</TableCell>
               <TableCell>{i18n.t('profileExtraArgs')}</TableCell>
               <TableCell width={48} />
             </TableRow>
@@ -234,33 +234,6 @@ const DownloadCredentials: React.FC = () => {
                       {i18n.t('profileFallbackNote')}
                     </Typography>
                   )}
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    fullWidth
-                    placeholder="/data/yt-cookie.json"
-                    value={p.cookiePath ?? ''}
-                    onChange={e => patch(idx, 'cookiePath', e.target.value)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    fullWidth
-                    placeholder="http://127.0.0.1:4416"
-                    value={p.potBaseUrl ?? ''}
-                    onChange={e => patch(idx, 'potBaseUrl', e.target.value)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    fullWidth
-                    placeholder="http://127.0.0.1:7890"
-                    value={p.proxy ?? ''}
-                    onChange={e => patch(idx, 'proxy', e.target.value)}
-                  />
                 </TableCell>
                 <TableCell>
                   <TextField

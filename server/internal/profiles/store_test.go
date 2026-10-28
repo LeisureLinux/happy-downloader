@@ -62,9 +62,14 @@ func TestStoreSeedsDefaults(t *testing.T) {
 	}
 }
 
-// The seed carries the config-file values into the YouTube and fallback
-// entries, so an existing deployment keeps working after the upgrade.
-func TestStoreSeedCarriesConfigValues(t *testing.T) {
+// The profiles no longer carry the cookie, the PO Token provider or the
+// proxy.
+//
+// They were three settings that had to be typed into every row of a table,
+// and the value was almost always the same in all of them. They are read from
+// the configuration when a download is built now, because they are properties
+// of the installation rather than of a site.
+func TestStoreSeedsNoPerSiteSettings(t *testing.T) {
 	f := t.TempDir() + "/test.db"
 	db, err := bolt.Open(f, 0600, nil)
 	if err != nil {
@@ -72,11 +77,7 @@ func TestStoreSeedCarriesConfigValues(t *testing.T) {
 	}
 	defer db.Close()
 
-	_, err = NewStore(db, Profile{
-		CookiePath: "/data/yt-cookie.json",
-		PotBaseURL: "http://127.0.0.1:4416",
-		Proxy:      "http://wpad.lan:8888",
-	})
+	_, err = NewStore(db, Profile{})
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
 	}
@@ -85,19 +86,16 @@ func TestStoreSeedCarriesConfigValues(t *testing.T) {
 	s := global
 	globalMu.RUnlock()
 
+	// The entries are there, and they carry nothing but what is per site.
 	p, _ := s.table.match("https://www.youtube.com/watch?v=x")
-	if p.CookiePath != "/data/yt-cookie.json" {
-		t.Errorf("YouTube cookie = %q, want the seeded value", p.CookiePath)
-	}
-	if p.PotBaseURL != "http://127.0.0.1:4416" {
-		t.Errorf("YouTube POT = %q, want the seeded value", p.PotBaseURL)
+	if p.HostSuffix == "" {
+		t.Error("YouTube has no profile")
 	}
 
-	// The fallback carries the seed too, so a URL that no profile names still
-	// resolves with the credentials the operator already had.
+	// The fallback resolves a URL that no profile names.
 	p2, _ := ForURL("https://example.com/video")
-	if p2.CookiePath != "/data/yt-cookie.json" {
-		t.Errorf("fallback cookie = %q, want the seeded value", p2.CookiePath)
+	if p2.HostSuffix != "" {
+		t.Errorf("the fallback has a host suffix %q, want none", p2.HostSuffix)
 	}
 
 	// A host with its own profile must not fall through to the fallback.
@@ -106,21 +104,18 @@ func TestStoreSeedCarriesConfigValues(t *testing.T) {
 		t.Errorf("bilibili resolved to %q, want its own profile", p3.Name)
 	}
 
-	// The fallback does not get the proxy.
-	//
-	// It used to, and that sent every site without a profile of its own
-	// through a proxy that was there for YouTube — and Bilibili answers
-	// that with a block rather than with the video. A proxy belongs to the
-	// site that needs it.
-	p4, _ := ForURL("https://example.com/video")
-	if p4.Proxy != "" {
-		t.Errorf("the fallback has the proxy %q, want none", p4.Proxy)
-	}
-
-	// And Bilibili, which has a profile of its own, has no proxy either.
-	p5, _ := ForURL("https://www.bilibili.com/video/BV1xx")
-	if p5.Proxy != "" {
-		t.Errorf("bilibili has the proxy %q, want none", p5.Proxy)
+	// Nothing on a profile carries a route any more: the proxy is chosen
+	// when the download is built, by asking whether the site answers
+	// directly.
+	for _, u := range []string{
+		"https://example.com/video",
+		"https://www.bilibili.com/video/BV1xx",
+		"https://www.youtube.com/watch?v=x",
+	} {
+		p, _ := ForURL(u)
+		if p.Name == "" {
+			t.Errorf("%s resolved to nothing", u)
+		}
 	}
 }
 
@@ -184,7 +179,7 @@ func TestReplacePersistsAcrossReopen(t *testing.T) {
 	}
 
 	want := table{
-		{Name: "Custom", HostSuffix: "custom.com", Proxy: "http://127.0.0.1:1080"},
+		{Name: "Custom", HostSuffix: "custom.com"},
 		{Name: "Fallback"},
 	}
 	if err := s.Replace(want); err != nil {
@@ -209,7 +204,7 @@ func TestReplacePersistsAcrossReopen(t *testing.T) {
 	}
 
 	p, _ := ForURL("https://custom.com/v/1")
-	if p.Name != "Custom" || p.Proxy != "http://127.0.0.1:1080" {
+	if p.Name != "Custom" {
 		t.Errorf("persisted profile wrong: %+v", p)
 	}
 }

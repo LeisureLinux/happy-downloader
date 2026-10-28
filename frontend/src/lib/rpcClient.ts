@@ -38,13 +38,6 @@ export class RPCClient {
     return String(this.seq++)
   }
 
-  private send(req: RPCRequest) {
-    this._socket$.next({
-      ...req,
-      id: this.incrementSeq(),
-    })
-  }
-
   private async sendHTTP<T>(req: RPCRequest) {
     const res = await fetch(this.httpEndpoint, {
       method: 'POST',
@@ -118,8 +111,14 @@ export class RPCClient {
     }
   }
 
+  // The list of downloads.
+  //
+  // It asks over HTTP rather than the socket: the socket's answer is pushed
+  // to whoever is listening, and a poll wants an answer it can use. The push
+  // is still there — it is what makes the list update the moment something
+  // changes — and this is what catches a change that happened elsewhere.
   public running() {
-    this.send({
+    return this.sendHTTP<RPCResult[]>({
       method: 'Service.Running',
       params: [],
     })

@@ -67,22 +67,20 @@ func TestArgvIsSelfContained(t *testing.T) {
 	p := Profile{
 		Name:              "YouTube",
 		HostSuffix:        "youtube.com",
-		CookiePath:        "/data/yt-cookie.json",
-		PotBaseURL:        "http://127.0.0.1:4416",
-		Proxy:             "http://wpad.lan:8888",
 		ExtraArgs:         []string{"--sub-langs", "en,zh-Hans"},
 		PreferFreeFormats: true,
 	}
 
-	got := p.Argv("/tmp/cookies.txt.ytdlp-jar", "node:/usr/bin/node")
+	got := p.Argv("https://www.youtube.com/watch?v=x", "/tmp/cookies.txt.ytdlp-jar", "node:/usr/bin/node")
 	gotStr := strings.Join(got, " ")
 
+	// The cookie and the extra arguments come from the profile. The PO
+	// Token provider and the proxy come from the configuration, because
+	// they are properties of the installation rather than of a site.
 	want := []string{
 		"--ignore-config",
 		"--js-runtimes", "node:/usr/bin/node",
 		"--cookies", "/tmp/cookies.txt.ytdlp-jar",
-		"--extractor-args", "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416",
-		"--proxy", "http://wpad.lan:8888",
 		"--prefer-free-formats",
 		"--sub-langs", "en,zh-Hans",
 	}
@@ -103,7 +101,7 @@ func TestArgvIsSelfContained(t *testing.T) {
 func TestArgvOmitsEmptyValues(t *testing.T) {
 	p := Profile{Name: "Bilibili", HostSuffix: "bilibili.com"}
 
-	got := p.Argv("", "")
+	got := p.Argv("https://example.com/video", "", "")
 
 	gotStr := strings.Join(got, " ")
 
@@ -122,7 +120,7 @@ func TestArgvOmitsEmptyValues(t *testing.T) {
 func TestArgvSkipsBlankExtraArgs(t *testing.T) {
 	p := Profile{ExtraArgs: []string{"", "   ", "--yes-video"}}
 
-	got := p.Argv("", "")
+	got := p.Argv("https://example.com/video", "", "")
 
 	if len(got) != 2 || got[1] != "--yes-video" {
 		t.Errorf("argv = %v, want [--ignore-config --yes-video]", got)

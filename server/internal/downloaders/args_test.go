@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/profiles"
 )
 
@@ -57,18 +58,41 @@ func TestStageCookieFileProtectsSourceFromRewrite(t *testing.T) {
 // that reaches YouTube through a proxy the provider needs it too. Its HTTP
 // server has no --proxy flag; the proxy travels per request in the same
 // extractor-args value as base_url.
+//
+// Both come from the configuration now: they are properties of the
+// installation, not of a site.
 func TestPotArgCarriesProxy(t *testing.T) {
+	previous := config.Instance()
+	t.Cleanup(func() { config.SetInstance(previous) })
+
+	config.SetInstance(&config.Config{
+		YtDlp: config.YtDlpConfig{
+			PotBaseURL: "http://127.0.0.1:4416",
+			Proxy:      "http://127.0.0.1:8888",
+		},
+	})
+
 	got := profiles.Profile{
 		Name:       "YouTube",
 		HostSuffix: "youtube.com",
-		PotBaseURL: "http://127.0.0.1:4416",
-		Proxy:      "http://127.0.0.1:8888",
-	}.Argv("", "")
+	}.Argv("https://www.youtube.com/watch?v=x", "", "")
 
 	joined := strings.Join(got, " ")
 	want := "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416;proxy=http://127.0.0.1:8888"
 	if !strings.Contains(joined, want) {
 		t.Errorf("POT arg missing the provider proxy:\n got: %s\nwant: %s", joined, want)
+	}
+
+	// The provider is asked for YouTube only. For another site the argument
+	// is dead weight: the extractor ignores it and the provider is not
+	// called at all.
+	other := strings.Join(
+		profiles.Profile{Name: "Bilibili", HostSuffix: "bilibili.com"}.
+			Argv("https://www.bilibili.com/video/BV1xx", "", ""),
+		" ")
+
+	if strings.Contains(other, "youtubepot") {
+		t.Errorf("the POT provider was asked for a site that is not YouTube:\n%s", other)
 	}
 }
 

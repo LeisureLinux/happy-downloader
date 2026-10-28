@@ -1,6 +1,7 @@
 package downloaders
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"os"
@@ -60,25 +61,36 @@ func BuildArgs(url string, extra ...string) []string {
 	// are different addresses for the same video.
 	url = NormalizeURL(url)
 
+	// A short link is followed to the page it points at. The extractors do
+	// not know the shorteners — Weibo's "t.cn/abc" means nothing to them —
+	// and the video is one request away.
+	//
+	// The failure is not fatal: a link that cannot be followed is passed on
+	// as it is, and the extractor will say what it thinks of it.
+	if resolved, err := ResolveShortLink(context.Background(), url); err == nil {
+		url = resolved
+	}
+
 	// Refresh the converted cookie file first: this is the pre-download check
 	// that covers a replaced export when the inotify watch is unavailable.
 	SyncCookies()
 
 	runtime := SanitizeRuntime(config.Instance().Paths.JSRuntimePath)
 
-	profile, matched := profiles.ForURL(url)
+	profile, _ := profiles.ForURL(url)
 
-	// The cookie the download uses: the one the user imported, if there is
-	// one, and the automatic export otherwise.
+	// The cookie the download uses.
 	//
-	// The imported one wins because it is the credential the person using
-	// the interface chose — a browser extension export from their own
-	// machine, signed into their own account. The automatic export belongs to
-	// whoever set up the host, which is not always the same person.
-	cookieSource := profile.CookiePath
-	if matched && cookieSource == "" {
-		cookieSource = config.ResolvedCookieSource()
-	}
+	// There is one file, not one per site. A browser's export holds the
+	// cookies of every site it has visited, so one file carries every
+	// session there is, and yt-dlp picks out the ones the site it is
+	// fetching asks for.
+	//
+	// The imported file wins over the automatic one: it is the credential
+	// the person using the interface chose — an export from their own
+	// machine, signed into their own account. The automatic export belongs
+	// to whoever set up the host, which is not always the same person.
+	cookieSource := config.ResolvedCookieSource()
 
 	if imported := ImportedCookiePath(); imported != "" {
 		cookieSource = imported
@@ -89,36 +101,14 @@ func BuildArgs(url string, extra ...string) []string {
 		cookieStaging = stageCookieFile(cookieSource)
 	}
 
-	// The proxy is a property of the site, not of the network.
+	// The profile's own extra arguments. Everything else — the cookie, the
+	// PO Token provider, the proxy — is read from the configuration when the
+	// arguments are built, because they are properties of the installation
+	// rather than of a site.
 	//
-	// It used to be the other way round: the global setting was the
-	// fallback for every site a profile did not name, so a proxy that was
-	// there for YouTube was also sent to Bilibili — and Bilibili answers a
-	// request from another country with 412 rather than with the video.
-	//
-	// So a proxy is now something a site asks for, and an empty proxy in a
-	// profile means "reach it directly". The global setting is not a
-	// fallback any more; it is the value the profiles are seeded with, which
-	// is where a proxy for YouTube belongs.
-	proxy := profile.Proxy
-
-	// POT provider, likewise: global unless the profile names its own.
-	pot := profile.PotBaseURL
-	if pot == "" {
-		pot = strings.TrimSpace(config.Instance().YtDlp.PotBaseURL)
-	}
-
-	// One implementation, in Profile.Argv: two copies of this logic is how the
-	// POT provider lost its proxy the first time. The resolved values are
-	// pushed into a copy of the profile so Argv stays free of the config
-	// singleton and remains directly testable.
-	resolved := profile
-	resolved.Proxy = proxy
-	resolved.PotBaseURL = pot
-
 	// Argv appends the profile's own extra args, so they must not be added
 	// again here.
-	args := append([]string{url}, resolved.Argv(cookieStaging, runtime)...)
+	args := append([]string{url}, profile.Argv(url, cookieStaging, runtime)...)
 
 	return append(args, extra...)
 }

@@ -46,6 +46,7 @@ import {
   themeState
 } from '../atoms/settings'
 import DownloadCredentials from '../components/DownloadCredentials'
+import NetworkSettings from '../components/NetworkSettings'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
 import Translator from '../lib/i18n'
@@ -301,6 +302,16 @@ export function SettingsContent() {
             {i18n.t('credentialsAnchor')}
           </Typography>
           <DownloadCredentials />
+        </Grid>
+
+        {/* 网络相关的设置：POT 提供方和代理。
+            它们是整个部署的属性，不是某个站点的属性 —— 以前它们是
+            站点参数表里的两列，每一行都要填一遍同样的值。 */}
+        <Grid sx={{ mr: 1, mt: 2 }}>
+          <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
+            {i18n.t('networkAnchor')}
+          </Typography>
+          <NetworkSettings />
         </Grid>
 
         {/* 反向代理放最后：部署时配置一次，之后基本不动 */}

@@ -2,12 +2,12 @@ package livestream
 
 import (
 	"bufio"
-	"errors"
 	"io"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
@@ -37,6 +37,17 @@ type LiveStream struct {
 
 	mq    *queue.MessageQueue
 	store *kv.Store
+
+	// published says whether the stream has been handed to the queue, which
+	// is the point where it stopped being watched for and started being
+	// downloaded.
+	//
+	// The two are told apart when the stream is finished or killed: a stream
+	// that is downloading is still known — it can be stopped and its state
+	// reported — and one that was only being watched for is forgotten,
+	// because there is nothing left of it.
+	published bool
+	mu        sync.Mutex
 }
 
 func New(url string, done chan *LiveStream, mq *queue.MessageQueue, store *kv.Store) *LiveStream {
@@ -96,6 +107,10 @@ func (l *LiveStream) Start() error {
 
 	l.store.Set(d)
 	l.mq.Publish(d)
+
+	l.mu.Lock()
+	l.published = true
+	l.mu.Unlock()
 
 	return nil
 }
@@ -158,13 +173,17 @@ func (l *LiveStream) WaitTime() <-chan time.Duration {
 
 // Kills a livestream process and signal its completition
 func (l *LiveStream) Kill() error {
-	l.done <- l
-
+	// The signal is sent after the process is killed, so that whoever
+	// receives it sees a stream that is really over. The channel is
+	// unbuffered, so sending first would block until the monitor took it —
+	// and the monitor would then look at a stream that was still running.
 	if l.proc != nil {
-		return l.proc.Kill()
+		l.proc.Kill()
 	}
 
-	return errors.New("nil yt-dlp process")
+	l.done <- l
+
+	return nil
 }
 
 // Parse the timespan returned from yt-dlp (time to live)

@@ -180,6 +180,25 @@ func printYtDlpErrors(stdout io.Reader, shortId, url string) error {
 	for scanner.Scan() {
 		line := scanner.Text()
 
+		// Most of what yt-dlp writes to stderr is not an error.
+		//
+		// A livestream writes a line per segment — the HLS machinery's
+		// progress, the frames it decoded, the packets it dropped — and all
+		// of it goes to stderr. Logging all of it as an error filled the log
+		// with two thousand lines a minute while the download was working
+		// perfectly, and the real errors were somewhere in the middle of it.
+		//
+		// So the lines that are the machinery talking are logged as what
+		// they are, and only the rest are errors.
+		if isProgressNoise(line) {
+			slog.Debug("yt-dlp output",
+				slog.String("id", shortId),
+				slog.String("url", url),
+				slog.String("out", line),
+			)
+			continue
+		}
+
 		slog.Error("yt-dlp process error",
 			slog.String("id", shortId),
 			slog.String("url", url),
@@ -195,6 +214,39 @@ func printYtDlpErrors(stdout io.Reader, shortId, url string) error {
 	}
 
 	return scanner.Err()
+}
+
+// isProgressNoise reports whether a line from yt-dlp is the machinery
+// talking rather than something that went wrong.
+//
+// The patterns are the ones a livestream produces: the HLS reader's notes
+// about segments and packets, and the frame counter that ffmpeg writes as it
+// decodes. All of them are normal, and all of them arrive on stderr, because
+// that is where a progress report goes.
+//
+// A line that starts with "ERROR" is never one of them.
+func isProgressNoise(line string) bool {
+	trimmed := strings.TrimSpace(line)
+
+	if strings.HasPrefix(trimmed, "ERROR") {
+		return false
+	}
+
+	for _, prefix := range []string{
+		"[hls @", "[https @", "[in#", "[out#", "[aist", "[tls", "[tcp",
+		"frame=", "frame =", "size=", "video:", "audio:",
+	} {
+		if strings.HasPrefix(trimmed, prefix) {
+			return true
+		}
+	}
+
+	// The ffmpeg statistics line: "frame= 298 fps=7.3 q=-1.0 size=..."
+	if strings.Contains(trimmed, "bitrate=") && strings.Contains(trimmed, "fps=") {
+		return true
+	}
+
+	return false
 }
 
 // requestedContainer returns the container the arguments will produce, when

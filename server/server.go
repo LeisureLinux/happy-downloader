@@ -200,11 +200,10 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	// Site profiles decide which arguments a URL needs: cookie, POT
 	// provider, proxy and extras. Stored in bolt and editable from the UI,
 	// because adding a site must not mean rebuilding the binary.
-	profileStore, err := profiles.NewStore(boltdb, profiles.Profile{
-		CookiePath: config.ResolvedCookieSource(),
-		PotBaseURL: config.Instance().YtDlp.PotBaseURL,
-		Proxy:      config.Instance().YtDlp.Proxy,
-	})
+	// The seed is empty: the cookie, the PO Token provider and the proxy
+	// are read from the configuration when a download is built, because they
+	// are properties of the installation rather than of a site.
+	profileStore, err := profiles.NewStore(boltdb, profiles.Profile{})
 	if err != nil {
 		return err
 	}

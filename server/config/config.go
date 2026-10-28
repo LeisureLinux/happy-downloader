@@ -96,6 +96,17 @@ func Instance() *Config {
 	return instance
 }
 
+// SetInstance replaces the configuration.
+//
+// It is for the tests, which need a configuration of their own: the proxy and
+// the PO Token provider are read from it when a download's arguments are
+// built, and a test cannot reach the network to find out.
+func SetInstance(c *Config) {
+	instanceOnce.Do(func() {})
+
+	instance = c
+}
+
 // CookiesPath is the Netscape file yt-dlp reads.
 //
 // It is derived from the source path, not configured: the converted output

@@ -278,11 +278,24 @@ const DownloadsTableView: React.FC = () => {
                 </Tooltip>
               </>
             ) : (
-              <Tooltip title={i18n.t('pauseDownload')}>
-                <IconButton size="small" onClick={() => stop(download)}>
-                  <PauseIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+              <>
+                {/* A running download can be paused and it can be removed.
+                    Pausing leaves it in the queue — the partial file is
+                    kept and it can be continued. Removing is the other
+                    thing: a download that is going nowhere should be
+                    able to leave, and with only a pause button there was
+                    no way to do it. */}
+                <Tooltip title={i18n.t('pauseDownload')}>
+                  <IconButton size="small" onClick={() => stop(download)}>
+                    <PauseIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={i18n.t('removeFromQueue')}>
+                  <IconButton size="small" onClick={() => client.clear(download.id)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </>
             )}
           </ButtonGroup>
         </TableCell>
