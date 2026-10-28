@@ -1,10 +1,12 @@
 import CookieIcon from '@mui/icons-material/Cookie'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { Box, Tooltip } from '@mui/material'
+import IconButton from '@mui/material/IconButton'
 import { cookieStatusState } from '../atoms/settings'
 import { formatTimestamp } from '../utils'
 import { useI18n } from '../hooks/useI18n'
 import { useAtomValue } from 'jotai'
+import { siteColor, siteIcon } from './SiteIcon'
 
 // When the cookie export was last replaced, next to the disk figure.
 //
@@ -22,26 +24,37 @@ import { useAtomValue } from 'jotai'
 // ten minutes, so a timestamp that has not moved for longer than that means
 // the refresher is not running — and the symptom is a download failing with a
 // bot wall, which looks like nothing at all unless something says so.
+//
+// The whole thing is a button: clicking it opens the import, which is where
+// a person goes when the timestamp is wrong or a site wants a cookie of its
+// own. The import used to be three clicks deep in settings.
 const STALE_AFTER_MINUTES = 30
 
-const CookieIndicator: React.FC = () => {
+type Props = {
+  onImport: () => void
+}
+
+const CookieIndicator: React.FC<Props> = ({ onImport }) => {
   const status = useAtomValue(cookieStatusState)
   const { i18n } = useI18n()
 
   const imported = status.imported
+
+  const open = () => onImport()
 
   // The imported export is in use: it is the cookie the downloads use, so it
   // is what the timestamp has to be about.
   if (imported) {
     return (
       <Tooltip title={`${i18n.t('cookieModifiedAt')} · ${imported.path}`}>
-        <Box
-          component="span"
-          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main' }}
+        <IconButton
+          size="small"
+          onClick={open}
+          sx={{ color: 'primary.main', gap: 0.5 }}
         >
           <CookieIcon fontSize="small" />
-          <Box component="span">{formatTimestamp(imported.modifiedAt)}</Box>
-        </Box>
+          <span>{formatTimestamp(imported.modifiedAt)}</span>
+        </IconButton>
       </Tooltip>
     )
   }
@@ -49,13 +62,14 @@ const CookieIndicator: React.FC = () => {
   if (!status.exists) {
     return (
       <Tooltip title={i18n.t('cookieNotLoaded')}>
-        <Box
-          component="span"
-          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.disabled' }}
+        <IconButton
+          size="small"
+          onClick={open}
+          sx={{ color: 'text.disabled', gap: 0.5 }}
         >
           <CookieIcon fontSize="small" />
-          <Box component="span">—</Box>
-        </Box>
+          <span>—</span>
+        </IconButton>
       </Tooltip>
     )
   }
@@ -67,19 +81,20 @@ const CookieIndicator: React.FC = () => {
     <Tooltip
       title={`${i18n.t('cookieModifiedAt')} · ${status.sourcePath ?? ''}`}
     >
-      <Box
-        component="span"
-        sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main' }}
+      <IconButton
+        size="small"
+        onClick={open}
+        sx={{ color: 'primary.main', gap: 0.5 }}
       >
         <CookieIcon fontSize="small" />
-        <Box component="span">{formatTimestamp(status.modifiedAt)}</Box>
+        <span>{formatTimestamp(status.modifiedAt)}</span>
         {stale && (
           <WarningAmberIcon
             fontSize="small"
             sx={{ color: 'warning.main' }}
           />
         )}
-      </Box>
+      </IconButton>
     </Tooltip>
   )
 }

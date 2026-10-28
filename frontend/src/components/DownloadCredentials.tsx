@@ -19,7 +19,6 @@ import {
   Typography
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import CookieImport from './CookieImport'
 import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useAtomValue } from 'jotai'
@@ -189,9 +188,6 @@ const DownloadCredentials: React.FC = () => {
           </Tooltip>
         </Stack>
       </Paper>
-
-      {/* ── 导入 cookie ─────────────────────────────────────── */}
-      <CookieImport onDone={refresh} />
 
       {stat?.exists && !hasLogin && (
         <Alert severity="warning" icon={false}>

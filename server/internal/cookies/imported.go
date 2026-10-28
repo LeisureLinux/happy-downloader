@@ -92,9 +92,9 @@ func NewStore(dir string) *Store {
 
 // The file name the uploaded export is written to.
 //
-// A fixed name, so that uploading a new one replaces the old one rather than
-// leaving a pile of them behind.
-const importedFileName = "imported-cookies.json"
+// A fixed name, so that uploading a new one does not leave a pile of files
+// behind.
+const importedFileName = "imported-cookies.txt"
 
 // Path returns the file the uploaded export is written to.
 func (s *Store) Path() string {
@@ -113,12 +113,26 @@ func (s *Store) Import(content []byte) (*Imported, error) {
 		return nil, err
 	}
 
+	// What is already imported, if anything.
+	existing := ""
+	if previous, err := os.ReadFile(s.Path()); err == nil {
+		existing = string(previous)
+	}
+
 	summary := Summarize(converted)
 
-	// A guest session is not a credential. YouTube hands out cookies to
-	// anyone who visits, so a file with no login cookie is a file that looks
-	// like an export and behaves like an anonymous visitor.
-	if missing := Required(summary.Names); len(missing) > 0 {
+	// A guest session is not a credential — but only YouTube says so with
+	// those four cookies.
+	//
+	// The check used to be applied to every file, so an export of a
+	// browser's cookies for any other site was refused for not carrying
+	// LOGIN_INFO: a cookie that only YouTube has. The import was of a
+	// perfectly good Douyin or Weibo session, and it was turned away by a
+	// rule about a different site.
+	//
+	// So the rule is asked of the site the cookies are for, and a file
+	// with cookies for several sites is judged by the one that has a rule.
+	if missing := missingForSite(converted, summary); len(missing) > 0 {
 		return nil, fmt.Errorf(
 			"the file is missing the login cookies %s, so it is a guest session rather than a signed-in one",
 			strings.Join(missing, ", "))
@@ -128,11 +142,27 @@ func (s *Store) Import(content []byte) (*Imported, error) {
 		return nil, err
 	}
 
+	// The new cookies are added to what is already there, not written over
+	// it.
+	//
+	// They used to replace each other, and that was wrong in a way that was
+	// easy to hit: a browser's export holds the cookies of every site it has
+	// visited, so importing the one that had Douyin in it was often the same
+	// file as the one that had YouTube in it. Whichever was imported last
+	// was the only one in use, and the other sites went back to not working
+	// without anything saying so.
+	//
+	// So the file is merged: the cookies already there are kept, and the new
+	// ones replace the ones of the same name. A cookie that is refreshed
+	// takes the new value — that is the point of importing — and a cookie for
+	// a site that was not in the previous export is kept.
+	merged, added, replaced := mergeCookies(existing, converted)
+
 	// Written to a temporary name and renamed, so a reader never sees a
 	// half-written file.
 	tmp := s.Path() + ".tmp"
 
-	if err := os.WriteFile(tmp, content, 0o600); err != nil {
+	if err := os.WriteFile(tmp, []byte(merged), 0o600); err != nil {
 		return nil, err
 	}
 
@@ -146,6 +176,14 @@ func (s *Store) Import(content []byte) (*Imported, error) {
 		Format:     string(format),
 		Count:      summary.Total,
 		ModifiedAt: time.Now(),
+	}
+
+	// The file now holds everything that was imported before as well, so the
+	// count is of the whole thing rather than of the last upload.
+	if added+replaced > 0 {
+		if total := Summarize(merged).Total; total > 0 {
+			imported.Count = total
+		}
 	}
 
 	s.mu.Lock()

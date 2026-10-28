@@ -3,12 +3,13 @@ import GitHubIcon from '@mui/icons-material/GitHub'
 import SettingsEthernet from '@mui/icons-material/SettingsEthernet'
 import TerminalIcon from '@mui/icons-material/Terminal'
 import { AppBar, Box, Divider, IconButton, Toolbar, Tooltip } from '@mui/material'
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { settingsState } from '../atoms/settings'
 import { connectedState } from '../atoms/status'
 import { totalDownloadSpeedState } from '../atoms/ui'
 import { useI18n } from '../hooks/useI18n'
 import { formatSpeedMiB } from '../utils'
+import CookieDialog from './CookieDialog'
 import CookieIndicator from './CookieIndicator'
 import FreeSpaceIndicator from './FreeSpaceIndicator'
 import YtdlpIndicator from './YtdlpIndicator'
@@ -30,6 +31,9 @@ const Footer: React.FC = () => {
   const isConnected = useAtomValue(connectedState)
   const totalDownloadSpeed = useAtomValue(totalDownloadSpeedState)
 
+  // The cookie dialog, opened from the cookie indicator in the bar.
+  const [cookieDialog, setCookieDialog] = useState(false)
+
   const [logOpen, setLogOpen] = useAtom(logPanelOpenAtom)
 
   const mode = settings.theme
@@ -38,6 +42,7 @@ const Footer: React.FC = () => {
   const toggleLog = () => setLogOpen(v => !v)
 
   return (
+    <>
     <AppBar position="fixed" color="default" sx={{
       top: 'auto',
       bottom: 0,
@@ -134,7 +139,7 @@ const Footer: React.FC = () => {
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', flexShrink: 0 }}>
               <Divider orientation="vertical" flexItem />
               <Suspense fallback={null}>
-                <CookieIndicator />
+                <CookieIndicator onImport={() => setCookieDialog(true)} />
               </Suspense>
             </Box>
           </Box>
@@ -155,6 +160,15 @@ const Footer: React.FC = () => {
         </Tooltip>
       </Toolbar>
     </AppBar>
+
+    {/* The cookie dialog, opened by clicking the cookie indicator in the
+        bar. It was three clicks deep in settings, which is a long way to
+        go when a download has just failed with a bot wall. */}
+    <CookieDialog
+      open={cookieDialog}
+      onClose={() => setCookieDialog(false)}
+    />
+    </>
   )
 }
 

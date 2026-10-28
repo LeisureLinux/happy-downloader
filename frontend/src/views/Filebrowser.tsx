@@ -44,7 +44,7 @@ import CaptionsDialog from '../components/CaptionsDialog'
 import DownloadDialog from '../components/DownloadDialog'
 import FileActions from '../components/FileActions'
 import FolderDialog from '../components/FolderDialog'
-import { siteColor, siteIcon } from '../components/SiteIcon'
+import { siteIcon } from '../components/SiteIcon'
 
 // A row is a file or a folder. Selection is by path, which is unique within a
 // listing, unlike the name the previous implementation keyed on.
@@ -475,15 +475,16 @@ export default function Filebrowser() {
                     {/* 来源站点的图标：文件名看不出是哪个站下来的，
                         一列图标一眼就知道。 */}
                     <TableCell>
+                      {/* The span matters: a tooltip puts a ref on its
+                          child, and a div does not take one. A <div> here
+                          brought the whole page down with a React error
+                          that said nothing about what was wrong. */}
                       <Tooltip title={f.sourceSite ?? ''}>
                         <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: siteColor(f.sourceSite, theme.palette.primary.main),
-                          }}
+                          component="span"
+                          sx={{ display: 'inline-flex', alignItems: 'center' }}
                         >
-                          {siteIcon(f.sourceSite)}
+                          {siteIcon(f.sourceSite, theme.palette.primary.main)}
                         </Box>
                       </Tooltip>
                     </TableCell>

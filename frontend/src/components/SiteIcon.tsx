@@ -18,6 +18,13 @@ import { ReactNode } from 'react'
 // A site nobody has an icon for gets the globe: the row still says where the
 // file came from, which is the point of the column.
 
+/** The Weibo mark: the eye. */
+const WeiboIcon = (props: SvgIconProps) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M10.1 20.3c-3.6 0-6.6-1.8-6.6-4.1 0-1.3.9-2.9 2.6-4.2 2.2-1.7 5-2.5 5.9-1.7.4.4.4 1 .1 1.6-.1.2-.2.4-.2.6 0 .4.4.7 1 .8 1 .4 1.6.4 2.5.4 2.9 0 5.5-2.2 5.5-4.9 0-2.7-2.2-4.7-5.1-4.7h-.2c.4-.9.3-1.8-.3-2.4-.9-.9-2.7-.8-4.4.4-1.6 1.1-2.6 2-2.4.4 0 .6.3.5.8-.3 1.7-3.9 4.9-3.9Zm-2.4 2.3c-1.2 0-2.2.8-2.2 1.7 0 1 .9 1.7 2.2 1.7s2.2-.8 2.2-1.7c0-.9-1-1.7-2.2-1.7Z" />
+  </svg>
+)
+
 /** The Bilibili mark: the television with the two ears. */
 const BilibiliIcon = (props: SvgIconProps) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -67,41 +74,6 @@ const TwitchIcon = (props: SvgIconProps) => (
   </svg>
 )
 
-// The icon for a site name.
-//
-// The names come from the server, which derives them from the URL. An
-// unknown one gets the globe rather than nothing: the column is there to say
-// where the file came from, and a missing icon would say nothing at all.
-export const siteIcon = (site?: string): ReactNode => {
-  switch (site) {
-    case 'youtube':
-      return <YouTubeIcon fontSize="small" />
-    case 'bilibili':
-      return <BilibiliIcon fontSize="small" />
-    case 'x':
-      return <XIcon fontSize="small" />
-    case 'xiaohongshu':
-      return <XiaohongshuIcon fontSize="small" />
-    case 'douyin':
-      return <DouyinIcon fontSize="small" />
-    case 'tiktok':
-      return <TikTokIcon fontSize="small" />
-    case 'reddit':
-      return <RedditIcon fontSize="small" />
-    case 'instagram':
-      return <InstagramIcon fontSize="small" />
-    case 'facebook':
-      return <FacebookIcon fontSize="small" />
-    case 'vimeo':
-      return <VimeoIcon fontSize="small" />
-    case 'twitch':
-      return <TwitchIcon fontSize="small" />
-    case 'niconico':
-      return <NiconicoIcon fontSize="small" />
-    default:
-      return <LanguageIcon fontSize="small" />
-  }
-}
 
 // The colour a site's icon is drawn in.
 //
@@ -109,12 +81,14 @@ export const siteIcon = (site?: string): ReactNode => {
 // YouTube and a blue X are recognisable without reading anything. A site
 // without a colour of its own uses the theme's accent, so it still looks
 // deliberate.
-export const siteColor = (site: string | undefined, primary: string): string => {
+export const siteColor = (site: string | undefined, primary = '#1976d2'): string => {
   switch (site) {
     case 'youtube':
       return '#FF0000'
     case 'bilibili':
       return '#00A1D6'
+    case 'weibo':
+      return '#E6162D'
     case 'x':
       return '#000000'
     case 'xiaohongshu':
@@ -139,3 +113,51 @@ export const siteColor = (site: string | undefined, primary: string): string => 
       return primary
   }
 }
+
+// The icon for a site name.
+//
+// The names come from the server, which derives them from the URL. An
+// unknown one gets the globe rather than nothing: the column is there to say
+// where the file came from, and a missing icon would say nothing at all.
+//
+// It never returns nothing. A site without a case used to come back as
+// undefined, and a <Tooltip> whose child is undefined is a crash — the whole
+// page went down over an icon that was simply not drawn.
+//
+// It returns an element rather than a bare node, because a bare node has to
+// be wrapped to be given a colour, and the wrapping is a <div> that a
+// <Tooltip> cannot put a ref on. The element carries its own colour
+// instead, so the caller can use it directly.
+export const siteIcon = (site?: string, primary?: string): ReactNode => {
+  switch (site) {
+    case 'youtube':
+      return <YouTubeIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'bilibili':
+      return <BilibiliIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'weibo':
+      return <WeiboIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'x':
+      return <XIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'xiaohongshu':
+      return <XiaohongshuIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'douyin':
+      return <DouyinIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'tiktok':
+      return <TikTokIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'reddit':
+      return <RedditIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'instagram':
+      return <InstagramIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'facebook':
+      return <FacebookIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'vimeo':
+      return <VimeoIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'twitch':
+      return <TwitchIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    case 'niconico':
+      return <NiconicoIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+    default:
+      return <LanguageIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+  }
+}
+
