@@ -126,6 +126,7 @@ keys:
   fileMissing: 'falta el fitxer'
   goHome: 'Ves a les descàrregues'
   goUp: 'Puja un nivell'
+  currentDirectory: 'Carpeta actual: {name}'
   manualBadge: 'manual'
   maxHeightLabel: 'Alçada màxima'
   mediaAudioOnly: 'Només àudio'

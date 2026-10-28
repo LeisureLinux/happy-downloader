@@ -126,6 +126,7 @@ keys:
   fileMissing: 'файл отсутствует'
   goHome: 'К загрузкам'
   goUp: 'На уровень выше'
+  currentDirectory: 'Текущая папка: {name}'
   manualBadge: 'вручную'
   maxHeightLabel: 'Максимальная высота'
   mediaAudioOnly: 'Только аудио'

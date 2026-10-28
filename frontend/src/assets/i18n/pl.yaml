@@ -126,6 +126,7 @@ keys:
   fileMissing: 'brak pliku'
   goHome: 'Przejdź do pobierania'
   goUp: 'Poziom wyżej'
+  currentDirectory: 'Bieżący folder: {name}'
   manualBadge: 'ręczne'
   maxHeightLabel: 'Maksymalna wysokość'
   mediaAudioOnly: 'Tylko audio'

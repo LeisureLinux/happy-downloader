@@ -126,6 +126,7 @@ keys:
   fileMissing: 'falta el archivo'
   goHome: 'Ir a las descargas'
   goUp: 'Subir un nivel'
+  currentDirectory: 'Carpeta actual: {name}'
   manualBadge: 'manual'
   maxHeightLabel: 'Altura máxima'
   mediaAudioOnly: 'Solo audio'

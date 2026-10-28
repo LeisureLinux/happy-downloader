@@ -127,6 +127,7 @@ keys:
   fileMissing: 'ファイルがありません'
   goHome: 'ダウンロードへ戻る'
   goUp: '一つ上の階層へ'
+  currentDirectory: '現在のフォルダー：{name}'
   manualBadge: '手動'
   maxHeightLabel: '最大解像度'
   mediaAudioOnly: '音声のみ'

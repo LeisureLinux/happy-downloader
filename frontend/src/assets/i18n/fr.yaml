@@ -129,6 +129,7 @@ keys:
   fileMissing: 'fichier manquant'
   goHome: 'Aller aux téléchargements'
   goUp: 'Remonter d’un niveau'
+  currentDirectory: 'Dossier actuel : {name}'
   manualBadge: 'manuel'
   maxHeightLabel: 'Hauteur maximale'
   mediaAudioOnly: 'Audio seul'

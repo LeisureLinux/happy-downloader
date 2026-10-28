@@ -50,6 +50,14 @@ import { siteColor, siteIcon } from '../components/SiteIcon'
 // listing, unlike the name the previous implementation keyed on.
 type Row = DirectoryEntry & { selected: boolean }
 
+// The last part of a path: the name of the directory it names.
+const baseName = (path: string): string => {
+  const cut = path.lastIndexOf('/')
+  if (cut < 0) return path
+
+  return path.slice(cut + 1)
+}
+
 // Downloads open in a new tab. Playback does not: the browser's own player
 // cannot offer a caption track, and choosing one is the reason the captions
 // were downloaded.
@@ -85,6 +93,11 @@ export default function Filebrowser() {
   // first-level folder is the download directory, and that cannot be worked
   // out from the path alone.
   const [parent, setParent] = useState('')
+  // The directory being listed, and its name. The name is what says where
+  // you are: inside a folder, the list looks the same as the list outside it,
+  // and without this there is nothing to say so.
+  const [subdirPath, setSubdirPath] = useState('')
+  const [subdirName, setSubdirName] = useState('')
   const [loading, setLoading] = useState(true)
 
   // useToast() returns a fresh object every render, so pushMessage is a new
@@ -115,12 +128,17 @@ export default function Filebrowser() {
       const listing = data as {
         files?: DirectoryEntry[]
         parent?: string
+        subDir?: string
       }
 
       // An empty folder used to come back as null, and .map() on null is a
       // crash that took the whole page with it.
       setRows((listing.files ?? []).map(d => ({ ...d, selected: false })))
       setParent(listing.parent ?? '')
+
+      // The name of the directory being listed — the last part of its path.
+      setSubdirPath(listing.subDir ?? '')
+      setSubdirName(baseName(listing.subDir ?? ''))
       setSelected(new Set())
     } catch (e) {
       notifyRef.current(String(e), 'error')
@@ -317,9 +335,17 @@ export default function Filebrowser() {
             顶层没有"上一级"，所以那一层不显示这个按钮 —— 那个父目录是
             下载目录的外面，按下去会列出不属于这里的东西。 */}
         {parent !== '' && (
-          <Button size="small" onClick={() => setSubdir(parent)} sx={{ mb: 1 }}>
-            ← {i18n.t('goUp')}
-          </Button>
+          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
+            <Button size="small" onClick={() => setSubdir(parent)}>
+              ← {i18n.t('goUp')}
+            </Button>
+
+            {/* 现在在哪个目录里。文件夹里的列表和外面的长得一样，
+                没有这一行就看不出自己在哪。 */}
+            <Typography variant="body2" color="text.secondary" noWrap>
+              {i18n.t('currentDirectory').replace('{name}', subdirName)}
+            </Typography>
+          </Stack>
         )}
 
         {loading ? (

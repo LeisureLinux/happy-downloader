@@ -126,6 +126,7 @@ keys:
   fileMissing: 'файл відсутній'
   goHome: 'До завантажень'
   goUp: 'На рівень вище'
+  currentDirectory: 'Поточна тека: {name}'
   manualBadge: 'вручну'
   maxHeightLabel: 'Максимальна висота'
   mediaAudioOnly: 'Лише аудіо'

@@ -128,6 +128,7 @@ keys:
   fileMissing: 'arquivo ausente'
   goHome: 'Ir para os downloads'
   goUp: 'Subir um nível'
+  currentDirectory: 'Pasta atual: {name}'
   manualBadge: 'manual'
   maxHeightLabel: 'Altura máxima'
   mediaAudioOnly: 'Somente áudio'

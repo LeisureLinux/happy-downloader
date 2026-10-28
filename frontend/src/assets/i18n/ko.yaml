@@ -126,6 +126,7 @@ keys:
   fileMissing: '파일 없음'
   goHome: '다운로드로 이동'
   goUp: '상위 폴더로'
+  currentDirectory: '현재 폴더: {name}'
   manualBadge: '수동'
   maxHeightLabel: '최대 해상도'
   mediaAudioOnly: '오디오만'

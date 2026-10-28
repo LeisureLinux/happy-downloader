@@ -152,6 +152,7 @@ keys:
   deleteSelected: 'Delete'
   confirmDeleteFiles: 'Delete the selected files? This cannot be undone.'
   goUp: 'Up one level'
+  currentDirectory: 'Current folder: {name}'
   noFilesFound: 'No Files Found'
   clearCompletedButton: 'Clear completed'
   mediaVideoAudio: 'Video + audio'

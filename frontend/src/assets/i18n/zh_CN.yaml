@@ -153,6 +153,7 @@ keys:
   deleteSelected: '删除'
   confirmDeleteFiles: '确定删除选中的文件？此操作无法撤销。'
   goUp: '返回上一级'
+  currentDirectory: '当前目录：{name}'
   noFilesFound: '没有文件'
   mediaVideoAudio: '视频+音频'
   mediaAudioOnly: '仅音频'

@@ -357,11 +357,49 @@ func SendFile(w http.ResponseWriter, r *http.Request) {
 	root := config.Instance().Paths.DownloadPath
 
 	if strings.Contains(filepath.Dir(filepath.Clean(filename)), filepath.Clean(root)) {
+		// The content type is set before the file is served, because
+		// http.ServeFile would otherwise work it out from the extension and
+		// say "video/x-matroska" for a .mkv.
+		//
+		// Chromium does not treat Matroska as playable media: a .mkv
+		// triggers a download rather than playing, even though the file
+		// holds exactly the same streams as a .webm. The two containers
+		// differ only in what they are allowed to contain, and a video
+		// downloaded as one plays as the other.
+		//
+		// So a .mkv is served as video/webm. That is what makes the same
+		// file play on a phone: the .webm next to it plays there, and the
+		// only difference between them is the container.
+		if ct := contentTypeFor(filename); ct != "" {
+			w.Header().Set("Content-Type", ct)
+		}
+
 		http.ServeFile(w, r, filename)
 		return
 	}
 
 	w.WriteHeader(http.StatusUnauthorized)
+}
+
+// contentTypeFor returns the content type a media file is served with.
+//
+// A Matroska file is served as video/webm, because Chromium plays that and
+// not the other: "accessing .mkv files in Chromium triggers a download because
+// the browser does not recognize the Matroska container format as playable
+// media" — even though the streams inside are identical to a WebM's.
+func contentTypeFor(path string) string {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".mkv":
+		return "video/webm"
+	case ".webm":
+		return "video/webm"
+	case ".mp4", ".m4v":
+		return "video/mp4"
+	case ".mov":
+		return "video/quicktime"
+	}
+
+	return ""
 }
 
 func DownloadFile(w http.ResponseWriter, r *http.Request) {
