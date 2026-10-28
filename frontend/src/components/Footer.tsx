@@ -2,7 +2,7 @@ import DownloadIcon from '@mui/icons-material/Download'
 import GitHubIcon from '@mui/icons-material/GitHub'
 import SettingsEthernet from '@mui/icons-material/SettingsEthernet'
 import TerminalIcon from '@mui/icons-material/Terminal'
-import { AppBar, Box, Divider, IconButton, Toolbar, Tooltip } from '@mui/material'
+import { AppBar, Box, Divider, IconButton, Stack, Toolbar, Tooltip } from '@mui/material'
 import { Suspense, useState } from 'react'
 import { settingsState } from '../atoms/settings'
 import { connectedState } from '../atoms/status'
@@ -10,10 +10,12 @@ import { totalDownloadSpeedState } from '../atoms/ui'
 import { useI18n } from '../hooks/useI18n'
 import { formatSpeedMiB } from '../utils'
 import CookieDialog from './CookieDialog'
+import { siteIcon } from './SiteIcon'
 import CookieIndicator from './CookieIndicator'
 import FreeSpaceIndicator from './FreeSpaceIndicator'
 import YtdlpIndicator from './YtdlpIndicator'
 import { useAtom, useAtomValue } from 'jotai'
+import { useTheme } from '@mui/material/styles'
 import { logPanelOpenAtom } from '../atoms/ui'
 
 // The bottom bar.
@@ -26,6 +28,23 @@ import { logPanelOpenAtom } from '../atoms/ui'
 // product name on a phone. The repository link is at the other end because it
 // is not navigation at all — it is where this deployment came from — and the
 // end of the bar is where something like that belongs.
+// The sites the application can download from, in the order they are most
+// likely to be used.
+const supportedSites = [
+  'youtube',
+  'bilibili',
+  'douyin',
+  'tiktok',
+  'xiaohongshu',
+  'weibo',
+  'x',
+  'instagram',
+  'reddit',
+  'vimeo',
+  'twitch',
+  'niconico',
+]
+
 const Footer: React.FC = () => {
   const settings = useAtomValue(settingsState)
   const isConnected = useAtomValue(connectedState)
@@ -37,6 +56,7 @@ const Footer: React.FC = () => {
   const [logOpen, setLogOpen] = useAtom(logPanelOpenAtom)
 
   const mode = settings.theme
+  const theme = useTheme()
   const { i18n } = useI18n()
 
   const toggleLog = () => setLogOpen(v => !v)
@@ -145,19 +165,40 @@ const Footer: React.FC = () => {
           </Box>
         </Box>
 
-        {/* The repository, at the far right. */}
-        <Tooltip title={i18n.t('sourceCode')}>
-          <IconButton
-            size="small"
-            component="a"
-            href="https://github.com/LeisureLinux/happy-downloader"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ color: 'primary.main', flexShrink: 0 }}
+        {/* The sites the application can download from, at the far
+            right. They are what the icons in the file browser are keyed
+            by, and a person looking at a file that will not play wants to
+            know what else it could have come from. */}
+        <Stack
+            direction="row"
+            spacing={0.5}
+            alignItems="center"
+            sx={{ flexShrink: 0, mr: 0.5 }}
           >
-            <GitHubIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+            {supportedSites.map(site => (
+              <Tooltip key={site} title={site}>
+                <Box
+                  component="span"
+                  sx={{ display: 'inline-flex', alignItems: 'center' }}
+                >
+                  {siteIcon(site, theme.palette.primary.main)}
+                </Box>
+              </Tooltip>
+            ))}
+          </Stack>
+
+          <Tooltip title={i18n.t('sourceCode')}>
+            <IconButton
+              size="small"
+              component="a"
+              href="https://github.com/LeisureLinux/happy-downloader"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ color: 'primary.main', flexShrink: 0 }}
+            >
+              <GitHubIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
       </Toolbar>
     </AppBar>
 

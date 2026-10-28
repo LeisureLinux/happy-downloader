@@ -5,7 +5,7 @@ import RedditIcon from '@mui/icons-material/Reddit'
 import SmartDisplayIcon from '@mui/icons-material/SmartDisplay'
 import XIcon from '@mui/icons-material/X'
 import YouTubeIcon from '@mui/icons-material/YouTube'
-import { SvgIconProps } from '@mui/material'
+import { SvgIcon, SvgIconProps } from '@mui/material'
 import { ReactNode } from 'react'
 
 // The icon for a site a file came from.
@@ -20,58 +20,58 @@ import { ReactNode } from 'react'
 
 /** The Weibo mark: the eye. */
 const WeiboIcon = (props: SvgIconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+  <SvgIcon {...props}>
     <path d="M10.1 20.3c-3.6 0-6.6-1.8-6.6-4.1 0-1.3.9-2.9 2.6-4.2 2.2-1.7 5-2.5 5.9-1.7.4.4.4 1 .1 1.6-.1.2-.2.4-.2.6 0 .4.4.7 1 .8 1 .4 1.6.4 2.5.4 2.9 0 5.5-2.2 5.5-4.9 0-2.7-2.2-4.7-5.1-4.7h-.2c.4-.9.3-1.8-.3-2.4-.9-.9-2.7-.8-4.4.4-1.6 1.1-2.6 2-2.4.4 0 .6.3.5.8-.3 1.7-3.9 4.9-3.9Zm-2.4 2.3c-1.2 0-2.2.8-2.2 1.7 0 1 .9 1.7 2.2 1.7s2.2-.8 2.2-1.7c0-.9-1-1.7-2.2-1.7Z" />
-  </svg>
+  </SvgIcon>
 )
 
 /** The Bilibili mark: the television with the two ears. */
 const BilibiliIcon = (props: SvgIconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+  <SvgIcon {...props}>
     <path d="M7.5 2.3a1 1 0 0 1 .7.3l2 2h3.6l2-2a1 1 0 1 1 1.4 1.4l-1.2 1.2h.4A4.7 4.7 0 0 1 21 9.6v8.1a4.7 4.7 0 0 1-4.7 4.7H7.7A4.7 4.7 0 0 1 3 17.7V9.6a4.7 4.7 0 0 1 4.7-4.7h.4L6.8 3.7a1 1 0 0 1 .7-1.4ZM8 7.4a2.6 2.6 0 0 0-2.6 2.6v7.3c0 1.4 1.2 2.6 2.6 2.6h8c1.4 0 2.6-1.2 2.6-2.6V10A2.6 2.6 0 0 0 16 7.4H8Zm1.9 3.1a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2Zm4.2 0a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2Z" />
-  </svg>
+  </SvgIcon>
 )
 
 /** The Xiaohongshu mark: the red book. */
 const XiaohongshuIcon = (props: SvgIconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+  <SvgIcon {...props}>
     <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H11a2 2 0 0 1 2 2v.4a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6.5A2.5 2.5 0 0 1 4 17.5v-13Zm11.5 2.6a2 2 0 0 1 4 0v10.4A2.5 2.5 0 0 1 17 20h-1.5a2 2 0 0 1-2-2V9.5a2 2 0 0 1 2-2.4ZM6 6.5v9h3v-9H6Z" />
-  </svg>
+  </SvgIcon>
 )
 
 /** The TikTok mark: the note. */
 const TikTokIcon = (props: SvgIconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+  <SvgIcon {...props}>
     <path d="M14 3h2.6a5.4 5.4 0 0 0 4.4 4.4V10a8 8 0 0 1-4.4-1.3v5.9a5.9 5.9 0 1 1-5.1-5.8v2.7a3.2 3.2 0 1 0 2.2 3V3Z" />
-  </svg>
+  </SvgIcon>
 )
 
 /** The Douyin mark: the note with its music. */
 const DouyinIcon = (props: SvgIconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+  <SvgIcon {...props}>
     <path d="M15 3h2.6a5.4 5.4 0 0 0 4.4 4.4V10a8 8 0 0 1-4.4-1.3v5.9a5.9 5.9 0 1 1-5.1-5.8v2.7a3.2 3.2 0 1 0 2.2 3V3Z" />
-  </svg>
+  </SvgIcon>
 )
 
 /** The Vimeo mark: the v. */
 const VimeoIcon = (props: SvgIconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+  <SvgIcon {...props}>
     <path d="M21 7.2c-.1 2.2-1.6 5.2-4.7 9-.3.5-.6 1-.8 1.3-.5.7-1 1.2-1.5 1.5-.6.4-1.2.5-1.8.3-1-.3-1.8-1-2.4-2-.5-1-.9-2.3-1.1-3.9-.3-2-.5-3.3-.6-3.9-.1-.4-.3-.7-.5-.9-.2-.2-.5-.2-.9 0-.3.2-.6.5-.9.9l-.4.6c-.4.7-.8 1.4-1.1 2.1-.4.8-.7 1.4-1 1.9-.4.7-.8 1-1.2 1-.3 0-.5-.1-.7-.3-.2-.2-.3-.5-.5-1-.2-.6-.3-1.3-.4-2.1C1 10.2.8 9 .6 7.8c0-.5.1-.9.4-1.2.3-.3.7-.4 1.2-.4.5 0 1 .2 1.5.6.5.4.9 1 1.3 1.8.4.8.8 1.9 1.2 3.3.1.4.2.7.3.8.1.2.2.3.3.3.2 0 .5-.4.8-1.1.4-.8.6-1.4.8-1.9.3-.8.3-1.5 0-2-.2-.6-.9-1.2-2.1-1.7.6 0 1.2-.1 1.7-.3.5-.2.9-.5 1.2-.9.3-.4.4-.8.4-1.4 0-.7-.3-1.3-.8-1.9-.5-.6-1.4-1-2.7-1.3 0-.1.1-.3.2-.4.3-.4.8-.6 1.4-.8.6-.2 1.3-.2 2.1-.1 1 0 1.9.2 2.8.5.9.3 1.5.7 1.9 1.3.4.6.6 1.3.6 2.2Z" />
-  </svg>
+  </SvgIcon>
 )
 
 /** The Niconico mark: the n. */
 const NiconicoIcon = (props: SvgIconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+  <SvgIcon {...props}>
     <path d="M3 5h4.2l3 7.3V5h3.4v3.2c1.2-.9 2.5-1.4 3.9-1.4 2.9 0 5 2.2 5 5.1 0 3-2.1 5.1-5.1 5.1-1.4 0-2.6-.5-3.5-1.4v.9H9v-3.1c-1.1 1.3-2.5 2-4.2 2C2.2 15.4 0 13 0 9.9 0 7.3 1.5 5.6 4 5.4V5Zm6.2 3c-1.5 0-2.6 1-2.6 2.4 0 1.4 1.1 2.5 2.6 2.5 1.6 0 2.8-1 2.8-2.6 0-1.5-1.2-2.3-2.8-2.3Zm7.9 1.6c-1.4 0-2.5 1-2.5 2.4s1.1 2.4 2.5 2.4c1.5 0 2.6-1 2.6-2.4s-1.1-2.4-2.6-2.4Z" />
-  </svg>
+  </SvgIcon>
 )
 
 /** The Twitch mark: the speech bubble. */
 const TwitchIcon = (props: SvgIconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+  <SvgIcon {...props}>
     <path d="M4.3 2 2.6 6.4v15h5.1v-3.5h2.8l1.6 3.5h3.4l1.6-3.5h4.3V2H4.3Zm15.1 14.4h-2.6l-1.7 3.6-1.7-3.6H6.6V4.1h12.8v12.3ZM8.6 6.7h2.6v5.6H8.6V6.7Zm5.3 0h2.6v5.6h-2.6V6.7Z" />
-  </svg>
+  </SvgIcon>
 )
 
 
