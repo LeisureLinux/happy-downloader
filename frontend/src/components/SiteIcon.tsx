@@ -5,8 +5,15 @@ import RedditIcon from '@mui/icons-material/Reddit'
 import SmartDisplayIcon from '@mui/icons-material/SmartDisplay'
 import XIcon from '@mui/icons-material/X'
 import YouTubeIcon from '@mui/icons-material/YouTube'
-import { SvgIcon, SvgIconProps } from '@mui/material'
+import { SvgIcon, SvgIconProps, Theme } from '@mui/material'
 import { ReactNode } from 'react'
+
+// Whether the theme is a dark one.
+//
+// It is what decides which colour a mark is drawn in: three of them are
+// black, and black on a dark background is black on black.
+export const isDark = (theme: Theme): boolean =>
+  theme.palette.mode === 'dark'
 
 // The icon for a site a file came from.
 //
@@ -123,6 +130,29 @@ export const siteColor = (site: string | undefined, primary = '#1976d2'): string
   }
 }
 
+// The colour a site's icon is drawn in, on a dark background.
+//
+// Three of the marks are black: X, TikTok and Niconico. Black on a dark
+// background is black on black, so the icon was there and unreadable — the
+// Niconico one looked like it was missing, and it was not.
+//
+// The dark-background version of a mark is the same shape in the colour the
+// site uses for a light background, which is what every one of these has:
+// X and TikTok are white on their site, and Niconico's television is white.
+export const siteColorOnDark = (site: string | undefined, primary = '#90caf9'): string => {
+  switch (site) {
+    case 'x':
+    case 'tiktok':
+    case 'niconico':
+      return '#FFFFFF'
+    case 'youtube':
+      // The bright red reads better on a dark background than the deep one.
+      return '#FF5252'
+    default:
+      return siteColor(site, primary)
+  }
+}
+
 // The icon for a site name.
 //
 // The names come from the server, which derives them from the URL. An
@@ -137,36 +167,42 @@ export const siteColor = (site: string | undefined, primary = '#1976d2'): string
 // be wrapped to be given a colour, and the wrapping is a <div> that a
 // <Tooltip> cannot put a ref on. The element carries its own colour
 // instead, so the caller can use it directly.
-export const siteIcon = (site?: string, primary?: string): ReactNode => {
+//
+// The dark argument is for the marks that are black. Three of them are — X,
+// TikTok and Niconico — and black on a dark background is black on black, so
+// the icon was there and unreadable.
+export const siteIcon = (site?: string, primary?: string, dark = false): ReactNode => {
+  const color = dark ? siteColorOnDark(site, primary) : siteColor(site, primary)
+
   switch (site) {
     case 'youtube':
-      return <YouTubeIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <YouTubeIcon fontSize="small" sx={{ color }} />
     case 'bilibili':
-      return <BilibiliIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <BilibiliIcon fontSize="small" sx={{ color }} />
     case 'weibo':
-      return <WeiboIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <WeiboIcon fontSize="small" sx={{ color }} />
     case 'x':
-      return <XIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <XIcon fontSize="small" sx={{ color }} />
     case 'xiaohongshu':
-      return <XiaohongshuIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <XiaohongshuIcon fontSize="small" sx={{ color }} />
     case 'douyin':
-      return <DouyinIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <DouyinIcon fontSize="small" sx={{ color }} />
     case 'tiktok':
-      return <TikTokIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <TikTokIcon fontSize="small" sx={{ color }} />
     case 'reddit':
-      return <RedditIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <RedditIcon fontSize="small" sx={{ color }} />
     case 'instagram':
-      return <InstagramIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <InstagramIcon fontSize="small" sx={{ color }} />
     case 'facebook':
-      return <FacebookIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <FacebookIcon fontSize="small" sx={{ color }} />
     case 'vimeo':
-      return <VimeoIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <VimeoIcon fontSize="small" sx={{ color }} />
     case 'twitch':
-      return <TwitchIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <TwitchIcon fontSize="small" sx={{ color }} />
     case 'niconico':
-      return <NiconicoIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <NiconicoIcon fontSize="small" sx={{ color }} />
     default:
-      return <LanguageIcon fontSize="small" sx={{ color: siteColor(site, primary) }} />
+      return <LanguageIcon fontSize="small" sx={{ color }} />
   }
 }
 

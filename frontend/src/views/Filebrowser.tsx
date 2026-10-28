@@ -44,7 +44,7 @@ import CaptionsDialog from '../components/CaptionsDialog'
 import DownloadDialog from '../components/DownloadDialog'
 import FileActions from '../components/FileActions'
 import FolderDialog from '../components/FolderDialog'
-import { siteIcon } from '../components/SiteIcon'
+import { isDark, siteIcon } from '../components/SiteIcon'
 
 // A row is a file or a folder. Selection is by path, which is unique within a
 // listing, unlike the name the previous implementation keyed on.
@@ -484,7 +484,7 @@ export default function Filebrowser() {
                           component="span"
                           sx={{ display: 'inline-flex', alignItems: 'center' }}
                         >
-                          {siteIcon(f.sourceSite, theme.palette.primary.main)}
+                          {siteIcon(f.sourceSite, theme.palette.primary.main, isDark(theme))}
                         </Box>
                       </Tooltip>
                     </TableCell>

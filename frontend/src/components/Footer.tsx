@@ -11,7 +11,7 @@ import { useI18n } from '../hooks/useI18n'
 import { formatSpeedMiB } from '../utils'
 import CookieDialog from './CookieDialog'
 import LivestreamIndicator from './LivestreamIndicator'
-import { siteIcon } from './SiteIcon'
+import { isDark, siteIcon } from './SiteIcon'
 import CookieIndicator from './CookieIndicator'
 import FreeSpaceIndicator from './FreeSpaceIndicator'
 import YtdlpIndicator from './YtdlpIndicator'
@@ -190,7 +190,7 @@ const Footer: React.FC = () => {
                   component="span"
                   sx={{ display: 'inline-flex', alignItems: 'center' }}
                 >
-                  {siteIcon(site, theme.palette.primary.main)}
+                  {siteIcon(site, theme.palette.primary.main, isDark(theme))}
                 </Box>
               </Tooltip>
             ))}

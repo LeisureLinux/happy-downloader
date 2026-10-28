@@ -17,7 +17,7 @@ import { useTheme } from '@mui/material/styles'
 import { cookieStatusState, serverURL } from '../atoms/settings'
 import { useI18n } from '../hooks/useI18n'
 import { useToast } from '../hooks/toast'
-import { siteColor, siteIcon } from './SiteIcon'
+import { isDark, siteIcon } from './SiteIcon'
 
 // The cookie dialog.
 //
@@ -170,7 +170,7 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
                   component="span"
                   sx={{ display: 'inline-flex', alignItems: 'center' }}
                 >
-                  {siteIcon(site, theme.palette.primary.main)}
+                  {siteIcon(site, theme.palette.primary.main, isDark(theme))}
                 </Box>
               </Tooltip>
             ))}
