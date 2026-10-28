@@ -144,6 +144,10 @@ export type DirectoryEntry = {
   // Where the file came from: the site name and the page it was on.
   sourceSite?: string
   sourceURL?: string
+  // For a folder: how many files it holds, and when its newest file was
+  // written. The figures shown for a folder are about its contents.
+  fileCount?: number
+  folderModTime?: string
   // The caption files sitting next to this one.
   subtitles?: SubtitleFile[]
 }

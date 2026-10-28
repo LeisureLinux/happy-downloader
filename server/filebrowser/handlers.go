@@ -117,6 +117,16 @@ type DirectoryEntry struct {
 
 	// SourceURL is the page the file came from.
 	SourceURL string `json:"sourceURL,omitempty"`
+
+	// The figures of a folder, which are about the folder rather than about
+	// a file: how many files it holds, when its newest file was written, and
+	// how much disk it takes.
+	//
+	// They are empty for a file, which has its own.
+	FileCount int `json:"fileCount,omitempty"`
+
+	// FolderModTime is when the newest file in the folder was written.
+	FolderModTime time.Time `json:"folderModTime,omitempty"`
 }
 
 // SubtitleFile is one caption track on disk.
@@ -156,6 +166,14 @@ func walkDir(root string) (*[]DirectoryEntry, error) {
 			IsVideo:     isVideo(d),
 			IsDirectory: d.IsDir(),
 			ModTime:     info.ModTime(),
+		}
+
+		// A folder's figures are about its contents.
+		if entry.IsDirectory {
+			count, newest, size := folderFigures(path)
+			entry.FileCount = count
+			entry.FolderModTime = newest
+			entry.Size = size
 		}
 
 		// Only media files carry a length and can have captions beside them.
@@ -224,13 +242,28 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := os.Remove(req.Path); err != nil {
+	path := filepath.Clean(req.Path)
+
+	if !withinDownloadDir(path) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// A folder is not deleted here. A folder with files in it has to have
+	// them moved or deleted first, and an empty one is removed by the folder
+	// endpoint — which is where the rule about non-empty folders lives.
+	if info, err := os.Stat(path); err == nil && info.IsDir() {
+		http.Error(w, "that is a folder; empty it first", http.StatusBadRequest)
+		return
+	}
+
+	if err := os.Remove(path); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// The file is gone, so its source record has nothing to point at.
-	forgetSource(req.Path)
+	forgetSource(path)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode("ok")

@@ -303,6 +303,11 @@ func newServer(c serverConfig) *http.Server {
 		// What can be downloaded for one file: the video and each of its
 		// captions, so the interface can offer them one by one.
 		r.Get("/downloadable", filebrowser.ListDownloadable)
+
+		// Folders.
+		r.Post("/folder", filebrowser.CreateFolder)
+		r.Post("/move", filebrowser.MoveFiles)
+		r.Delete("/folder", filebrowser.DeleteFolder)
 	})
 
 	// Archive routes

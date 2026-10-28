@@ -24,6 +24,8 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import SmartDisplayIcon from '@mui/icons-material/SmartDisplay'
 import SubtitleIcon from '@mui/icons-material/Subtitles'
 import FolderIcon from '@mui/icons-material/Folder'
+import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder'
+import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove'
 import { matchW } from 'fp-ts/lib/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
 import { serverURL } from '../atoms/settings'
@@ -39,6 +41,7 @@ import { captionDoneCountState, captionJobsState } from '../atoms/captions'
 import Player from '../components/Player'
 import CaptionsDialog from '../components/CaptionsDialog'
 import DownloadDialog from '../components/DownloadDialog'
+import FolderDialog from '../components/FolderDialog'
 import { siteColor, siteIcon } from '../components/SiteIcon'
 
 // A row is a file or a folder. Selection is by path, which is unique within a
@@ -68,6 +71,8 @@ export default function Filebrowser() {
   const [captioning, setCaptioning] = useState<Row | null>(null)
   // The file whose download options are being shown.
   const [downloading, setDownloading] = useState<Row | null>(null)
+  // The folder dialog: making a folder, or moving files into one.
+  const [folderDialog, setFolderDialog] = useState<'create' | 'move' | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [subdir, setSubdir] = useState('')
   const [loading, setLoading] = useState(true)
@@ -179,6 +184,31 @@ export default function Filebrowser() {
     await list(subdir)
   }
 
+  // 删除文件夹。
+  //
+  // 有内容的文件夹会被服务端拒绝，所以按钮是禁用的；这里的检查是
+  // 第二道，因为按钮禁用的理由可能跟用户看到的不一样。
+  const removeFolder = async (f: Row) => {
+    if ((f.fileCount ?? 0) > 0) {
+      pushMessage(i18n.t('folderNotEmpty'), 'error')
+      return
+    }
+
+    try {
+      const res = await fetch(
+        `${serverAddr}/filebrowser/folder?path=${encodeURIComponent(f.path)}`,
+        { method: 'DELETE' })
+
+      if (!res.ok) {
+        throw new Error(await res.text())
+      }
+
+      await list(subdir)
+    } catch (e) {
+      pushMessage(String(e), 'error')
+    }
+  }
+
   const selectedFiles = files.filter(f => selected.has(f.path))
 
   return (
@@ -186,6 +216,14 @@ export default function Filebrowser() {
       <Paper sx={{ p: 2 }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
           <Typography variant="h6" color="primary">{i18n.t('browseButtonLabel')}</Typography>
+
+          {/* 新建文件夹：在标题旁边，因为它是在这一层做的事。 */}
+          <Tooltip title={i18n.t('folderCreateTitle')}>
+            <IconButton size="small" onClick={() => setFolderDialog('create')}>
+              <CreateNewFolderIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
           <Box flexGrow={1} />
           {/* 批量操作：只对选中的文件生效 */}
           <ButtonGroup size="small">
@@ -208,6 +246,17 @@ export default function Filebrowser() {
                   onClick={() => selectedFiles.forEach(f => downloadFile(serverAddr, f.path))}
                 >
                   <FileDownloadIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={i18n.t('folderMoveTitle')}>
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={selectedFiles.length === 0}
+                  onClick={() => setFolderDialog('move')}
+                >
+                  <DriveFileMoveIcon fontSize="small" />
                 </IconButton>
               </span>
             </Tooltip>
@@ -256,17 +305,23 @@ export default function Filebrowser() {
                   <TableCell sx={{ width: 36 }} />
                   {/* 表头用主题色：这些是列名，和标题一样是该被强调的东西，
                       默认灰色让表格和页面其他部分的配色脱节。 */}
-                  <TableCell sx={{ color: 'primary.main' }}>{i18n.t('colFileName')}</TableCell>
-                  <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colDuration')}</TableCell>
-                  <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colDownloadTime')}</TableCell>
-                  <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colFileSize')}</TableCell>
-                  <TableCell align="right" sx={{ color: 'primary.main' }}>{i18n.t('colActions')}</TableCell>
+                  {/* 表头不换行：中文的列名只有四个字，换行之后表头比
+                      内容还高，看起来是错位的。 */}
+                  <TableCell sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>{i18n.t('colFileName')}</TableCell>
+                  <TableCell align="right" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>{i18n.t('colDuration')}</TableCell>
+                  <TableCell align="right" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>{i18n.t('colDownloadTime')}</TableCell>
+                  <TableCell align="right" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>{i18n.t('colFileSize')}</TableCell>
+                  <TableCell align="right" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>{i18n.t('colActions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {folders.map(f => (
                   <TableRow key={f.path} hover>
                     <TableCell padding="checkbox" />
+
+                    {/* 文件夹没有来源站点：它不是从某个网站下来的。 */}
+                    <TableCell />
+
                     <TableCell>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <FolderIcon fontSize="small" />
@@ -275,7 +330,39 @@ export default function Filebrowser() {
                         </Button>
                       </Stack>
                     </TableCell>
-                    <TableCell colSpan={4} />
+
+                    {/* 文件夹的数字是关于它里面的文件的：有多少个、
+                        最新的是什么时候下的、占多大地方。 */}
+                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                      {i18n.t('folderFileCount').replace('{count}', String(f.fileCount ?? 0))}
+                    </TableCell>
+                    <TableCell align="right">
+                      {f.folderModTime ? new Date(f.folderModTime).toLocaleString() : '—'}
+                    </TableCell>
+                    <TableCell align="right">{formatSize(f.size)}</TableCell>
+
+                    {/* 文件夹不能播放、不能下字幕、也不能下载：那些都是
+                        对单个文件做的事。它只有删除，而有内容的文件夹
+                        也不能删。 */}
+                    <TableCell align="right">
+                      {/* 有内容的文件夹不能删：删掉它就得决定那些文件
+                          去哪，而每一种答案都会丢掉用户想要的东西。 */}
+                      <Tooltip title={
+                        (f.fileCount ?? 0) > 0
+                          ? i18n.t('folderNotEmpty')
+                          : i18n.t('folderDelete')
+                      }>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => removeFolder(f)}
+                            disabled={(f.fileCount ?? 0) > 0}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {files.map(f => (
@@ -351,6 +438,16 @@ export default function Filebrowser() {
                             </IconButton>
                           </Tooltip>
                         )}
+                        {/* 移动到文件夹。 */}
+                        <Tooltip title={i18n.t('folderMoveTitle')}>
+                          <IconButton size="small" onClick={() => {
+                            setSelected(new Set([f.path]))
+                            setFolderDialog('move')
+                          }}>
+                            <DriveFileMoveIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+
                         {/* 下载按钮给出选择：视频本身，和每一个字幕文件。
                             以前只有一个按钮，产出的是一个 zip——手机上收到
                             zip 是没法播放的。 */}
@@ -373,6 +470,16 @@ export default function Filebrowser() {
           </TableContainer>
         )}
       </Paper>
+
+      <FolderDialog
+        open={folderDialog !== null}
+        mode={folderDialog ?? 'create'}
+        parent={subdir}
+        folders={folders}
+        files={selectedFiles.map(f => f.path)}
+        onClose={() => setFolderDialog(null)}
+        onDone={() => { void list(subdir); setSelected(new Set()) }}
+      />
 
       <DownloadDialog
         open={downloading !== null}

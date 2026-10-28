@@ -65,6 +65,15 @@ if (result.exceptionDetails) {
 
 console.log(JSON.stringify(result.result.value, null, 2))
 
+// A picture, when the caller asked for one. The words can be right and the
+// layout still be wrong.
+if (process.env.SHOT) {
+  const shot = await send('Page.captureScreenshot', { format: 'png' })
+  const { writeFileSync } = await import('node:fs')
+  writeFileSync(process.env.SHOT, Buffer.from(shot.data, 'base64'))
+  console.log('screenshot:', process.env.SHOT)
+}
+
 await send('Page.close').catch(() => {})
 ws.close()
 process.exit(0)
