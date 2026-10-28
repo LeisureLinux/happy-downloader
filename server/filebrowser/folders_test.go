@@ -94,3 +94,33 @@ func TestFolderNameIsChecked(t *testing.T) {
 		t.Error("an ordinary name was refused")
 	}
 }
+
+// Renaming a folder keeps its contents: it is a move within the parent, so
+// the files inside it are untouched.
+func TestRenameFolderKeepsTheContents(t *testing.T) {
+	root := t.TempDir()
+
+	previous := &config.Instance().Paths
+	previousRoot := previous.DownloadPath
+	t.Cleanup(func() { previous.DownloadPath = previousRoot })
+	previous.DownloadPath = root
+
+	folder := filepath.Join(root, "before")
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	file := filepath.Join(folder, "video.mp4")
+	if err := os.WriteFile(file, []byte("video"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	after := filepath.Join(root, "after")
+	if err := os.Rename(folder, after); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(after, "video.mp4")); err != nil {
+		t.Errorf("the file did not come along: %v", err)
+	}
+}

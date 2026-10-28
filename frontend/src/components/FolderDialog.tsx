@@ -16,6 +16,7 @@ import {
 } from '@mui/material'
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder'
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove'
+import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline'
 import { useAtomValue } from 'jotai'
 import { serverURL } from '../atoms/settings'
 import { useI18n } from '../hooks/useI18n'
@@ -37,13 +38,15 @@ type Props = {
   /** The files to move. Empty means "make a folder". */
   files?: string[]
   /** The name of the folder to make, when making one. */
-  mode: 'create' | 'move'
+  mode: 'create' | 'move' | 'rename'
+  /** The folder to rename, when renaming one. */
+  folder?: DirectoryEntry
   onClose: () => void
   onDone: () => void
 }
 
 const FolderDialog: React.FC<Props> = ({
-  open, parent, folders, files = [], mode, onClose, onDone,
+  open, parent, folders, files = [], mode, folder, onClose, onDone,
 }) => {
   const serverAddr = useAtomValue(serverURL)
   const { i18n } = useI18n()
@@ -56,11 +59,13 @@ const FolderDialog: React.FC<Props> = ({
 
   useEffect(() => {
     if (open) {
-      setName('')
+      // Renaming starts from the name the folder has, so the field shows what
+      // it is now rather than an empty box.
+      setName(mode === 'rename' ? (folder?.name ?? '') : '')
       setTarget('')
       setError('')
     }
-  }, [open, mode])
+  }, [open, mode, folder])
 
   const create = async () => {
     setBusy(true)
@@ -78,6 +83,33 @@ const FolderDialog: React.FC<Props> = ({
       }
 
       pushMessage(i18n.t('folderCreated').replace('{name}', name), 'success')
+      onDone()
+      onClose()
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const rename = async () => {
+    if (!folder) return
+
+    setBusy(true)
+    setError('')
+
+    try {
+      const res = await fetch(`${serverAddr}/filebrowser/folder`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: folder.path, name }),
+      })
+
+      if (!res.ok) {
+        throw new Error(await res.text())
+      }
+
+      pushMessage(i18n.t('folderRenamed').replace('{name}', name), 'success')
       onDone()
       onClose()
     } catch (e) {
@@ -132,17 +164,21 @@ const FolderDialog: React.FC<Props> = ({
         <Stack direction="row" spacing={1} alignItems="center">
           {mode === 'create'
             ? <CreateNewFolderIcon />
-            : <DriveFileMoveIcon />}
+            : mode === 'rename'
+              ? <DriveFileRenameOutlineIcon />
+              : <DriveFileMoveIcon />}
           <span>
             {mode === 'create'
               ? i18n.t('folderCreateTitle')
-              : i18n.t('folderMoveTitle')}
+              : mode === 'rename'
+                ? i18n.t('folderRenameTitle')
+                : i18n.t('folderMoveTitle')}
           </span>
         </Stack>
       </DialogTitle>
 
       <DialogContent>
-        {mode === 'create' ? (
+        {mode === 'create' || mode === 'rename' ? (
           <TextField
             autoFocus
             fullWidth
@@ -150,7 +186,9 @@ const FolderDialog: React.FC<Props> = ({
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => {
-              if (e.key === 'Enter' && name.trim()) void create()
+              if (e.key !== 'Enter' || !name.trim()) return
+              if (mode === 'rename') void rename()
+              else void create()
             }}
             sx={{ mt: 1 }}
           />
@@ -199,6 +237,14 @@ const FolderDialog: React.FC<Props> = ({
             onClick={create}
           >
             {i18n.t('folderCreateButton')}
+          </Button>
+        ) : mode === 'rename' ? (
+          <Button
+            variant="contained"
+            disabled={busy || !name.trim() || name === folder?.name}
+            onClick={rename}
+          >
+            {i18n.t('folderRenameButton')}
           </Button>
         ) : (
           <Button

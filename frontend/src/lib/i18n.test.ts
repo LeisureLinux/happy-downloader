@@ -41,6 +41,36 @@ describe('translations', () => {
     expect(problems).toEqual([])
   })
 
+  it('keeps the folder labels apart from each other', () => {
+    // The labels for the folder actions are four different things, and they
+    // sit next to each other in the file: make a folder, move files into one,
+    // rename one, delete one.
+    //
+    // They were confused once — the move button's label became the rename
+    // button's label, and the delete tooltip became the explanation of why a
+    // full folder cannot be deleted. The parity test above cannot see that:
+    // every key exists, and every value is a string in the right language.
+    // What catches it is insisting that they are different.
+    const en = files.en_US
+
+    const labels = [
+      'folderCreateButton',
+      'folderMoveButton',
+      'folderRenameButton',
+    ]
+
+    for (const key of labels) {
+      for (const other of labels) {
+        if (key === other) continue
+        expect(en[key]).not.toBe(en[other])
+      }
+    }
+
+    // The delete tooltip is about deleting; the other one is about why it
+    // cannot be done.
+    expect(en.folderDelete).not.toBe(en.folderNotEmpty)
+  })
+
   it('no language is left as the English string', () => {
     // Words that are genuinely the same in both — Proxy, Cookies, Host — would
     // be false positives, so only multi-word values are considered. A whole

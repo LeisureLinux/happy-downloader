@@ -117,8 +117,34 @@ func downloadURL(path string) string {
 }
 
 // withinDownloadDir reports whether a path is inside the download directory.
+//
+// The check is on the directory of the path, because the path is a file
+// inside it. It is a prefix check rather than a comparison, so the download
+// directory "/data/downloads" does not also contain "/data/downloads-old".
 func withinDownloadDir(path string) bool {
-	root := config.Instance().Paths.DownloadPath
+	root := filepath.Clean(config.Instance().Paths.DownloadPath)
 
-	return strings.Contains(filepath.Dir(filepath.Clean(path)), filepath.Clean(root))
+	dir := filepath.Clean(filepath.Dir(path))
+
+	return dir == root || strings.HasPrefix(dir, root+string(filepath.Separator))
+}
+
+// resolveSubDir works out which directory a listing is about.
+//
+// The subdirectory arrives either as a path relative to the download
+// directory, or as an absolute one — the interface keeps the absolute path of
+// the folder it is showing, so that is what it sends.
+//
+// filepath.Join would have been wrong for the second case: it joins, so an
+// absolute path became "<root>/home/axu/media/downloads/folder", which is
+// nowhere. The result is checked against the download directory afterwards,
+// so a path that climbs out of it is refused rather than served.
+func resolveSubDir(root, sub string) string {
+	clean := filepath.Clean(sub)
+
+	if filepath.IsAbs(clean) {
+		return clean
+	}
+
+	return filepath.Join(root, clean)
 }

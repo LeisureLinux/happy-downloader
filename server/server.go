@@ -306,6 +306,7 @@ func newServer(c serverConfig) *http.Server {
 
 		// Folders.
 		r.Post("/folder", filebrowser.CreateFolder)
+		r.Patch("/folder", filebrowser.RenameFolder)
 		r.Post("/move", filebrowser.MoveFiles)
 		r.Delete("/folder", filebrowser.DeleteFolder)
 	})

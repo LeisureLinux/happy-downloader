@@ -60,7 +60,14 @@ func CreateFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	root := config.Instance().Paths.DownloadPath
-	parent := filepath.Join(root, filepath.Clean(req.SubDir))
+
+	// The parent may be given relative to the download directory or as an
+	// absolute path — the interface keeps the absolute path of the folder it
+	// is showing.
+	parent := root
+	if req.SubDir != "" {
+		parent = resolveSubDir(root, req.SubDir)
+	}
 
 	if !withinDownloadDir(filepath.Join(parent, "x")) {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -92,6 +99,91 @@ func CreateFolder(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(map[string]string{"path": path, "name": name}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+// RenameFolder gives a folder a new name.
+//
+// The folder keeps its contents: renaming a directory moves it within its
+// parent, so the files inside it are untouched.
+//
+// The name is checked the same way a new folder's name is, and the result is
+// checked against the download directory — a name of ".." would move the
+// folder out of it.
+func RenameFolder(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		// Path is the folder to rename.
+		Path string `json:"path"`
+		// Name is the name it should have.
+		Name string `json:"name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	from := filepath.Clean(req.Path)
+	name := strings.TrimSpace(req.Name)
+
+	if name == "" {
+		http.Error(w, "a name is required", http.StatusBadRequest)
+		return
+	}
+
+	if !validFolderName(name) {
+		http.Error(w, "that name cannot be used for a folder", http.StatusBadRequest)
+		return
+	}
+
+	if !withinDownloadDir(from) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	info, err := os.Stat(from)
+	if err != nil || !info.IsDir() {
+		http.Error(w, "there is no folder at that path", http.StatusNotFound)
+		return
+	}
+
+	to := filepath.Join(filepath.Dir(from), name)
+
+	// The new path has to stay inside the download directory.
+	if !withinDownloadDir(filepath.Join(to, "x")) {
+		http.Error(w, "that name would put the folder outside the download directory",
+			http.StatusBadRequest)
+		return
+	}
+
+	// Renaming a folder to the name it already has is not an error; there is
+	// simply nothing to do.
+	if to == from {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"path": from, "name": name})
+		return
+	}
+
+	if _, err := os.Stat(to); err == nil {
+		http.Error(w, "there is already something with that name", http.StatusConflict)
+		return
+	}
+
+	if err := os.Rename(from, to); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("folder renamed",
+		slog.String("from", from),
+		slog.String("to", to),
+	)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(map[string]string{"path": to, "name": name}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

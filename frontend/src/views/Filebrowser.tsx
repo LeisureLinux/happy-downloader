@@ -26,6 +26,7 @@ import SubtitleIcon from '@mui/icons-material/Subtitles'
 import FolderIcon from '@mui/icons-material/Folder'
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder'
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove'
+import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline'
 import { matchW } from 'fp-ts/lib/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
 import { serverURL } from '../atoms/settings'
@@ -56,6 +57,7 @@ const downloadFile = (serverAddr: string, path: string) => {
   window.open(`${serverAddr}/filebrowser/d/${encoded}`)
 }
 
+
 export default function Filebrowser() {
   const serverAddr = useAtomValue(serverURL)
   const { i18n } = useI18n()
@@ -71,10 +73,17 @@ export default function Filebrowser() {
   const [captioning, setCaptioning] = useState<Row | null>(null)
   // The file whose download options are being shown.
   const [downloading, setDownloading] = useState<Row | null>(null)
-  // The folder dialog: making a folder, or moving files into one.
-  const [folderDialog, setFolderDialog] = useState<'create' | 'move' | null>(null)
+  // The folder dialog: making a folder, moving files into one, or renaming one.
+  const [folderDialog, setFolderDialog] = useState<'create' | 'move' | 'rename' | null>(null)
+  // The folder being renamed.
+  const [renaming, setRenaming] = useState<Row | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [subdir, setSubdir] = useState('')
+  // The directory the "up" button goes to. It comes from the server, which is
+  // the only thing that knows where the download directory is: the parent of a
+  // first-level folder is the download directory, and that cannot be worked
+  // out from the path alone.
+  const [parent, setParent] = useState('')
   const [loading, setLoading] = useState(true)
 
   // useToast() returns a fresh object every render, so pushMessage is a new
@@ -96,8 +105,21 @@ export default function Filebrowser() {
         body: JSON.stringify({ subdir: dir, orderBy: 'modtime' })
       })
       if (!res.ok) throw new Error(await res.text())
-      const data: DirectoryEntry[] = await res.json()
-      setRows(data.map(d => ({ ...d, selected: false })))
+      const data = await res.json()
+
+      // The answer is an object, because the interface needs to know where
+      // the root is: the "up" button goes to the parent directory, and the
+      // parent of a first-level folder is the download directory — which
+      // cannot be worked out from the path alone.
+      const listing = data as {
+        files?: DirectoryEntry[]
+        parent?: string
+      }
+
+      // An empty folder used to come back as null, and .map() on null is a
+      // crash that took the whole page with it.
+      setRows((listing.files ?? []).map(d => ({ ...d, selected: false })))
+      setParent(listing.parent ?? '')
       setSelected(new Set())
     } catch (e) {
       notifyRef.current(String(e), 'error')
@@ -275,8 +297,13 @@ export default function Filebrowser() {
           </ButtonGroup>
         </Stack>
 
-        {subdir !== '' && (
-          <Button size="small" onClick={() => setSubdir('')} sx={{ mb: 1 }}>
+        {/* 返回上一级：到父目录，而不是一直回到根。文件夹可以嵌套，
+            只回到根会让人以为上面没有别的了。
+
+            顶层没有"上一级"，所以那一层不显示这个按钮 —— 那个父目录是
+            下载目录的外面，按下去会列出不属于这里的东西。 */}
+        {parent !== '' && (
+          <Button size="small" onClick={() => setSubdir(parent)} sx={{ mb: 1 }}>
             ← {i18n.t('goUp')}
           </Button>
         )}
@@ -325,7 +352,14 @@ export default function Filebrowser() {
                     <TableCell>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <FolderIcon fontSize="small" />
-                        <Button size="small" onClick={() => setSubdir(f.path)}>
+                        {/* 名字保持原样：MUI 的按钮默认把文字转成大写，
+                            一个叫 "Security" 的文件夹显示成 "SECURITY"
+                            看着像是另一个东西。 */}
+                        <Button
+                          size="small"
+                          onClick={() => setSubdir(f.path)}
+                          sx={{ textTransform: 'none' }}
+                        >
                           {f.name}
                         </Button>
                       </Stack>
@@ -342,9 +376,21 @@ export default function Filebrowser() {
                     <TableCell align="right">{formatSize(f.size)}</TableCell>
 
                     {/* 文件夹不能播放、不能下字幕、也不能下载：那些都是
-                        对单个文件做的事。它只有删除，而有内容的文件夹
-                        也不能删。 */}
+                        对单个文件做的事。它能改名字和删除，而有内容的
+                        文件夹不能删。 */}
                     <TableCell align="right">
+                      <Tooltip title={i18n.t('folderRenameTitle')}>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setRenaming(f)
+                            setFolderDialog('rename')
+                          }}
+                        >
+                          <DriveFileRenameOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+
                       {/* 有内容的文件夹不能删：删掉它就得决定那些文件
                           去哪，而每一种答案都会丢掉用户想要的东西。 */}
                       <Tooltip title={
@@ -477,8 +523,9 @@ export default function Filebrowser() {
         parent={subdir}
         folders={folders}
         files={selectedFiles.map(f => f.path)}
-        onClose={() => setFolderDialog(null)}
-        onDone={() => { void list(subdir); setSelected(new Set()) }}
+        folder={renaming ?? undefined}
+        onClose={() => { setFolderDialog(null); setRenaming(null) }}
+        onDone={() => { void list(subdir); setSelected(new Set()); setRenaming(null) }}
       />
 
       <DownloadDialog

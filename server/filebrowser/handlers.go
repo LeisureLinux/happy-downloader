@@ -145,7 +145,10 @@ func walkDir(root string) (*[]DirectoryEntry, error) {
 		return nil, err
 	}
 
-	var files []DirectoryEntry
+	// An empty slice rather than a nil one: a nil slice is encoded as
+	// "null", and the interface calls .map() on the answer. An empty folder
+	// was a crash.
+	files := []DirectoryEntry{}
 
 	for _, d := range dirs {
 		if !isValidEntry(d) || isCaptionFile(d.Name()) {
@@ -204,6 +207,26 @@ type ListRequest struct {
 	OrderBy string `json:"orderBy"`
 }
 
+// ListResponse is the answer to a listing.
+//
+// It is an object rather than a bare array because the interface needs to
+// know where the root is: the "up" button goes to the parent directory, and
+// the parent of a first-level folder is the download directory — which the
+// interface cannot work out on its own, because it does not know where the
+// download directory is. Without this the button climbed out of the download
+// directory and one more press listed /home/axu/media.
+type ListResponse struct {
+	// Files are the entries of the directory.
+	Files []DirectoryEntry `json:"files"`
+	// Root is the download directory.
+	Root string `json:"root"`
+	// SubDir is the directory that was listed.
+	SubDir string `json:"subDir"`
+	// Parent is the directory the "up" button goes to, or empty when the
+	// listing is already at the root.
+	Parent string `json:"parent,omitempty"`
+}
+
 func ListDownloaded(w http.ResponseWriter, r *http.Request) {
 	root := config.Instance().Paths.DownloadPath
 	req := new(ListRequest)
@@ -213,7 +236,30 @@ func ListDownloaded(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files, err := walkDir(filepath.Join(root, req.SubDir))
+	// The subdirectory may be given as a path relative to the download
+	// directory or as an absolute one — the interface keeps the absolute
+	// path of the folder it is showing, so that is what arrives.
+	//
+	// filepath.Join would have joined the two, and an absolute path in the
+	// second argument is not what Join does with it: it produced
+	// "<root>/home/axu/media/downloads/folder", which is nowhere.
+	dir := root
+	if req.SubDir != "" {
+		dir = resolveSubDir(root, req.SubDir)
+
+		// The root of the listing is the download directory. A path that
+		// names it is the root, not a subdirectory of it.
+		if filepath.Clean(dir) == filepath.Clean(root) {
+			dir = root
+		}
+	}
+
+	if !withinDownloadDir(filepath.Join(dir, "x")) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	files, err := walkDir(dir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -225,9 +271,22 @@ func ListDownloaded(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// The parent of the listing, which is empty at the root: the root has
+	// no "up", and the interface hides the button rather than sending a
+	// path that would climb out of the download directory.
+	parent := ""
+	if filepath.Clean(dir) != filepath.Clean(root) {
+		parent = filepath.Dir(filepath.Clean(dir))
+	}
+
 	w.WriteHeader(http.StatusOK)
 
-	if err := json.NewEncoder(w).Encode(files); err != nil {
+	if err := json.NewEncoder(w).Encode(ListResponse{
+		Files:  *files,
+		Root:   filepath.Clean(root),
+		SubDir: filepath.Clean(dir),
+		Parent: parent,
+	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
