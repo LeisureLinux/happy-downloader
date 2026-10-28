@@ -67,3 +67,35 @@ func TestPackageManagerPrefersUv(t *testing.T) {
 		t.Errorf("packageManager picked %q, want uv", filepath.Base(got))
 	}
 }
+
+// The environment uv installs into is the one yt-dlp belongs to, not the one
+// the uv binary happens to live next to.
+//
+// A venv created by uv has no uv of its own — the one that made it is
+// elsewhere on the path — so looking next to the uv binary would find the
+// wrong environment and install into it.
+func TestPythonOfFindsTheEnvironment(t *testing.T) {
+	dir := t.TempDir()
+
+	bin := filepath.Join(dir, "bin")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// .../venv/bin/yt-dlp
+	ytdlp := filepath.Join(bin, "yt-dlp")
+	if err := os.WriteFile(ytdlp, []byte("#!/usr/bin/python3\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// .../venv/bin/python3
+	python := filepath.Join(bin, "python3")
+	if err := os.WriteFile(python, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	got := pythonOf(ytdlp)
+	if got != python {
+		t.Errorf("pythonOf = %q, want %q", got, python)
+	}
+}

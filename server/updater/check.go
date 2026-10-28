@@ -239,7 +239,7 @@ func Update(ctx context.Context) error {
 	}
 
 	if manager := packageManager(current); manager != "" {
-		return updateWithPackageManager(ctx, manager, version)
+		return updateWithPackageManager(ctx, manager, current, version)
 	}
 
 	// The asset name depends on the architecture.

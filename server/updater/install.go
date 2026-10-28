@@ -81,6 +81,36 @@ func packageManager(ytdlpPath string) string {
 		return name
 	}
 
+	// Not in the environment. It may still be on the path — a venv created
+	// by uv has no uv of its own, and the one that made it is elsewhere.
+	if path := lookupInPath("uv"); path != "" {
+		return path
+	}
+
+	// And it may be in the per-user directory, which is where a tool
+	// installed without a package manager ends up. It is not on the PATH of
+	// a service started by the system, which is how this server runs.
+	if home, err := os.UserHomeDir(); err == nil {
+		if path, ok := executableIn(filepath.Join(home, ".local", "bin"), "uv"); ok {
+			return path
+		}
+	}
+
+	return ""
+}
+
+// lookupInPath finds an executable on the path.
+func lookupInPath(name string) string {
+	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
+		if dir == "" {
+			continue
+		}
+
+		if path, ok := executableIn(dir, name); ok {
+			return path
+		}
+	}
+
 	return ""
 }
 
@@ -105,16 +135,29 @@ func executableIn(dir, name string) (string, bool) {
 // The version is pinned, so a package index that has moved on does not
 // decide what gets installed: the release that was checked is the release
 // that is installed.
-func updateWithPackageManager(ctx context.Context, manager, version string) error {
-	// uv and pip take different arguments for the same thing.
-	args := []string{"install", "--upgrade", "yt-dlp==" + version}
+func updateWithPackageManager(ctx context.Context, manager, ytdlpPath, version string) error {
+	// The two take different arguments for the same thing.
+	//
+	//   uv:  uv pip install --upgrade yt-dlp==<version> --python <env>
+	//   pip: pip install --upgrade yt-dlp==<version>
+	//
+	// The version is pinned, so a package index that has moved on does not
+	// decide what gets installed: the release that was checked is the
+	// release that is installed.
+	requirement := "yt-dlp==" + version
+
+	var args []string
 
 	if strings.Contains(filepath.Base(manager), "uv") {
-		// uv needs to be told which environment to install into.
-		args = append([]string{"pip", "install"}, args...)
-		args = append(args, "--python", pythonOf(manager))
+		args = []string{"pip", "install", "--upgrade", requirement}
+
+		// uv has to be told which environment to install into, or it picks
+		// one of its own.
+		if python := pythonOf(ytdlpPath); python != "" {
+			args = append(args, "--python", python)
+		}
 	} else {
-		args = append([]string{"install", "--upgrade"}, args[2:]...)
+		args = []string{"install", "--upgrade", requirement}
 	}
 
 	fmt.Printf("updating yt-dlp with %s\n", filepath.Base(manager))
