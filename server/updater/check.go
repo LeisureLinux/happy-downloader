@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -98,7 +99,11 @@ func latestVersion(ctx context.Context) (string, error) {
 	req.Header.Set("User-Agent", "happy-downloader")
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	res, err := http.DefaultClient.Do(req)
+	// Through the proxy the host is configured with. Without it the check
+	// times out on a host that cannot reach GitHub directly, and the
+	// answer is that yt-dlp is fine — which is not the same as knowing
+	// whether there is an update.
+	res, err := httpClient().Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -127,6 +132,20 @@ func latestVersion(ctx context.Context) (string, error) {
 	}
 
 	return version, nil
+}
+
+// assetName returns the name of the release asset for an architecture.
+func assetName(arch string) (string, bool) {
+	switch arch {
+	case "amd64":
+		return "yt-dlp_linux", true
+	case "arm64":
+		return "yt-dlp_linux_aarch64", true
+	case "arm":
+		return "yt-dlp_linux_armv7l", true
+	default:
+		return "", false
+	}
 }
 
 // isNewer compares two version strings.
@@ -190,13 +209,23 @@ func isDateForm(version string) bool {
 
 // Update installs a newer yt-dlp.
 //
-// The GitHub binary is downloaded and put in place of the current one,
-// because a yt-dlp installed by a package manager cannot be replaced by its
-// own updater — it says so and gives up.
+// How it is installed depends on how it is already installed, because the
+// two are very different in practice:
 //
-// The replacement is atomic: the new binary is written next to the old one
-// and renamed over it, so a download starting at that moment finds either the
-// old binary or the new one, never a half-written file.
+//   - A pip or uv installation is updated by the package manager. That is
+//     what it was installed with, and the package manager is the only thing
+//     that can replace it correctly.
+//   - A standalone binary is replaced by downloading the new one.
+//
+// The standalone binary is a self-contained bundle that unpacks itself on
+// every run, and it takes 4.2 seconds to start against the package
+// installation's 1.7. Every download spawns yt-dlp, so the difference is
+// paid on every download — which is why the install method is kept rather
+// than always using the binary.
+//
+// The replacement of a binary is atomic: the new one is written next to the
+// old one and renamed over it, so a download starting at that moment finds
+// either the old binary or the new one, never a half-written file.
 func Update(ctx context.Context) error {
 	current := config.Instance().Paths.DownloaderPath
 
@@ -209,10 +238,34 @@ func Update(ctx context.Context) error {
 		return err
 	}
 
-	url := fmt.Sprintf(
-		"https://github.com/yt-dlp/yt-dlp/releases/download/%s/yt-dlp_linux", version)
+	if manager := packageManager(current); manager != "" {
+		return updateWithPackageManager(ctx, manager, version)
+	}
 
-	slog.Info("downloading a new yt-dlp", slog.String("version", version))
+	// The asset name depends on the architecture.
+	//
+	// The release carries one binary per platform, and "yt-dlp_linux" is the
+	// x86-64 one — so a host that is not x86-64 would have had its binary
+	// replaced with one it cannot run. The names are:
+	//
+	//   x86-64   yt-dlp_linux
+	//   arm64    yt-dlp_linux_aarch64
+	//   armv7    yt-dlp_linux_armv7l
+	//
+	// Anything else has no Linux binary, and the update says so rather than
+	// installing something that will not run.
+	asset, ok := assetName(runtime.GOARCH)
+	if !ok {
+		return fmt.Errorf("yt-dlp has no Linux binary for %s", runtime.GOARCH)
+	}
+
+	url := fmt.Sprintf(
+		"https://github.com/yt-dlp/yt-dlp/releases/download/%s/%s", version, asset)
+
+	slog.Info("downloading a new yt-dlp",
+		slog.String("version", version),
+		slog.String("asset", asset),
+	)
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
@@ -222,7 +275,10 @@ func Update(ctx context.Context) error {
 		return err
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	// Through the proxy, for the same reason as the check: the binary comes
+	// from GitHub, and a host that reaches the internet through a proxy
+	// cannot reach GitHub directly.
+	res, err := httpClient().Do(req)
 	if err != nil {
 		return err
 	}
@@ -246,6 +302,18 @@ func Update(ctx context.Context) error {
 	}
 
 	if err := file.Close(); err != nil {
+		removeQuietly(tmp)
+		return err
+	}
+
+	// The new binary is run before it is put in place.
+	//
+	// A wrong asset or a truncated download would otherwise replace a
+	// working yt-dlp with one that cannot start, and the next download
+	// would fail with a message about the downloader rather than about the
+	// update. Asking the new binary for its version proves it runs on this
+	// machine, which is also the proof that the architecture is right.
+	if err := verifyBinary(tmp); err != nil {
 		removeQuietly(tmp)
 		return err
 	}

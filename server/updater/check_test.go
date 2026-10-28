@@ -51,3 +51,28 @@ func TestTrimBuild(t *testing.T) {
 		}
 	}
 }
+
+// The asset name depends on the architecture, and the wrong one replaces a
+// working downloader with one that cannot start.
+func TestAssetName(t *testing.T) {
+	cases := map[string]string{
+		"amd64": "yt-dlp_linux",
+		"arm64": "yt-dlp_linux_aarch64",
+		"arm":   "yt-dlp_linux_armv7l",
+	}
+
+	for arch, want := range cases {
+		got, ok := assetName(arch)
+		if !ok {
+			t.Errorf("assetName(%q) reported no asset", arch)
+			continue
+		}
+		if got != want {
+			t.Errorf("assetName(%q) = %q, want %q", arch, got, want)
+		}
+	}
+
+	if _, ok := assetName("riscv64"); ok {
+		t.Error("assetName found an asset for an architecture that has none")
+	}
+}

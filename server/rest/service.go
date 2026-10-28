@@ -3,10 +3,8 @@ package rest
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -294,24 +292,9 @@ func (s *Service) GetVersion(ctx context.Context) (string, string, string, error
 	// into ServerVersion would render as "UI vv4.2.0".
 	serverVersion := strings.TrimPrefix(ServerVersion, "v")
 
-	result := make(chan string, 1)
-
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, config.Instance().Paths.DownloaderPath, "--version")
-	go func() {
-		stdout, _ := cmd.Output()
-		// yt-dlp prints a bare date; some channels prefix a "v". Strip it
-		// so the footer does not render "yt-dlp vv2026.10.21".
-		v := strings.TrimSpace(string(stdout))
-		result <- strings.TrimPrefix(v, "v")
-	}()
-
-	select {
-	case <-ctx.Done():
-		return serverVersion, ServerBuiltAt, "", errors.New("requesting yt-dlp version took too long")
-	case res := <-result:
-		return serverVersion, ServerBuiltAt, res, nil
-	}
+	// The yt-dlp version is remembered rather than asked for every time.
+	// Asking is a process spawn, and the standalone binary takes four
+	// seconds to start — which the page waited for, on every load, because
+	// the footer shows the version.
+	return serverVersion, ServerBuiltAt, ytDlpVersion(ctx), nil
 }

@@ -1,6 +1,11 @@
 package updater
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+)
 
 // The small file operations the updater needs, in one place.
 //
@@ -25,6 +30,25 @@ func createExecutable(path string) (*os.File, error) {
 // file, and a reader either sees the old file or the new one.
 func replaceFile(from, to string) error {
 	return os.Rename(from, to)
+}
+
+// verifyBinary runs a downloaded binary and checks that it works.
+//
+// It is the check that the asset is the right one for this machine: an x86-64
+// binary on an arm64 host cannot start, and that is exactly the mistake this
+// catches before it replaces a working downloader.
+func verifyBinary(path string) error {
+	out, err := exec.Command(path, "--version").Output()
+	if err != nil {
+		return fmt.Errorf("the downloaded yt-dlp does not run on this machine: %w", err)
+	}
+
+	version := strings.TrimSpace(strings.TrimPrefix(string(out), "v"))
+	if version == "" {
+		return fmt.Errorf("the downloaded yt-dlp reported no version")
+	}
+
+	return nil
 }
 
 // removeQuietly deletes a file, ignoring the failure.

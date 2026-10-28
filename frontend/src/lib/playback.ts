@@ -15,10 +15,13 @@
 // The codecs, as the browser spells them in a MIME type, keyed by ffprobe's
 // names.
 //
-// H.264 and AAC are absent from the video table on purpose: every browser
-// that can run this application can decode them, and a false negative there
-// would refuse a file that plays perfectly. The audio table keeps AAC out
-// for the same reason.
+// Every codec the downloader can produce, as the browser spells it in a MIME
+// type.
+//
+// H.264 and AAC are here even though every browser can decode them, because
+// a codec missing from this table was treated as "cannot play" — and AAC was
+// missing, so every file with an AAC track was refused. A file that plays
+// perfectly showed the message saying it could not be played.
 const VIDEO_CODECS: Record<string, string> = {
   av1: 'av01.0.05M.08',
   vp9: 'vp09.00.10.08',
@@ -33,6 +36,8 @@ const AUDIO_CODECS: Record<string, string> = {
   vorbis: 'vorbis',
   flac: 'flac',
   mp3: 'mp4a.40.34',
+  aac: 'mp4a.40.2',
+  mp4a: 'mp4a.40.2',
 }
 
 // The containers, as MIME types.
@@ -89,16 +94,22 @@ export function canPlay(
 
   if (typeof document === 'undefined') return true
 
-  if (video) {
-    const probe = document.createElement('video')
-    if (probe.canPlayType(`${mime}; codecs="${video}"`) === '') return false
-  }
+  // Both codecs are asked of the same element, with the same MIME type, in
+  // one question.
+  //
+  // Asking them separately was wrong twice over. The audio question used
+  // "audio/mp4" while the file is in whatever container it is in, so an Opus
+  // track in an MP4 was judged by a different rule than the video next to
+  // it. And asking one codec at a time answers a question nobody asked: the
+  // browser has to be able to play the file as a whole, video and audio
+  // together, and a file whose two halves it can each play separately is not
+  // necessarily one it can play.
+  const codecs = [video, audio].filter(Boolean).join(',')
 
-  if (audio) {
-    // An audio element, because the MIME type is an audio one.
-    const probe = document.createElement('audio')
-    if (probe.canPlayType(`audio/mp4; codecs="${audio}"`) === '') return false
-  }
+  if (!codecs) return true
+
+  const probe = document.createElement('video')
+  if (probe.canPlayType(`${mime}; codecs="${codecs}"`) === '') return false
 
   return true
 }

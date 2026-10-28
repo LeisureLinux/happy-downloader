@@ -13,6 +13,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/livestream"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
 	"github.com/LeisureLinux/happy-downloader/v4/server/playlist"
+	"github.com/LeisureLinux/happy-downloader/v4/server/rest"
 	"github.com/LeisureLinux/happy-downloader/v4/server/sys"
 	"github.com/LeisureLinux/happy-downloader/v4/server/updater"
 )
@@ -409,8 +410,9 @@ func (s *Service) UpdateYtdlp(args NoArgs, updated *bool) error {
 		return err
 	}
 
-	// The cached answer is about the version that was just replaced.
+	// The cached answers are about the version that was just replaced.
 	updater.Invalidate()
+	rest.ForgetYtdlpVersion()
 
 	*updated = true
 	slog.Info("yt-dlp updated")
