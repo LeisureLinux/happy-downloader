@@ -350,15 +350,28 @@ export default function Filebrowser() {
                     <TableCell />
 
                     <TableCell>
+                      {/* 文件夹的名字和视频的名字左对齐。
+                          名字在一个按钮里，按钮自带内边距，文字就比
+                          同一列里的视频文件名右移了一截，看着像没对齐。
+                          所以内边距去掉，间距由外面的 Stack 统一管。 */}
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <FolderIcon fontSize="small" />
-                        {/* 名字保持原样：MUI 的按钮默认把文字转成大写，
-                            一个叫 "Security" 的文件夹显示成 "SECURITY"
-                            看着像是另一个东西。 */}
+                        {/* 文件夹是黄色的，跟 Windows 里一样。默认的主题色
+                            把它染成了蓝色，一个文件夹看起来就不像文件夹了。 */}
+                        <FolderIcon fontSize="small" sx={{ color: '#FFB300' }} />
                         <Button
                           size="small"
                           onClick={() => setSubdir(f.path)}
-                          sx={{ textTransform: 'none' }}
+                          sx={{
+                            // 名字保持原样：MUI 的按钮默认把文字转成大写，
+                            // 一个叫 "Security" 的文件夹显示成 "SECURITY"
+                            // 看着像是另一个东西。
+                            textTransform: 'none',
+                            // 去掉按钮的内边距，让文字的左边和视频文件名
+                            // 的左边在同一条线上。
+                            px: 0,
+                            minWidth: 0,
+                            justifyContent: 'flex-start',
+                          }}
                         >
                           {f.name}
                         </Button>

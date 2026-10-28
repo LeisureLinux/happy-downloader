@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/filebrowser"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
@@ -349,7 +350,7 @@ func (h *CaptionsHandler) sourceURL(path string) (string, bool) {
 	// yt-dlp's --embed-metadata writes the page URL into the comment field.
 	// Reading it means the old files work too, rather than only the ones
 	// fetched since.
-	if url, ok := sourceFromMetadata(path); ok {
+	if url, ok := filebrowser.SourceFromMetadata(path); ok {
 		return url, true
 	}
 

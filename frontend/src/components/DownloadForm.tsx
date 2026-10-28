@@ -136,7 +136,15 @@ const DownloadForm: React.FC = () => {
       <Stack spacing={2}>
         <Typography variant="h6" color="primary">{i18n.t('downloadsButtonLabel')}</Typography>
 
-        <Stack direction="row" spacing={1} alignItems="flex-start">
+        {/* URL 输入框和"选择格式"按钮占页面宽度的七成，居中。
+            它是这一页唯一要填的东西，占满整行反而把它埋在一堆空白
+            里面；居中则一眼就知道该往哪儿填。 */}
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="flex-start"
+          sx={{ width: '70%', margin: '0 auto' }}
+        >
           <TextField
             multiline
             minRows={1}

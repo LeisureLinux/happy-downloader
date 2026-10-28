@@ -256,6 +256,11 @@ func MoveFiles(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
+			// The source index is keyed by the path, so the record has to
+			// move with the file. Without this the file shows no source at
+			// all, because the record names a path that is no longer there.
+			moveSource(s, to)
+
 			moved = append(moved, to)
 		}
 	}

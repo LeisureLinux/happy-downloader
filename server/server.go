@@ -131,10 +131,17 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	filebrowser.SetSourceLookup(func(path string) (string, bool) {
 		rec, ok := sourceIndex.Lookup(path)
 		if !ok {
+			// The file was moved before the index learned to move, so its
+			// record names a path that is no longer there. The name is the
+			// same, so it is looked for by name.
+			rec, ok = sourceIndex.LookupByName(path)
+		}
+		if !ok {
 			return "", false
 		}
 		return rec.URL, true
 	})
+	filebrowser.SetSourceMover(sourceIndex.Move)
 
 	go mdb.Restore(mq)
 	go mdb.EventListener()

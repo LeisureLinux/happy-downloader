@@ -60,10 +60,16 @@ export default function Layout() {
   // four labelled buttons next to the product name, and they were squeezed
   // into an unreadable row. The log is a thing you consult while watching
   // something else, which is what the footer is for.
+  // 顺序：设置 | 浏览。
+  //
+  // 设置放最左边：它是两个里面最不常点的一个，放在最左边就不用每次
+  // 都越过浏览才能碰到它。
+  //
+  // 下载不在这里：它是首页，按钮在页面里，不必在顶上再放一个。顶栏
+  // 上的下载链接在大标题旁边，点标题和点那个图标是一回事。
   const destinations = [
-    { to: '/filebrowser', label: i18n.t('browseButtonLabel'), icon: <Dashboard fontSize="small" /> },
-    { to: '/', label: i18n.t('downloadsButtonLabel'), icon: <CloudDownloadIcon fontSize="small" /> },
     { to: '/settings', label: i18n.t('settingsButtonLabel'), icon: <SettingsIcon fontSize="small" /> },
+    { to: '/filebrowser', label: i18n.t('browseButtonLabel'), icon: <Dashboard fontSize="small" /> },
   ]
 
   return (
@@ -85,25 +91,46 @@ export default function Layout() {
               and below a phone's width they become icons — which is what
               they are anyway, with a tooltip for the name. */}
           <Toolbar sx={{ pr: { xs: 1, sm: 2 }, gap: { xs: 0.25, sm: 1 }, flexWrap: 'nowrap' }}>
-            <Typography
-              component="h1"
-              variant="h6"
-              noWrap
+            {/* 产品名本身就是下载页的链接，旁边的图标也是。
+                顶上再放一个"下载"按钮是重复的，而重复的那个被点到的
+                次数最多 —— 所以它留在了大标题上。 */}
+            <Box
+              component={Link}
+              to="/"
+              aria-label={i18n.t('downloadsButtonLabel')}
               sx={{
-                flexGrow: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
                 minWidth: 0,
                 color: 'primary.main',
-                fontSize: { xs: '1rem', sm: '1.25rem' },
+                textDecoration: 'none',
+                '&:hover': { opacity: 0.72 },
               }}
             >
-              {productName}
-              {/* The version takes space from the buttons on a phone, and
-                  it is also the first thing to go: the header is for the
-                  product name and the controls. */}
-              <Box sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                <AppVersion />
-              </Box>
-            </Typography>
+              <Typography
+                component="h1"
+                variant="h6"
+                noWrap
+                sx={{
+                  minWidth: 0,
+                  color: 'primary.main',
+                  fontSize: { xs: '1rem', sm: '1.25rem' },
+                }}
+              >
+                {productName}
+                {/* The version takes space from the buttons on a phone, and
+                    it is also the first thing to go: the header is for the
+                    product name and the controls. */}
+                <Box sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  <AppVersion />
+                </Box>
+              </Typography>
+
+              <CloudDownloadIcon fontSize="small" />
+            </Box>
+
+            <Box sx={{ flexGrow: 1 }} />
 
             {/* 顺序：设置 | 浏览 | 下载。
                 前一个是开关，后两个是目的地。

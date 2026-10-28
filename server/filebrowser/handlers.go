@@ -188,11 +188,15 @@ func walkDir(root string) (*[]DirectoryEntry, error) {
 			entry.Subtitles = subtitlesFor(root, d.Name())
 
 			// Where it came from, so the row can say so.
-			if sourceLookup != nil {
-				if url, ok := sourceLookup(path); ok {
-					entry.SourceURL = url
-					entry.SourceSite = SiteOf(url)
-				}
+			//
+			// The index is the first choice, and the file's own metadata is
+			// the fallback: a file that was moved before the index learned
+			// to move has a record naming a path that is no longer there,
+			// and the file itself still carries the URL yt-dlp wrote into it.
+			url, ok := sourceOf(path)
+			if ok {
+				entry.SourceURL = url
+				entry.SourceSite = SiteOf(url)
 			}
 		}
 
@@ -556,6 +560,44 @@ var sourceLookup func(path string) (url string, ok bool)
 // SetSourceLookup installs the callback.
 func SetSourceLookup(fn func(path string) (string, bool)) {
 	sourceLookup = fn
+}
+
+// The callback for a file that has moved.
+//
+// The index is keyed by the file's path, so a file that moves into a folder
+// leaves its record behind — and that record is what says where the file came
+// from. Without this, a file that had been moved showed no source at all.
+var sourceMover func(from, to string)
+
+// SetSourceMover installs the callback.
+func SetSourceMover(fn func(from, to string)) {
+	sourceMover = fn
+}
+
+// moveSource records that a file has moved.
+func moveSource(from, to string) {
+	if sourceMover != nil {
+		sourceMover(from, to)
+	}
+}
+
+// sourceOf finds where a file came from.
+//
+// The index is consulted first because it is free. The file's own metadata is
+// the fallback, and it is what answers for the files that were moved before
+// the index learned to move: their record names a path that is no longer
+// there, and the file still carries the URL inside it.
+//
+// The fallback costs a process spawn, so it is not used for every file — only
+// for the ones the index does not know.
+func sourceOf(path string) (string, bool) {
+	if sourceLookup != nil {
+		if url, ok := sourceLookup(path); ok {
+			return url, true
+		}
+	}
+
+	return SourceFromMetadata(path)
 }
 
 func forgetSource(path string) {

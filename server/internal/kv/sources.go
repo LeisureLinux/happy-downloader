@@ -112,6 +112,51 @@ func (s *SourceIndex) Remember(rec SourceRecord) {
 	}
 }
 
+// LookupByName finds the source of a file by its name.
+//
+// The index is keyed by the full path, so a file that was moved into a folder
+// leaves its record naming a path that is no longer there. The name is the
+// same, though, and the name is what the record was written with.
+//
+// It is a fallback: the path is tried first, and only when that fails is the
+// name looked for. Two files with the same name in different folders would
+// be ambiguous, and the one whose record is still in the index is the one
+// that is found — which is the one whose path is right anyway.
+func (s *SourceIndex) LookupByName(path string) (SourceRecord, bool) {
+	name := filepath.Base(filepath.Clean(path))
+	if name == "" {
+		return SourceRecord{}, false
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var found SourceRecord
+	var foundAt string
+
+	for recordedPath, rec := range s.mem {
+		if filepath.Base(recordedPath) != name {
+			continue
+		}
+
+		// The file still there wins: its record is the one that is right.
+		if _, err := os.Stat(recordedPath); err == nil {
+			return rec, true
+		}
+
+		if foundAt == "" {
+			found = rec
+			foundAt = recordedPath
+		}
+	}
+
+	if foundAt == "" {
+		return SourceRecord{}, false
+	}
+
+	return found, true
+}
+
 // Lookup finds the source of a file.
 func (s *SourceIndex) Lookup(path string) (SourceRecord, bool) {
 	clean := filepath.Clean(path)
@@ -148,6 +193,52 @@ func (s *SourceIndex) Lookup(path string) (SourceRecord, bool) {
 	}
 
 	return found, true
+}
+
+// Move records that a file has moved.
+//
+// The index is keyed by the file's path, so a file that moves leaves its
+// record behind — and the record is what says where the file came from. A
+// file moved into a folder was showing no source at all, because the path in
+// the index no longer named anything on disk.
+//
+// The record is moved rather than copied: there is one file, and it has one
+// source.
+func (s *SourceIndex) Move(from, to string) {
+	fromClean := filepath.Clean(from)
+	toClean := filepath.Clean(to)
+
+	s.mu.Lock()
+	rec, ok := s.mem[fromClean]
+	if ok {
+		rec.Path = toClean
+		s.mem[toClean] = rec
+		delete(s.mem, fromClean)
+	}
+	s.mu.Unlock()
+
+	if err := s.db.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists(sourcesBucket)
+		if err != nil {
+			return err
+		}
+
+		encoded, err := json.Marshal(rec)
+		if err != nil {
+			return err
+		}
+
+		if err := b.Put([]byte(toClean), encoded); err != nil {
+			return err
+		}
+
+		return b.Delete([]byte(fromClean))
+	}); err != nil {
+		slog.Error("could not move the source record",
+			slog.String("from", fromClean),
+			slog.String("to", toClean),
+			slog.Any("err", err))
+	}
 }
 
 // Forget removes a file's record.
