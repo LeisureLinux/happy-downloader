@@ -13,6 +13,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/metadata"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/probeinfo"
 )
 
@@ -35,6 +36,12 @@ func ParseURL(url string) (*Metadata, error) {
 		if msg == "" {
 			msg = err.Error()
 		}
+
+		// "Unsupported URL" says which link could not be read and nothing
+		// else. The rewritten message says whether the site is one the
+		// application knows at all, or whether the link is the wrong shape.
+		msg = metadata.ExplainUnsupported(msg)
+
 		slog.Error("failed to retrieve metadata",
 			slog.String("url", url), slog.String("err", msg))
 		return nil, errors.New(msg)

@@ -63,7 +63,10 @@ func DefaultFetcher(url string) (*common.DownloadMetadata, error) {
 	}
 
 	if err := cmd.Wait(); err != nil {
-		return nil, errors.New(bufferedStderr.String())
+		// yt-dlp's "Unsupported URL" says which link it could not read
+		// and nothing else. The rewritten message says whether the site is
+		// one the application knows at all.
+		return nil, errors.New(ExplainUnsupported(bufferedStderr.String()))
 	}
 
 	probeinfo.Remember(url, meta)

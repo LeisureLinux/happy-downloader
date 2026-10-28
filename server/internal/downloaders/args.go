@@ -55,6 +55,11 @@ func SanitizeRuntime(runtime string) string {
 // used to supply — a proxy above all — has to be passed explicitly, or the
 // download fails on a network that never needed a profile to work.
 func BuildArgs(url string, extra ...string) []string {
+	// The URL is put into the form the site's extractor recognises. People
+	// paste links from an app rather than from the address bar, and the two
+	// are different addresses for the same video.
+	url = NormalizeURL(url)
+
 	// Refresh the converted cookie file first: this is the pre-download check
 	// that covers a replaced export when the inotify watch is unavailable.
 	SyncCookies()

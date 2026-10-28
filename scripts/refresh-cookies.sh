@@ -165,6 +165,9 @@ fi
 FILTERED="$WORKDIR/filtered.txt"
 
 head -1 "$TMP" > "$FILTERED"
+# The sites the application can download from. A cookie is worth keeping for
+# a site that needs one: Douyin refuses a request without the browser's own
+# cookies, and the browser that has them is the only source of them.
 awk -F'\t' '
   /^#/ && !/^#HttpOnly_/ { next }
   NF < 7 { next }
@@ -172,7 +175,11 @@ awk -F'\t' '
     domain = $1
     sub(/^#HttpOnly_/, "", domain)
     if (domain ~ /(^|\.)youtube\.com$/ || domain ~ /(^|\.)google\.com$/ ||
-        domain ~ /(^|\.)youtu\.be$/)
+        domain ~ /(^|\.)youtu\.be$/ ||
+        domain ~ /(^|\.)douyin\.com$/ || domain ~ /(^|\.)tiktok\.com$/ ||
+        domain ~ /(^|\.)bilibili\.com$/ || domain ~ /(^|\.)xiaohongshu\.com$/ ||
+        domain ~ /(^|\.)weibo\.com$/ || domain ~ /(^|\.)instagram\.com$/ ||
+        domain ~ /(^|\.)reddit\.com$/ || domain ~ /(^|\.)vimeo\.com$/)
       print
   }
 ' "$TMP" >> "$FILTERED"
@@ -183,7 +190,7 @@ if [ "${COUNT:-0}" -eq 0 ]; then
   exit 1
 fi
 
-if ! grep -q LOGIN_INFO "$FILTERED"; then
+if ! grep -q LOGIN_INFO "$FILTERED" && ! grep -qi douyin "$FILTERED"; then
   # The browser is signed out, or the cookie has not been written yet. Writing
   # this would replace a working credential with a guest session, which
   # downloads public videos and fails everything else — a strictly worse state
