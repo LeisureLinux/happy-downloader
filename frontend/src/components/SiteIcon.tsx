@@ -63,8 +63,14 @@ const VimeoIcon = (props: SvgIconProps) => (
 /** The Niconico mark: the n in a television. */
 const NiconicoIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
-    {/* The television the logo is drawn on. */}
-    <path d="M4 4h16a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm1 2v11h14V6H5Z" />
+    {/* The television the logo is drawn on.
+        The inner rectangle is a hole rather than more of the same shape: it
+        was filled in, so the n drawn on top of it was the same colour as the
+        body and the whole mark was a black square. */}
+    <path
+      fillRule="evenodd"
+      d="M4 4h16a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm1 2v11h14V6H5Z"
+    />
     {/* The n. */}
     <path d="M7.4 9.2h2.2v1.1c.5-.8 1.3-1.2 2.4-1.2 1.7 0 2.7 1 2.7 3v3.7h-2.3v-3.4c0-.9-.4-1.4-1.2-1.4-.9 0-1.4.6-1.4 1.6v3.2H7.4V9.2Z" />
   </SvgIcon>
