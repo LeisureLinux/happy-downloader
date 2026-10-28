@@ -193,18 +193,28 @@ func (g *GenericDownloader) Start() error {
 
 	g.proc = cmd.Process
 
-	// The cleanup that runs when yt-dlp exits, whether it finished or was
-	// killed.
+	// The cleanup that runs when yt-dlp exits, whether it finished, was
+	// killed or failed.
 	//
 	// A killed download is not a finished one: it becomes paused, so it
 	// stays in the queue and can be resumed. The kill is detected by the
 	// process having been stopped deliberately, which Stop() records.
+	//
+	// A failed download is not a finished one either. It used to be marked
+	// completed here, and the queue marked it errored afterwards — but by
+	// then it was already complete, so it left the queue and never showed
+	// up at all. The person saw the download vanish with no trace, and the
+	// only evidence was a line in the log.
+	failed := false
 	stop := func() {
 		stdout.Close()
 
-		if g.stopped {
+		switch {
+		case g.stopped:
 			g.progress.Status = internal.StatusPaused
-		} else {
+		case failed:
+			g.progress.Status = internal.StatusErrored
+		default:
 			g.Complete()
 			g.progress.Status = internal.StatusCompleted
 		}
@@ -218,14 +228,25 @@ func (g *GenericDownloader) Start() error {
 	go consumeLogs(ctx, logs, g.logConsumer, g)
 
 	go func() {
-		err := printYtDlpErrors(stderr, g.Id, g.URL)
-		if err != nil {
+		if err := printYtDlpErrors(stderr, g.Id, g.URL); err != nil {
 			stop()
 		}
 	}()
 
 	g.SetPending(false)
-	return cmd.Wait()
+
+	err = cmd.Wait()
+
+	// A download that failed is not a finished one.
+	//
+	// The exit code is the only thing that says so: yt-dlp writes its
+	// errors to stderr and exits non-zero, and a download that produced no
+	// file at all is the case that matters here.
+	if err != nil && !g.stopped {
+		failed = true
+	}
+
+	return err
 }
 
 // Stop halts the download without ending it.

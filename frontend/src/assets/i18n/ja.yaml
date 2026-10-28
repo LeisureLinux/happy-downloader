@@ -107,6 +107,7 @@ keys:
   cookieLoaded: 'Cookie ファイルを読み込みました'
   cookieMissingLogin: 'YouTube のログイン Cookie がありません'
   cookieModifiedAt: '最終更新'
+  cookieStaleWarning: '自動取得のファイルがしばらく置き換わられていません。10 分ごとに書き直されるものなので、これは更新 programmes が動いていないということです —— ダウンロードはボットウォールに当たります。'
   cookieNotLoaded: 'Cookie ファイルが読み込まれていません'
   cookieRefreshStatus: '更新状況'
   cookieDialogTitle: 'Cookie'

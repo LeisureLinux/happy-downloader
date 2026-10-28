@@ -108,6 +108,7 @@ keys:
   cookieLoaded: 'Arquivo de cookies carregado'
   cookieMissingLogin: 'Faltam os cookies de login do YouTube'
   cookieModifiedAt: 'Última modificação'
+  cookieStaleWarning: 'A exportação automática não é substituída há muito tempo. Ela é reescrita a cada dez minutos, então o atualizador não está rodando — e um download falha com uma parede antibot.'
   cookieNotLoaded: 'Arquivo de cookies não carregado'
   cookieRefreshStatus: 'Status da atualização'
   cookieDialogTitle: 'Cookies'

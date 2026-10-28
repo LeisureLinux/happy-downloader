@@ -123,6 +123,7 @@ keys:
   profilesIgnoreConfigNote: '服务端会传入 --ignore-config，因此本机 yt-dlp 的配置文件不会影响下载，只使用本表中的设置。'
   cookieSourcePath: 'Cookie 源文件'
   cookieModifiedAt: '最后修改'
+  cookieStaleWarning: '自动传入的那份已经很久没更新了。它每十分钟会被替换一次，所以这说明刷新器没在跑 —— 下载时会撞上反爬墙。'
   close: '关闭'
   statusPending: '准备中'
   statusMetadata: '读取元数据'

@@ -106,6 +106,7 @@ keys:
   cookieLoaded: '쿠키 파일을 불러왔습니다'
   cookieMissingLogin: 'YouTube 로그인 쿠키가 없습니다'
   cookieModifiedAt: '마지막 수정'
+  cookieStaleWarning: '자동으로 가져온 파일이 한참 교체되지 않았습니다. 10분마다 다시 쓰이는 파일이니 갱신 프로그램이 동작하지 않는다는 뜻입니다 — 다운로드가 봇 벽에 막힙니다.'
   cookieNotLoaded: '쿠키 파일을 불러오지 못했습니다'
   cookieRefreshStatus: '갱신 상태'
   cookieDialogTitle: '쿠키'

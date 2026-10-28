@@ -108,6 +108,7 @@ keys:
   cookieLoaded: 'Sütifájl betöltve'
   cookieMissingLogin: 'Hiányoznak a YouTube bejelentkezési sütik'
   cookieModifiedAt: 'Utolsó módosítás'
+  cookieStaleWarning: 'Az automatikus export régóta nem lett cserélve. Tíz percenként újraíródik, szóval a frissítő nem fut — és a letöltés egy botfalba ütközik.'
   cookieNotLoaded: 'A sütifájl nincs betöltve'
   cookieRefreshStatus: 'Frissítés állapota'
   cookieDialogTitle: 'Cookie-k'

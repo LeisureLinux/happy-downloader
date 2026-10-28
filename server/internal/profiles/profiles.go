@@ -174,10 +174,19 @@ func (p Profile) Argv(cookieStaging, jsRuntime string) []string {
 		args = append(args, "--cookies", cookieStaging)
 	}
 
-	if p.PotBaseURL != "" {
+	if p.PotBaseURL != "" && p.isYouTube() {
 		// The provider fetches the BotGuard challenge from YouTube, so it needs
 		// the same egress as the download. Its HTTP server has no --proxy flag;
 		// the proxy travels per request, in the same extractor-args value.
+		//
+		// It is only for YouTube. The provider is asked for a challenge that
+		// only YouTube's extractor understands, so for any other site the
+		// argument is dead weight: the extractor ignores it and the
+		// provider is not called at all.
+		//
+		// The fallback profile carried one, because it was seeded with the
+		// global setting — so every site without a profile of its own was
+		// asked for a YouTube challenge it had no use for.
 		potArg := "youtubepot-bgutilhttp:base_url=" + p.PotBaseURL
 		if p.Proxy != "" {
 			potArg += ";proxy=" + p.Proxy
@@ -200,6 +209,20 @@ func (p Profile) Argv(cookieStaging, jsRuntime string) []string {
 	}
 
 	return args
+}
+
+// isYouTube reports whether this profile is YouTube.
+//
+// It is what decides whether the PO Token provider is worth asking: the
+// challenge it fetches is one only YouTube's extractor understands.
+func (p Profile) isYouTube() bool {
+	for _, suffix := range p.suffixes() {
+		if suffix == "youtube.com" || suffix == "youtu.be" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Summarize describes a cookie file without echoing values.

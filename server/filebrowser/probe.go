@@ -71,12 +71,36 @@ func mediaInfoFor(path string) mediaInfo {
 		return mediaInfo{}
 	}
 
+	// The memory cache first: it is free, and it is what a listing that
+	// runs twice in a row reads.
 	probeMu.RLock()
 	entry, ok := probeCache[path]
 	probeMu.RUnlock()
 
 	if ok && entry.modTime.Equal(info.ModTime()) && entry.size == info.Size() {
 		return entry.info
+	}
+
+	// Then the one on disk. It is what makes the first visit to the file
+	// browser fast after a restart: the answers are still there from the
+	// last time, and running ffprobe on every file again took three seconds
+	// for thirteen files.
+	if cached, ok := cachedProbeFor(path, info.ModTime(), info.Size()); ok {
+		probed := mediaInfo{
+			duration:   cached.Duration,
+			videoCodec: cached.VideoCodec,
+			audioCodec: cached.AudioCodec,
+		}
+
+		probeMu.Lock()
+		probeCache[path] = probeCacheEntry{
+			info:    probed,
+			modTime: info.ModTime(),
+			size:    info.Size(),
+		}
+		probeMu.Unlock()
+
+		return probed
 	}
 
 	value, _, _ := probeGroup.Do(path, func() (any, error) {
@@ -92,6 +116,8 @@ func mediaInfoFor(path string) mediaInfo {
 		size:    info.Size(),
 	}
 	probeMu.Unlock()
+
+	rememberProbe(path, info.ModTime(), info.Size(), probed)
 
 	return probed
 }

@@ -128,6 +128,10 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	recorder := &kv.SourceRecorder{Index: sourceIndex}
 	downloaders.SetSourceRecorder(recorder.Record)
 	filebrowser.SetSourceForgetter(sourceIndex.Forget)
+
+	// The media probe cache is written to disk, so that the first visit to
+	// the file browser after a restart is as fast as the one after it.
+	filebrowser.StartProbeCacheWriter()
 	filebrowser.SetSourceLookup(func(path string) (string, bool) {
 		rec, ok := sourceIndex.Lookup(path)
 		if !ok {

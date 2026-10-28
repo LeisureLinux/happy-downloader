@@ -106,6 +106,7 @@ keys:
   cookieLoaded: 'Fitxer de cookies carregat'
   cookieMissingLogin: 'Falten les cookies d’inici de sessió de YouTube'
   cookieModifiedAt: 'Darrera modificació'
+  cookieStaleWarning: 'L''exportació automàtica no s''ha substituït fa molt. Es reescriu cada deu minuts, així que vol dir que el refrescador no s''està executant — i una baixada fallarà amb un mur antibot.'
   cookieNotLoaded: 'Fitxer de cookies no carregat'
   cookieRefreshStatus: 'Estat de l’actualització'
   cookieDialogTitle: 'Cookies'

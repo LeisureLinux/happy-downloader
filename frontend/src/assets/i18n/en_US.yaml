@@ -122,6 +122,7 @@ keys:
   profilesIgnoreConfigNote: 'The server passes --ignore-config, so nothing from the host yt-dlp config file affects downloads. Only what is in this table is used.'
   cookieSourcePath: 'Cookie source file'
   cookieModifiedAt: 'Last modified'
+  cookieStaleWarning: 'The automatic export has not been replaced for a while. It is rewritten every ten minutes, so this means the refresher is not running — and a download will fail with a bot wall.'
   close: 'Close'
   statusPending: 'Preparing'
   statusMetadata: 'Reading metadata'

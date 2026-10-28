@@ -106,6 +106,7 @@ keys:
   cookieLoaded: 'Файл cookies загружен'
   cookieMissingLogin: 'Нет cookies для входа в YouTube'
   cookieModifiedAt: 'Изменён'
+  cookieStaleWarning: 'Автоматический экспорт давно не обновлялся. Он переписывается каждые десять минут, значит обновлятор не работает — и загрузка упрётся в антибот.'
   cookieNotLoaded: 'Файл cookies не загружен'
   cookieRefreshStatus: 'Состояние обновления'
   cookieDialogTitle: 'Cookie'

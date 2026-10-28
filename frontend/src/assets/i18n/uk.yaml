@@ -106,6 +106,7 @@ keys:
   cookieLoaded: 'Файл cookies завантажено'
   cookieMissingLogin: 'Немає cookies для входу в YouTube'
   cookieModifiedAt: 'Змінено'
+  cookieStaleWarning: 'Автоматичний експорт давно не оновлювався. Він переписується кожні десять хвилин, тож оновлювач не працює — і завантаження впирається в антибот.'
   cookieNotLoaded: 'Файл cookies не завантажено'
   cookieRefreshStatus: 'Стан оновлення'
   cookieDialogTitle: 'Cookie'

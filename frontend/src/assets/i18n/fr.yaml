@@ -109,6 +109,7 @@ keys:
   cookieLoaded: 'Fichier de cookies chargé'
   cookieMissingLogin: 'Cookies de connexion YouTube manquants'
   cookieModifiedAt: 'Dernière modification'
+  cookieStaleWarning: 'L''export automatique n''a pas été remplacé depuis longtemps. Il est réécrit toutes les dix minutes, donc le rafraîchisseur ne fonctionne pas — et un téléchargement échouera sur un mur antibot.'
   cookieNotLoaded: 'Fichier de cookies non chargé'
   cookieRefreshStatus: 'État du rafraîchissement'
   cookieDialogTitle: 'Cookies'

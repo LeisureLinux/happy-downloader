@@ -106,6 +106,7 @@ keys:
   cookieLoaded: 'Wczytano plik ciasteczek'
   cookieMissingLogin: 'Brak ciasteczek logowania do YouTube'
   cookieModifiedAt: 'Ostatnia zmiana'
+  cookieStaleWarning: 'Eksport automatyczny nie był zastępowany od dawna. Jest przepisywany co dziesięć minut, więc odświeżacz nie działa — a pobieranie trafi na ścianę antybotową.'
   cookieNotLoaded: 'Nie wczytano pliku ciasteczek'
   cookieRefreshStatus: 'Stan odświeżania'
   cookieDialogTitle: 'Pliki cookie'

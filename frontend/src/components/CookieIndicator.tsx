@@ -88,11 +88,18 @@ const CookieIndicator: React.FC<Props> = ({ onImport }) => {
       >
         <CookieIcon fontSize="small" />
         <span>{formatTimestamp(status.modifiedAt)}</span>
+        {/* The warning has its own tooltip. It was inside the parent's,
+            so it inherited the parent's text — the timestamp and the path —
+            which says nothing about what the warning is about. */}
         {stale && (
-          <WarningAmberIcon
-            fontSize="small"
-            sx={{ color: 'warning.main' }}
-          />
+          <Tooltip title={i18n.t('cookieStaleWarning')}>
+            <span>
+              <WarningAmberIcon
+                fontSize="small"
+                sx={{ color: 'warning.main' }}
+              />
+            </span>
+          </Tooltip>
         )}
       </IconButton>
     </Tooltip>

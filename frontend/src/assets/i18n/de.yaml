@@ -108,6 +108,7 @@ keys:
   cookieLoaded: 'Cookie-Datei geladen'
   cookieMissingLogin: 'YouTube-Anmelde-Cookies fehlen'
   cookieModifiedAt: 'Zuletzt geändert'
+  cookieStaleWarning: 'Der automatische Export wurde eine Weile nicht ersetzt. Er wird alle zehn Minuten neu geschrieben, das heißt der Erfrischer läuft nicht — und ein Download scheitert an einer Bot-Sperre.'
   cookieNotLoaded: 'Cookie-Datei nicht geladen'
   cookieRefreshStatus: 'Aktualisierungsstatus'
   cookieDialogTitle: 'Cookies'

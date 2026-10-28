@@ -108,6 +108,7 @@ keys:
   cookieLoaded: 'Kakfilen är inläst'
   cookieMissingLogin: 'Inloggningskakor för YouTube saknas'
   cookieModifiedAt: 'Senast ändrad'
+  cookieStaleWarning: 'Den automatiska exporten har inte ersatts på länge. Den skrivs om var tionde minut, så uppdateraren körs inte — och en nedladdning möter en botmur.'
   cookieNotLoaded: 'Kakfilen är inte inläst'
   cookieRefreshStatus: 'Uppdateringsstatus'
   cookieDialogTitle: 'Kakor'

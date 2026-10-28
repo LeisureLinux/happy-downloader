@@ -108,6 +108,7 @@ keys:
   cookieLoaded: 'File dei cookie caricato'
   cookieMissingLogin: 'Mancano i cookie di accesso a YouTube'
   cookieModifiedAt: 'Ultima modifica'
+  cookieStaleWarning: 'L''esportazione automatica non è stata sostituita da parecchio. Viene riscritta ogni dieci minuti, quindi l''aggiornatore non è in funzione — e un download fallisce con un muro antibot.'
   cookieNotLoaded: 'File dei cookie non caricato'
   cookieRefreshStatus: 'Stato aggiornamento'
   cookieDialogTitle: 'Cookie'
