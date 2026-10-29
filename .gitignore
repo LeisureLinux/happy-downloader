@@ -37,3 +37,10 @@ Dockerfile
 # converted cookie artifacts
 cookies-*.txt
 cookies-*.txt.ytdlp-jar
+
+# Build artefacts of a release. They are uploaded to the GitHub release and
+# have no business in the repository: the source is what belongs here, and two
+# binaries are thirty megabytes of history that nobody can diff.
+happy-downloader_linux-amd64
+happy-downloader_linux-arm64
+SHA256SUMS
