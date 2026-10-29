@@ -102,6 +102,12 @@ function LinearProgressWithLabel(
 // against the length that was asked for — which the recording may not reach,
 // because the stream might end first. The bar is then capped at the end of
 // what was asked for.
+// Whether the row is a recording: it is either recording or being put into
+// its container, and neither is a download with a percentage.
+const isRecording = (r: RPCResult): boolean =>
+  r.progress.process_status === ProcessStatus.LIVESTREAM ||
+  r.progress.process_status === ProcessStatus.REMUXING
+
 const recordedFraction = (r: RPCResult): number => {
   const elapsed = r.progress.percentage
   const parts = elapsed.split(':').map(Number)
@@ -341,17 +347,20 @@ const DownloadsTableView: React.FC = () => {
           </Typography>
           <LinearProgressWithLabel
             sx={{ height: '16px', mt: 0.5 }}
+            // A recording shows the time it recorded, while it records and
+            // while it is being put into its container: that is how long the
+            // file is, and it is what the person is waiting for.
+            //
+            // The remux state went without it, and fell through to the
+            // percentage reading — "00:02:39" is not a number, so the label
+            // said "NaN%".
             elapsed={
-              download.progress.process_status === ProcessStatus.LIVESTREAM
-                ? download.progress.percentage
-                : undefined
+              isRecording(download) ? download.progress.percentage : undefined
             }
-            // A recording being remuxed keeps the time it recorded: that is
-            // how long the file is, and it is what the person is waiting for.
             value={
               done
                 ? 100
-                : download.progress.process_status === ProcessStatus.LIVESTREAM
+                : isRecording(download)
                   ? recordedFraction(download)
                   : Number(download.progress.percentage.replace('%', '') || 0)
             }
