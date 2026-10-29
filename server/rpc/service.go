@@ -60,7 +60,7 @@ func (s *Service) ExecPlaylist(args internal.DownloadRequest, result *string) er
 
 // TODO: docs
 func (s *Service) ExecLivestream(args internal.DownloadRequest, result *string) error {
-	s.lm.AddFrom(args.URL, args.RecordMinutes, args.FromIP)
+	s.lm.AddFrom(args.URL, args.RecordMinutes, args.FromIP, args.Path)
 
 	*result = args.URL
 	return nil
@@ -233,6 +233,35 @@ func (s *Service) Retry(args string, result *string) error {
 
 	*result = d.GetId()
 
+	return nil
+}
+
+// StartRecording starts a recording that was stopped on purpose.
+//
+// It is not a retry: nothing failed, and the files already written are the
+// point of the exercise. The same row runs again, from the live edge, and
+// writes a new file for the new segment.
+func (s *Service) StartRecording(args string, result *string) error {
+	download, err := s.db.Get(args)
+	if err != nil {
+		return err
+	}
+
+	if download == nil {
+		return errors.New("nil process")
+	}
+
+	recorder, ok := download.(*downloaders.LiveStreamDownloader)
+	if !ok {
+		return errors.New("this entry is not a recording")
+	}
+
+	recorder.PrepareRestart()
+	s.mq.Publish(recorder)
+
+	slog.Info("starting the recording again", slog.String("id", args))
+
+	*result = args
 	return nil
 }
 

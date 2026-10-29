@@ -25,6 +25,28 @@ const STATUS_POLL_MS = 2000
 // How long to wait between attempts to re-establish a dropped WebSocket.
 const RECONNECT_MS = 2000
 
+// selectQueue is what the queue shows, from what the server reports.
+//
+// A row is shown from the moment it is queued. The filter used to be
+// `!!info.url`, and info.url only exists once the metadata has been fetched:
+// for the first few seconds of a download there was nothing in the list at
+// all, which reads as the queue having refused it. The requested URL is on
+// the entry itself, from the start.
+//
+// There are two paths into this state — the socket pushing the list and a
+// poll asking for it — and they used to carry their own copy of the rule.
+// One of them was fixed and the other was not, which is a bug that comes
+// back the moment either is edited.
+const selectQueue = (running: RPCResult[]): RPCResult[] =>
+  running
+    .filter(f => !!(f.url ?? f.info.url))
+    .sort((a, b) => datetimeCompareFunc(
+      // A row whose metadata is still being fetched has no created_at, and
+      // it is the newest thing there is.
+      b.info.created_at || new Date().toISOString(),
+      a.info.created_at || new Date().toISOString(),
+    ))
+
 const SocketSubscriber: React.FC<Props> = () => {
   const [connected, setIsConnected] = useAtom(connectedState)
   const setDownloads = useSetAtom(downloadsState)
@@ -93,14 +115,7 @@ const SocketSubscriber: React.FC<Props> = () => {
       if (!Array.isArray(event.result)) { return }
 
       if (event.result) {
-        return setDownloads(
-          O.of(event.result
-            .filter(f => !!f.info.url).sort((a, b) => datetimeCompareFunc(
-              b.info.created_at,
-              a.info.created_at,
-            )),
-          )
-        )
+        return setDownloads(O.of(selectQueue(event.result)))
       }
       setDownloads(O.none)
     },
@@ -131,14 +146,7 @@ const SocketSubscriber: React.FC<Props> = () => {
     if (!connected) { return }
 
     const apply = (running: RPCResult[]) => {
-      setDownloads(
-        O.of(running
-          .filter(f => !!f.info.url).sort((a, b) => datetimeCompareFunc(
-            b.info.created_at,
-            a.info.created_at,
-          )),
-        )
-      )
+      setDownloads(O.of(selectQueue(running)))
     }
 
     const sub = timer(0, STATUS_POLL_MS).subscribe(() => {

@@ -5,6 +5,7 @@ export type RPCMethods =
   | "Service.Resume"
   | "Service.Clear"
   | "Service.Retry"
+  | "Service.StartRecording"
   | "Service.Running"
   | "Service.KillAll"
   | "Service.FreeSpace"
@@ -74,6 +75,25 @@ export type RPCResult = Readonly<{
   id: string
   progress: DownloadProgress
   info: DownloadInfo
+  /**
+   * Which stage produced this entry: "generic" for an ordinary download,
+   * "livestream" for a recording.
+   *
+   * A recording's buttons are not a download's buttons: it can be stopped and
+   * started again, and stopping it writes a file rather than leaving a
+   * partial one behind.
+   */
+  downloader_name?: string
+
+  /**
+   * The URL as requested.
+   *
+   * `info.url` is the same value only after metadata has been fetched, so a
+   * download that was just queued has an empty info.url. Filtering the queue
+   * on it hid the row for the few seconds the metadata takes, and a person
+   * who has just pressed start saw an empty queue.
+   */
+  url?: string
   /** seconds; how long the video is, known before a byte is transferred */
   duration?: number
   output: {

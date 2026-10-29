@@ -62,6 +62,12 @@ func (l *LiveStreamDownloader) recordingPath() (string, string) {
 	name := sanitizeFilename(l.Title())
 	when := l.startedAt.Format("2006-01-02 15-04-05")
 
+	// A recording goes where the request asked for, like any other download.
+	dir := config.Instance().Paths.DownloadPath
+	if l.output.Path != "" {
+		dir = l.output.Path
+	}
+
 	// The stream is written as it arrives, into the partial directory.
 	//
 	// It used to be written into the download directory, which meant the
@@ -79,7 +85,7 @@ func (l *LiveStreamDownloader) recordingPath() (string, string) {
 	// And the one that is kept is the same thing in an MP4, if ffmpeg can
 	// put it there.
 	final := filepath.Join(
-		config.Instance().Paths.DownloadPath,
+		dir,
 		fmt.Sprintf("%s %s.mp4", name, when),
 	)
 
@@ -104,7 +110,22 @@ func (l *LiveStreamDownloader) finishRecording(raw, final string) string {
 			slog.String("err", err.Error()),
 		)
 
-		return raw
+		// The raw file is moved next to where the finished one would have
+		// been, out of the partial directory: that is where the temporary
+		// files live and they are cleaned up, and a recording left there is
+		// one that exists and then does not.
+		kept := filepath.Join(filepath.Dir(final), filepath.Base(raw))
+
+		if err := os.Rename(raw, kept); err != nil {
+			slog.Error("could not keep the recording",
+				slog.String("id", l.Id),
+				slog.String("raw", raw),
+				slog.String("err", err.Error()),
+			)
+			return raw
+		}
+
+		return kept
 	}
 
 	os.Remove(raw)

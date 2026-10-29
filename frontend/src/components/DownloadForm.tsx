@@ -4,6 +4,7 @@ import {
   Button,
   Checkbox,
   FormControlLabel,
+  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -43,6 +44,10 @@ const playlistAtom = atom(false)
 // Zero means until the stop button is pressed.
 const recordMinutesAtom = atom(0)
 const filenameAtom = atom('')
+
+// Where the file goes. Empty means the download directory itself, which is
+// what most downloads want and is why it is the default.
+const saveDirAtom = atom('')
 // Deliberately not persisted: a probe in flight belongs to this tab, and
 // restoring a stuck spinner after a reload would be worse than starting over.
 const probingAtom = atom(false)
@@ -75,6 +80,8 @@ const DownloadForm: React.FC = () => {
   const [asPlaylist, setAsPlaylist] = useAtom(playlistAtom)
   const [recordMinutes, setRecordMinutes] = useAtom(recordMinutesAtom)
   const [filename, setFilename] = useAtom(filenameAtom)
+  const [saveDir, setSaveDir] = useAtom(saveDirAtom)
+  const [dirs, setDirs] = useState<string[]>([])
   const [probeFailed, setProbeFailed] = useAtom(probeFailedAtom)
 
   // Elapsed seconds while probing. Twenty seconds of a disabled button and no
@@ -129,6 +136,26 @@ const DownloadForm: React.FC = () => {
     }
   }
 
+  // The directories a file can be saved into, once there is something to
+  // save. The list is the download directory and everything under it, which
+  // is what a person means by "my folders".
+  useEffect(() => {
+    if (!meta && !probeFailed) return
+
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const res = await client.directoryTree()
+        if (!cancelled) setDirs(res?.result ?? [])
+      } catch {
+        // The picker is a convenience; a failed listing leaves the default.
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [meta, probeFailed, client])
+
   const start = async () => {
     if (!url.trim()) return
 
@@ -152,7 +179,7 @@ const DownloadForm: React.FC = () => {
       // that was already fetched: a site that is live is live, whatever its
       // address looks like.
       if (isLivestreamURL(url, meta?.is_live)) {
-        await client.execLivestream(url.trim(), recordMinutes)
+        await client.execLivestream(url.trim(), recordMinutes, saveDir)
         pushMessage(`${i18n.t('livestreamQueued')}: ${url.trim()}`, 'success')
         setUrl('')
         setMeta(undefined)
@@ -163,7 +190,7 @@ const DownloadForm: React.FC = () => {
       await client.download({
         url: url.trim(),
         args: finalArgs,
-        pathOverride: '',
+        pathOverride: saveDir,
         renameTo: settings.fileRenaming ? filename : '',
         playlist: asPlaylist,
       })
@@ -323,6 +350,29 @@ const DownloadForm: React.FC = () => {
               />
             )}
           </Box>
+        )}
+
+        {/* Where it goes. The default is the download directory, which is
+            what almost every download wants — but a course, a series or a
+            recording that belongs somewhere particular should not have to be
+            moved afterwards. */}
+        {(meta || probeFailed) && dirs.length > 0 && (
+          <TextField
+            select
+            size="small"
+            fullWidth
+            label={i18n.t('saveDirLabel')}
+            value={saveDir}
+            onChange={e => setSaveDir(e.target.value)}
+            helperText={i18n.t('saveDirHint')}
+          >
+            <MenuItem value="">{i18n.t('saveDirRoot')}</MenuItem>
+            {dirs.filter(Boolean).map(dir => (
+              <MenuItem key={dir} value={dir}>
+                {dir}
+              </MenuItem>
+            ))}
+          </TextField>
         )}
 
         {/* The button is offered whenever there is something to download.

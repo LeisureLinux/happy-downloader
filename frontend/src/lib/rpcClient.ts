@@ -147,6 +147,18 @@ export class RPCClient {
     })
   }
 
+  // Start a recording that was stopped on purpose.
+  //
+  // Not a retry: nothing failed, and the files already written are kept. The
+  // same row runs again from the live edge, writing a new file for the new
+  // segment.
+  public startRecording(id: string) {
+    return this.sendHTTP({
+      method: 'Service.StartRecording',
+      params: [id],
+    })
+  }
+
   public clear(id: string) {
     return this.sendHTTP({
       method: 'Service.Clear',
@@ -187,12 +199,13 @@ export class RPCClient {
   //
   // The minutes are how long the recording should run. A livestream does not
   // end, so without a length the recording went on until somebody noticed.
-  public execLivestream(url: string, recordMinutes = 0) {
+  public execLivestream(url: string, recordMinutes = 0, pathOverride = '') {
     return this.sendHTTP({
       method: 'Service.ExecLivestream',
       params: [{
         URL: url,
         RecordMinutes: recordMinutes,
+        Path: pathOverride,
       }]
     })
   }

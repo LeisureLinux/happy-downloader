@@ -72,7 +72,7 @@ func (m *Monitor) Schedule() {
 // The minutes are how long the recording should run. Zero means until it is
 // stopped.
 func (m *Monitor) Add(url string, minutes int) {
-	m.AddFrom(url, minutes, "")
+	m.AddFrom(url, minutes, "", "")
 }
 
 // AddFrom starts watching a stream, recording who asked for it.
@@ -81,11 +81,12 @@ func (m *Monitor) Add(url string, minutes int) {
 // the download log can say which machine asked for the recording. It is
 // resolved once, at the request, because a recording outlives the request
 // that started it by hours.
-func (m *Monitor) AddFrom(url string, minutes int, fromIP string) {
+func (m *Monitor) AddFrom(url string, minutes int, fromIP, dir string) {
 	ls := New(url, m.done, m.mq, m.store)
 
 	ls.SetRecordMinutes(minutes)
 	ls.SetFromIP(fromIP)
+	ls.SetOutputPath(dir)
 
 	go ls.Start()
 

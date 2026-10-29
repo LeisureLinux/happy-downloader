@@ -83,3 +83,15 @@ func (d *DownloaderBase) Complete() {
 	defer d.mutex.Unlock()
 	d.Completed = true
 }
+
+// Reopen clears the finished mark, so the download can run again.
+//
+// It exists for the one case that is not a retry: a recording that was
+// stopped on purpose, which the operator wants to start again on the same
+// row. The files it already produced are kept — they are in the download
+// directory and in the source index, and nothing here touches them.
+func (d *DownloaderBase) Reopen() {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.Completed = false
+}

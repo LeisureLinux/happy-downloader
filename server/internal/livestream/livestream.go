@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/pipes"
@@ -42,6 +43,9 @@ type LiveStream struct {
 	// recordMinutes is how long the recording should run.
 	recordMinutes int
 
+	// outputPath is the directory the recording was asked to go in.
+	outputPath string
+
 	// fromIP is the address the stream was asked for from. It is handed to
 	// the download the monitor publishes, which is the one that ends up in
 	// the download log.
@@ -68,6 +72,16 @@ type LiveStream struct {
 	// reported — and one that was only being watched for is forgotten,
 	// because there is nothing left of it.
 	published bool
+}
+
+// SetOutputPath records the directory the recording was asked to go in.
+//
+// It is handed to the download the monitor publishes, the same way the
+// address is: the request is long gone by the time the recording starts.
+func (l *LiveStream) SetOutputPath(dir string) {
+	l.mu.Lock()
+	l.outputPath = dir
+	l.mu.Unlock()
 }
 
 // SetFromIP records the address the stream was asked for from.
@@ -158,6 +172,7 @@ func (l *LiveStream) Start() error {
 
 	l.mu.Lock()
 	d.SetFromIP(l.fromIP)
+	d.SetOutput(internal.DownloadOutput{Path: l.outputPath})
 	l.mu.Unlock()
 
 	l.store.Set(d)

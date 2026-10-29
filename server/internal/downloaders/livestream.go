@@ -310,6 +310,26 @@ func (l *LiveStreamDownloader) Start() error {
 		return nil
 	}
 
+	// Stopped before anything arrived is not a finished recording.
+	//
+	// It used to be reported as one, because "stopped on purpose" was taken
+	// to mean "succeeded". The row then said completed with no file and a
+	// path pointing into the temporary directory — a recording that looks
+	// fine and does not exist.
+	if l.stopped {
+		slog.Warn("the recording was stopped before anything was written",
+			slog.String("id", l.Id),
+			slog.String("url", l.URL),
+		)
+
+		l.progress.Status = internal.StatusErrored
+		l.SetFailureReason("stopped before anything was recorded")
+		l.output = internal.DownloadOutput{}
+		signalFinished(l)
+
+		return nil
+	}
+
 	if waitErr != nil {
 		slog.Error("the recording failed", slog.String("id", l.Id), slog.Any("err", waitErr))
 		l.progress.Status = internal.StatusErrored
@@ -422,6 +442,24 @@ func (l *LiveStreamDownloader) Status() internal.ProcessSnapshot {
 		FromIP:   l.FromIP,
 		Output:   l.output,
 	}
+}
+
+// PrepareRestart makes the recording ready to run again.
+//
+// A recording that was stopped has finished, and starting it again is a new
+// segment of the same live stream: the process starts from the live edge, so
+// the file that follows is a different file. What is reset here is the state
+// that says this attempt is over; what is not reset is anything about the
+// files already written.
+func (l *LiveStreamDownloader) PrepareRestart() {
+	l.stopped = false
+
+	// The directory the request asked for is kept: the next segment belongs
+	// beside the last one. Only the file that was written is cleared, because
+	// the new segment writes a different file.
+	l.output = internal.DownloadOutput{Path: l.output.Path}
+	l.Reopen()
+	l.SetProgress(internal.DownloadProgress{Status: internal.StatusPending})
 }
 
 // recordedBytes is the size of the file the recording was written to, or zero

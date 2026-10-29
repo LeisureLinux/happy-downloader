@@ -2,6 +2,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadDoneIcon from '@mui/icons-material/DownloadDone'
 import ReplayIcon from '@mui/icons-material/Replay'
 import PauseIcon from '@mui/icons-material/Pause'
+import StopCircleIcon from '@mui/icons-material/StopCircle'
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import {
   Box,
@@ -21,14 +23,16 @@ import {
   Tooltip,
   Typography
 } from "@mui/material"
-import { forwardRef, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import { TableComponents, TableVirtuoso } from 'react-virtuoso'
 import { activeDownloadsState } from '../atoms/downloads'
 import { serverURL } from '../atoms/settings'
 import { useRPC } from '../hooks/useRPC'
+import { useNavigate } from 'react-router-dom'
 import { ProcessStatus, RPCResult } from '../types'
 import { base64URLEncode, formatSize, formatSpeedMiB } from "../utils"
 import { useI18n } from '../hooks/useI18n'
+import { useToast } from '../hooks/toast'
 import { useAtomValue } from 'jotai'
 
 const columns = [
@@ -137,6 +141,8 @@ const DownloadsTableView: React.FC = () => {
   const serverAddr = useAtomValue(serverURL)
   const { client } = useRPC()
   const { i18n } = useI18n()
+  const { pushMessage } = useToast()
+  const navigate = useNavigate()
 
   // This is a queue, not a history. A download that finished is a file, and
   // files belong in the browser; leaving them here meant the list grew without
@@ -200,6 +206,17 @@ const DownloadsTableView: React.FC = () => {
     r.output.fileSize && r.output.fileSize > 0 ? r.output.fileSize : 0
 
 
+  // joinedAt is when the row appeared, as far as the server has said.
+  const joinedAt = (r: RPCResult): string => {
+    const raw = r.info.created_at
+    if (!raw) return '—'
+
+    const at = new Date(raw)
+    if (Number.isNaN(at.getTime()) || at.getFullYear() < 1970) return '—'
+
+    return at.toLocaleString()
+  }
+
   const viewFile = (path: string) => {
     const encoded = base64URLEncode(path)
     window.open(`${serverAddr}/filebrowser/v/${encoded}`)
@@ -231,6 +248,55 @@ const DownloadsTableView: React.FC = () => {
   const isDone = (r: RPCResult) =>
     r.progress.process_status === ProcessStatus.COMPLETED
 
+
+  // A recording that finishes is news, and it finishes somewhere else: the
+  // row goes from 转码中 to 完成 and the file appears in the browser. Without a
+  // word about it the last thing a person saw was the row changing, and the
+  // file three clicks away.
+  //
+  // Only recordings this page watched run are announced, so opening the
+  // downloads page does not replay every recording that has ever finished.
+  const watched = useRef<Set<string>>(new Set())
+  const announced = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    // The unfiltered list: a finished row is dropped from what is shown, so
+    // watching that would never see the transition this is about.
+    for (const r of allDownloads) {
+      if (r.downloader_name !== 'livestream') continue
+
+      if (
+        r.progress.process_status === ProcessStatus.LIVESTREAM ||
+        r.progress.process_status === ProcessStatus.REMUXING ||
+        r.progress.process_status === ProcessStatus.PENDING
+      ) {
+        watched.current.add(r.id)
+        continue
+      }
+
+      const finished =
+        r.progress.process_status === ProcessStatus.COMPLETED &&
+        fileOnDisk(r)
+
+      if (!finished || !watched.current.has(r.id) || announced.current.has(r.id)) {
+        continue
+      }
+
+      announced.current.add(r.id)
+
+      pushMessage(
+        `${i18n.t('recordingReady')}: ${r.output.savedFilePath.split('/').pop() ?? ''}`,
+        'success',
+        {
+          // Long enough to read and to press, unlike the two seconds an
+          // acknowledgement gets.
+          durationMs: 12000,
+          actionLabel: i18n.t('goToFiles'),
+          onAction: () => navigate('/filebrowser'),
+        },
+      )
+    }
+  }, [allDownloads, i18n, pushMessage, navigate])
 
   function rowContent(_index: number, download: RPCResult) {
     const done = isDone(download)
@@ -305,11 +371,63 @@ const DownloadsTableView: React.FC = () => {
           />
         </TableCell>
         <TableCell align="right">
-          {new Date(download.info.created_at).toLocaleString()}
+          {/* A row shows from the moment it is queued, and created_at comes
+              with the metadata — so for the first few seconds there is no
+              date. Rendering the zero value gave "1/1/1 08:05:43", which
+              looks like a download from the year one rather than one that
+              has just been asked for. */}
+          {joinedAt(download)}
         </TableCell>
         <TableCell align="right">
           <ButtonGroup size="small">
-            {download.progress.process_status === ProcessStatus.ERRORED ? (
+            {download.downloader_name === 'livestream' ? (
+              <>
+                {/* A recording is not a download: it has one toggle and one
+                    delete.
+                    
+                    The toggle is 停止录制 while it runs and 开始录制 when it
+                    has been stopped. Stopping writes the mp4 — it is not a
+                    pause, because a live stream has no resume: starting again
+                    picks up from the live edge and writes a new file, and the
+                    file already written is kept.
+                    
+                    Delete abandons this task. It does not touch the files
+                    already recorded: they are finished recordings, sitting in
+                    the download directory. */}
+                {download.progress.process_status === ProcessStatus.LIVESTREAM ? (
+                  <Tooltip title={i18n.t('stopRecording')}>
+                    <IconButton size="small" onClick={() => client.pause(download.id)}>
+                      <StopCircleIcon fontSize="small" sx={{ color: 'error.main' }} />
+                    </IconButton>
+                  </Tooltip>
+                ) : (
+                  <Tooltip title={i18n.t('startRecording')}>
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      disabled={download.progress.process_status === ProcessStatus.REMUXING}
+                      onClick={() => client.startRecording(download.id)}
+                    >
+                      <FiberManualRecordIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+
+                <Tooltip title={i18n.t('removeFromQueue')}>
+                  <IconButton size="small" onClick={() => client.clear(download.id)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+
+                {fileOnDisk(download) && (
+                  <Tooltip title={i18n.t('playSelected')}>
+                    <IconButton size="small" onClick={() => viewFile(download.output.savedFilePath)}>
+                      <PlayArrowIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </>
+            ) : download.progress.process_status === ProcessStatus.ERRORED ? (
               <>
                 {/* 失败的行留着是为了还能重来，所以第一个按钮必须是"重来"，
                     而不是"播放"——队列里没有可播放的东西。 */}
@@ -322,20 +440,6 @@ const DownloadsTableView: React.FC = () => {
                   <IconButton size="small" onClick={() => client.clear(download.id)}>
                     <DeleteIcon fontSize="small" />
                   </IconButton>
-                </Tooltip>
-              </>
-            ) : download.progress.process_status === ProcessStatus.REMUXING ? (
-              <>
-                {/* The file is being written and there is nothing to stop:
-                    the bytes are already recorded. Saying so is the point —
-                    the row used to vanish here, and the file was not in the
-                    browser yet either. */}
-                <Tooltip title={i18n.t('statusRemuxing')}>
-                  <span>
-                    <IconButton size="small" disabled>
-                      <PauseIcon fontSize="small" />
-                    </IconButton>
-                  </span>
                 </Tooltip>
               </>
             ) : download.progress.process_status === ProcessStatus.PAUSED ? (
