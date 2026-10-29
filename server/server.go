@@ -212,6 +212,20 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	go lm.Schedule()
 	go lm.Restore()
 
+	// A recording leaves the queue when it is over. Nothing else announces
+	// that, because a recording is written from the media stream rather than
+	// by yt-dlp's own postprocessing — so the hook that would have said so
+	// was never called, and every finished recording stayed in the queue for
+	// ever.
+	//
+	// The monitor is told as well, because it is the one the footer's stop
+	// button is drawn from. A finished recording cannot be stopped, so the
+	// footer said a livestream was running long after it was over.
+	downloaders.SetFinishedRecorder(func(d downloaders.Downloader) {
+		mdb.Delete(d.GetId())
+		lm.Forget(d.GetUrl())
+	})
+
 	tm := twitch.NewMonitor(
 		twitch.NewAuthenticationManager(
 			config.Instance().Twitch.ClientId,

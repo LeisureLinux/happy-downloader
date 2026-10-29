@@ -76,24 +76,6 @@ func (j *JSONLogConsumer) GetShortId(id string) string {
 	return strings.Split(id, "-")[0]
 }
 
-//TODO: split in different files
-
-type FFMpegLogConsumer struct{}
-
-func NewFFMpegLogConsumer() LogConsumer {
-	return &JSONLogConsumer{}
-}
-
-func (f *FFMpegLogConsumer) GetName() string { return "ffmpeg-log-consumer" }
-
-func (f *FFMpegLogConsumer) ParseLogEntry(entry []byte, d Downloader) {
-	slog.Info("ffmpeg output",
-		slog.String("id", d.GetId()),
-		slog.String("url", d.GetUrl()),
-		slog.String("output", string(entry)),
-	)
-}
-
 // sourceRecorder is notified when a file is written, so the source index can
 // remember where the file came from.
 //
@@ -119,4 +101,32 @@ func RememberSource(d Downloader, path string) {
 	}
 
 	sourceRecorder(d, path)
+}
+
+// finishedRecorder is notified when a recording is over.
+//
+// It is a function rather than an interface so that this package does not
+// depend on the store: the server sets it at startup, and the tests that do
+// not care about it leave it unset.
+var finishedRecorder func(d Downloader)
+
+// SetFinishedRecorder installs the callback that is told when a recording
+// ends.
+//
+// A recording is the only download that leaves the queue by itself. Every
+// other download stays in the list until the file browser has it. A
+// recording used to stay for ever, because nothing announced that it was
+// over: it was written from the media stream rather than by yt-dlp's own
+// postprocessing, so the hook that would have said so was never called.
+func SetFinishedRecorder(fn func(d Downloader)) {
+	finishedRecorder = fn
+}
+
+// signalFinished tells whoever is listening that a recording is over.
+func signalFinished(d Downloader) {
+	if finishedRecorder == nil {
+		return
+	}
+
+	finishedRecorder(d)
 }

@@ -70,6 +70,8 @@ keys:
   savedTemplates: Sparade mallar
   logsTitle: 'Logg'
   awaitingLogs: 'Väntar på loggen...'
+  pauseLogs: 'Pausa loggen'
+  resumeLogs: 'Fortsätt loggen'
   accentSelect: 'Accentfärg'
   generalDownloadSettings: 'Allmänna nedladdningsinställningar'
   noFilesFound: 'Inga filer hittades'
@@ -178,6 +180,7 @@ keys:
   statusDownloading: 'Laddar ned'
   statusErrored: 'Misslyckades'
   statusPaused: 'Pausad'
+  statusLivestream: 'Spelar in'
   statusMetadata: 'Läser metadata'
   statusPending: 'Förbereder'
   stopDownload: 'Stoppa'

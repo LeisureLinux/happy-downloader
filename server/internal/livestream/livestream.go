@@ -97,12 +97,14 @@ func (l *LiveStream) Start() error {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		l.status = errored
+		l.finish()
 		return err
 	}
 	defer stdout.Close()
 
 	if err := cmd.Start(); err != nil {
 		l.status = errored
+		l.finish()
 		return err
 	}
 
@@ -118,7 +120,6 @@ func (l *LiveStream) Start() error {
 
 	// Set the job as completed and notify the parent the completion.
 	l.status = completed
-	l.done <- l
 
 	// Send the started livestream to the message queue! :D
 
@@ -138,7 +139,33 @@ func (l *LiveStream) Start() error {
 	l.published = true
 	l.mu.Unlock()
 
+	// The completion is signalled last, and only once the recording has
+	// been handed to the queue.
+	//
+	// It used to be signalled first, which was a race: the monitor reads
+	// `published` when it takes the stream off the channel, and it always
+	// read it as false — so it forgot a stream that had just become a
+	// recording. The recording then ran with nothing able to stop it, and
+	// the footer kept saying the stream was live long after it was over.
+	l.finish()
+
 	return nil
+}
+
+// finish tells the monitor that this stream is over.
+//
+// It is safe to call more than once, and it never blocks: the monitor reads
+// the channel in a loop, but a stream that failed to start has to be
+// signalled from a path that cannot wait for it.
+func (l *LiveStream) finish() {
+	select {
+	case l.done <- l:
+	default:
+		// The monitor is busy with another stream. The signal would be
+		// dropped, and the stream would stay in the list — which is what
+		// this is meant to prevent.
+		go func() { l.done <- l }()
+	}
 }
 
 func (l *LiveStream) monitorStartTime(r io.Reader) {

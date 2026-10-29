@@ -67,6 +67,8 @@ keys:
   savedTemplates: Сохраненные шаблоны
   logsTitle: 'Журнал'
   awaitingLogs: 'Ожидание журнала...'
+  pauseLogs: 'Приостановить журнал'
+  resumeLogs: 'Продолжить журнал'
   accentSelect: 'Акцент'
   urlBase: 'Базовый URL для обратного прокси (подкаталог), по умолчанию пусто'
   generalDownloadSettings: 'Общие настройки загрузки'
@@ -178,6 +180,7 @@ keys:
   statusDownloading: 'Загрузка'
   statusErrored: 'Ошибка'
   statusPaused: 'Приостановлено'
+  statusLivestream: 'Запись'
   statusMetadata: 'Чтение метаданных'
   statusPending: 'Подготовка'
   stopDownload: 'Остановить'

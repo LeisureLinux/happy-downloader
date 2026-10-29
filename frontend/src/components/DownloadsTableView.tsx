@@ -70,19 +70,50 @@ const columns = [
   },
 ] as const
 
-function LinearProgressWithLabel(props: LinearProgressProps & { value: number }) {
+// The progress bar, with what it is showing beside it.
+//
+// A recording is shown as the time recorded rather than as a percentage: it
+// is a thing that grows for as long as the stream lasts, and "12:30" says
+// more about it than "42%".
+function LinearProgressWithLabel(
+  props: LinearProgressProps & { value: number; elapsed?: string }
+) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center' }}>
       <Box sx={{ width: '100%', mr: 1 }}>
         <LinearProgress variant="determinate" {...props} />
       </Box>
       <Box sx={{ minWidth: 35 }}>
-        <Typography variant="body2" color="text.secondary">{`${Math.round(
-          props.value,
-        )}%`}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {props.elapsed ?? `${Math.round(props.value)}%`}
+        </Typography>
       </Box>
     </Box>
   )
+}
+
+// How much of a recording that was asked for has been recorded.
+//
+// The recording reports the time it has run for, and the bar is measured
+// against the length that was asked for — which the recording may not reach,
+// because the stream might end first. The bar is then capped at the end of
+// what was asked for.
+const recordedFraction = (r: RPCResult): number => {
+  const elapsed = r.progress.percentage
+  const parts = elapsed.split(':').map(Number)
+
+  if (parts.length !== 3 || parts.some(p => Number.isNaN(p))) {
+    return 0
+  }
+
+  const seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]
+  const total = r.duration
+
+  if (!total || total <= 0) {
+    return 0
+  }
+
+  return Math.min(100, (seconds * 100) / total)
 }
 
 const VirtuosoTableComponents: TableComponents<RPCResult> = {
@@ -138,6 +169,11 @@ const DownloadsTableView: React.FC = () => {
         return i18n.t('statusErrored')
       case ProcessStatus.PAUSED:
         return i18n.t('statusPaused')
+      case ProcessStatus.LIVESTREAM:
+        // A recording has no percentage to speak of — it is as long as the
+        // stream lasts. What it has is how much has been recorded, so that
+        // is what is said.
+        return i18n.t('statusLivestream')
       default:
         return ''
     }
@@ -237,8 +273,29 @@ const DownloadsTableView: React.FC = () => {
           </Typography>
           <LinearProgressWithLabel
             sx={{ height: '16px', mt: 0.5 }}
-            value={done ? 100 : Number(download.progress.percentage.replace('%', '') || 0)}
-            variant={download.progress.process_status === 0 ? 'indeterminate' : 'determinate'}
+            elapsed={
+              download.progress.process_status === ProcessStatus.LIVESTREAM
+                ? download.progress.percentage
+                : undefined
+            }
+            value={
+              done
+                ? 100
+                : download.progress.process_status === ProcessStatus.LIVESTREAM
+                  ? recordedFraction(download)
+                  : Number(download.progress.percentage.replace('%', '') || 0)
+            }
+            variant={
+              // A recording that has not been asked for a length has no
+              // percentage to show, so the bar moves instead of sitting
+              // at zero.
+              download.progress.process_status === ProcessStatus.LIVESTREAM &&
+              !download.progress.percentage
+                ? 'indeterminate'
+                : download.progress.process_status === 0
+                  ? 'indeterminate'
+                  : 'determinate'
+            }
             color={'primary'}
           />
         </TableCell>

@@ -104,6 +104,8 @@ keys:
   savedTemplates: Saved templates
   logsTitle: 'Logs'
   awaitingLogs: 'Awaiting logs...'
+  pauseLogs: 'Pause logs'
+  resumeLogs: 'Resume logs'
   accentSelect: 'Accent'
   generalDownloadSettings: 'General Download Settings'
   reverseProxyAnchor: 'Reverse Proxy'
@@ -140,6 +142,7 @@ keys:
   statusCompleted: 'Completed'
   statusErrored: 'Failed'
   statusPaused: 'Paused'
+  statusLivestream: 'Recording'
   downloadQueue: 'Download queue'
   queueHint: 'Anything unfinished stays here; finished files move to the file browser'
   queueEmpty: 'Nothing queued'

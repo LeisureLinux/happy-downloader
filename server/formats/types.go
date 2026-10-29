@@ -20,6 +20,17 @@ type Metadata struct {
 	// per-video judgement.
 	Subtitles         map[string]any `json:"subtitles"`
 	AutomaticCaptions map[string]any `json:"automatic_captions"`
+
+	// IsLive says whether the source is a livestream that is running now.
+	//
+	// yt-dlp works it out for every site it has an extractor for, so this
+	// does not depend on a list of hosts kept in the application: a site
+	// that starts being live tomorrow is handled without a change here.
+	//
+	// It is nil when the extractor does not say — most do not have the
+	// field at all — and nil means "not known to be live", which is the
+	// ordinary case for a video.
+	IsLive *bool `json:"is_live,omitempty"`
 }
 
 func (m *Metadata) IsPlaylist() bool {

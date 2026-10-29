@@ -44,6 +44,13 @@ const filenameAtom = atom('')
 // Deliberately not persisted: a probe in flight belongs to this tab, and
 // restoring a stuck spinner after a reload would be worse than starting over.
 const probingAtom = atom(false)
+// Whether the last probe failed.
+//
+// The probe is what says whether a link is a livestream and what formats it
+// offers. When it fails there is no metadata, and the whole panel used to
+// disappear with it — so a link that could not be probed could not be
+// downloaded either, even by the path that does not need the metadata.
+const probeFailedAtom = atom(false)
 
 // The download flow, inline on the page: paste a URL, see what the source
 // actually offers, choose what to keep, download.
@@ -66,6 +73,7 @@ const DownloadForm: React.FC = () => {
   const [asPlaylist, setAsPlaylist] = useAtom(playlistAtom)
   const [recordMinutes, setRecordMinutes] = useAtom(recordMinutesAtom)
   const [filename, setFilename] = useAtom(filenameAtom)
+  const [probeFailed, setProbeFailed] = useAtom(probeFailedAtom)
 
   // Elapsed seconds while probing. Twenty seconds of a disabled button and no
   // other change reads as a hang, and the fix is to show that time is passing.
@@ -100,8 +108,20 @@ const DownloadForm: React.FC = () => {
       }
 
       setMeta(result)
+      setProbeFailed(false)
     } catch (e) {
       pushMessage(String(e), 'error')
+
+      // The probe failing does not mean the download cannot work. A
+      // livestream that is not running now is the usual case: yt-dlp has
+      // no formats to offer, because there is nothing to offer — but the
+      // recording is what the user asked for, and the monitor waits for the
+      // stream to start.
+      //
+      // So the button stays, and the download goes down the ordinary path.
+      // If it was a livestream that is simply not live yet, the ordinary
+      // path will say so, and the livestream path can be used instead.
+      setProbeFailed(true)
     } finally {
       setProbing(false)
     }
@@ -125,10 +145,16 @@ const DownloadForm: React.FC = () => {
       // "preparing" forever, with no file and nothing to say what it was
       // doing. The monitor waits for the stream to start instead, and it can
       // be stopped.
-      if (isLivestreamURL(url)) {
+      //
+      // Whether it is a livestream is what yt-dlp says, from the metadata
+      // that was already fetched: a site that is live is live, whatever its
+      // address looks like.
+      if (isLivestreamURL(url, meta?.is_live)) {
         await client.execLivestream(url.trim(), recordMinutes)
         pushMessage(`${i18n.t('livestreamQueued')}: ${url.trim()}`, 'success')
         setUrl('')
+        setMeta(undefined)
+        setProbeFailed(false)
         return
       }
 
@@ -143,6 +169,7 @@ const DownloadForm: React.FC = () => {
       setUrl('')
       setMeta(undefined)
       setOptions(defaultOptions)
+      setProbeFailed(false)
     } catch (e) {
       pushMessage(String(e), 'error')
     }
@@ -151,6 +178,7 @@ const DownloadForm: React.FC = () => {
   const reset = () => {
     setMeta(undefined)
     setOptions(defaultOptions)
+    setProbeFailed(false)
   }
 
   return (
@@ -243,7 +271,7 @@ const DownloadForm: React.FC = () => {
 
         {/* 直播要录多久。直播不会结束，所以不问清楚就会一直录下去，
             直到有人想起来。 */}
-        {isLivestreamURL(url) && (
+        {isLivestreamURL(url, meta?.is_live) && (
           <TextField
             size="small"
             type="number"
@@ -292,14 +320,21 @@ const DownloadForm: React.FC = () => {
                 onChange={e => setFilename(e.target.value)}
               />
             )}
-
-            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-              <Button variant="contained" onClick={() => void start()}>
-                {i18n.t('startButton')}
-              </Button>
-              <Button onClick={reset}>{i18n.t('clearCompletedButton')}</Button>
-            </Stack>
           </Box>
+        )}
+
+        {/* The button is offered whenever there is something to download.
+            It used to sit inside the metadata panel, so a probe that failed
+            took the button with it — and a link that could not be probed
+            could not be downloaded either, even by the path that does not
+            need the metadata. */}
+        {(meta || probeFailed) && (
+          <Stack direction="row" spacing={1}>
+            <Button variant="contained" onClick={() => void start()}>
+              {i18n.t('startButton')}
+            </Button>
+            <Button onClick={reset}>{i18n.t('clearCompletedButton')}</Button>
+          </Stack>
         )}
       </Stack>
     </Paper>

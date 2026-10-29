@@ -70,6 +70,8 @@ keys:
   savedTemplates: Mentett sablonok
   logsTitle: 'Napló'
   awaitingLogs: 'Naplóra várakozás...'
+  pauseLogs: 'Napló szüneteltetése'
+  resumeLogs: 'Napló folytatása'
   accentSelect: 'Kiemelőszín'
   generalDownloadSettings: 'Általános letöltési beállítások'
   noFilesFound: 'Nincs találat'
@@ -178,6 +180,7 @@ keys:
   statusDownloading: 'Letöltés'
   statusErrored: 'Sikertelen'
   statusPaused: 'Szüneteltetve'
+  statusLivestream: 'Felvétel folyamatban'
   statusMetadata: 'Metaadatok olvasása'
   statusPending: 'Előkészítés'
   stopDownload: 'Leállítás'

@@ -104,6 +104,8 @@ keys:
   savedTemplates: 保存模板
   logsTitle: '日志'
   awaitingLogs: '正在等待日志…'
+  pauseLogs: '暂停日志滚动'
+  resumeLogs: '恢复日志滚动'
   accentSelect: '主题色'
   urlBase: 'URL 基础路径（用于反向代理子目录），留空表示不使用'
   generalDownloadSettings: '通用下载设置'
@@ -141,6 +143,7 @@ keys:
   statusCompleted: '已完成'
   statusErrored: '失败'
   statusPaused: '已暂停'
+  statusLivestream: '录制中'
   downloadQueue: '下载队列'
   queueHint: '还没下完的会留在这里，下完的会自动出现在文件浏览里'
   queueEmpty: '队列是空的'

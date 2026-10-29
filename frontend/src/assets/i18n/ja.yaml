@@ -68,6 +68,8 @@ keys:
   savedTemplates: 保存したテンプレート
   logsTitle: 'ログ'
   awaitingLogs: 'ログを待っています...'
+  pauseLogs: 'ログを一時停止'
+  resumeLogs: 'ログを再開'
   accentSelect: 'アクセントカラー'
   urlBase: 'リバースプロキシ（サブディレクトリ）用の URL ベース。既定では空です'
   generalDownloadSettings: '一般ダウンロード設定'
@@ -178,6 +180,7 @@ keys:
   statusDownloading: 'ダウンロード中'
   statusErrored: '失敗'
   statusPaused: '一時停止中'
+  statusLivestream: '録画中'
   statusMetadata: 'メタデータ取得中'
   statusPending: '準備中'
   stopDownload: '停止'

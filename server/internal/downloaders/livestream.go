@@ -230,17 +230,25 @@ func (l *LiveStreamDownloader) Start() error {
 	if l.stopped {
 		l.progress.Status = internal.StatusCompleted
 		l.Complete()
+		signalFinished(l)
 		return nil
 	}
 
 	if waitErr != nil {
 		slog.Error("the recording failed", slog.String("id", l.Id), slog.Any("err", waitErr))
 		l.progress.Status = internal.StatusErrored
+		// A recording that failed is over as well, and it has to leave the
+		// queue for the same reason a finished one does: the queue and the
+		// file browser have to agree on what exists. A failed recording
+		// produced no file, so there is nothing for the file browser to
+		// show.
+		signalFinished(l)
 		return waitErr
 	}
 
 	l.progress.Status = internal.StatusCompleted
 	l.Complete()
+	signalFinished(l)
 
 	return nil
 }
@@ -331,6 +339,10 @@ func (l *LiveStreamDownloader) Status() internal.ProcessSnapshot {
 		Info:           l.Metadata,
 		Progress:       l.progress,
 		DownloaderName: "livestream",
+		// How long the recording was asked to be, in seconds. The queue
+		// measures the bar against it, so without it a recording sat at
+		// zero no matter how long it had run.
+		Duration: float64(l.Duration) * 60,
 	}
 }
 

@@ -69,6 +69,8 @@ keys:
   savedTemplates: Gespeicherte Vorlage
   logsTitle: 'Protokoll'
   awaitingLogs: 'Warte auf Protokoll...'
+  pauseLogs: 'Protokoll anhalten'
+  resumeLogs: 'Protokoll fortsetzen'
   accentSelect: 'Akzentfarbe'
   urlBase: URL-Basis für Reverse-Proxy-Unterstützung (Unterverzeichnis), standardmäßig leer
   generalDownloadSettings: 'Allgemeine Download-Einstellungen'
@@ -178,6 +180,7 @@ keys:
   statusDownloading: 'Wird heruntergeladen'
   statusErrored: 'Fehlgeschlagen'
   statusPaused: 'Pausiert'
+  statusLivestream: 'Aufnahme läuft'
   statusMetadata: 'Metadaten lesen'
   statusPending: 'Vorbereitung'
   stopDownload: 'Stoppen'

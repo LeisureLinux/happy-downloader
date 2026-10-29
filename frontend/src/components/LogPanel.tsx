@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import PauseIcon from '@mui/icons-material/Pause'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import TerminalIcon from '@mui/icons-material/Terminal'
 import { serverURL } from '../atoms/settings'
 import { useI18n } from '../hooks/useI18n'
@@ -21,8 +23,21 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
 
   const [lines, setLines] = useState<string[]>([])
   const [connected, setConnected] = useState(false)
+  const [paused, setPaused] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
   const stickToTop = useRef(true)
+  // The paused flag is read inside the event handler, which is installed
+  // once. A ref keeps it current without making the stream reconnect — and
+  // reconnecting would send the buffered history again, which would show
+  // every line twice.
+  const pausedRef = useRef(false)
+  pausedRef.current = paused
+  // The lines that arrived while the panel was paused. They are kept out of
+  // the list until the reader resumes, because the list is rendered newest
+  // first: putting a line in at the top shifts everything below it, so the
+  // text the reader is looking at moves away even though nothing scrolled.
+  // Holding the lines back is what actually freezes the view.
+  const pendingRef = useRef<string[]>([])
 
   useEffect(() => {
     if (!open) return
@@ -35,6 +50,15 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
     es.addEventListener('log', event => {
       try {
         const msg: string = JSON.parse(event.data)
+
+        if (pausedRef.current) {
+          // Held back until the reader resumes. The count in the header
+          // still moves, so the reader can see that the log kept running.
+          pendingRef.current = [msg, ...pendingRef.current].slice(0, 500)
+          setPendingCount(pendingRef.current.length)
+          return
+        }
+
         setLines(prev => [msg, ...prev].slice(0, 500))
         if (stickToTop.current) boxRef.current?.scrollTo(0, 0)
       } catch {
@@ -47,6 +71,30 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
       setConnected(false)
     }
   }, [open, serverAddr])
+
+  const [pendingCount, setPendingCount] = useState(0)
+
+  // Resuming lets the held-back lines in. The view goes back to the newest
+  // line, because that is where the reader left the log.
+  const resume = () => {
+    const held = pendingRef.current
+    pendingRef.current = []
+    setPendingCount(0)
+    setPaused(false)
+    pausedRef.current = false
+
+    if (held.length > 0) {
+      setLines(prev => [...held, ...prev].slice(0, 500))
+    }
+
+    stickToTop.current = true
+    boxRef.current?.scrollTo(0, 0)
+  }
+
+  const pause = () => {
+    setPaused(true)
+    pausedRef.current = true
+  }
 
   if (!open) return null
 
@@ -89,7 +137,31 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
         />
         <Typography variant="caption" color="text.secondary">
           {lines.length}
+          {pendingCount > 0 && (
+            <Box component="span" sx={{ ml: 0.5, color: 'warning.main' }}>
+              (+{pendingCount})
+            </Box>
+          )}
         </Typography>
+        {/* 暂停滚动：日志跑得比人读得快，一直追着顶部看，什么也读不到。
+            暂停后新行不进入列表，列表就不会被顶动，正在读的那一行留在原地。 */}
+        <Tooltip title={paused ? i18n.t('resumeLogs') : i18n.t('pauseLogs')}>
+          <IconButton
+            size="small"
+            onClick={() => {
+              if (paused) {
+                resume()
+              } else {
+                pause()
+              }
+            }}
+            aria-label={paused ? i18n.t('resumeLogs') : i18n.t('pauseLogs')}
+          >
+            {paused
+              ? <PlayArrowIcon fontSize="small" />
+              : <PauseIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
         <Tooltip title={i18n.t('close')}>
           <IconButton size="small" onClick={onClose}>
             <CloseIcon fontSize="small" />
@@ -100,8 +172,12 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
       <Box
         ref={boxRef}
         onScroll={e => {
-          // Keep following only while the reader is at the newest end.
-          stickToTop.current = e.currentTarget.scrollTop <= 2
+          // Keep following only while the reader is at the newest end. While
+          // the panel is paused the reader is looking at something else on
+          // purpose, so the position is not a wish to follow.
+          if (!pausedRef.current) {
+            stickToTop.current = e.currentTarget.scrollTop <= 2
+          }
         }}
         sx={{
           flexGrow: 1,

@@ -70,6 +70,8 @@ keys:
   savedTemplates: Modelos salvos
   logsTitle: 'Log'
   awaitingLogs: 'Aguardando o log...'
+  pauseLogs: 'Pausar o log'
+  resumeLogs: 'Retomar o log'
   accentSelect: 'Cor de destaque'
   generalDownloadSettings: 'Configurações gerais de download'
   noFilesFound: 'Nenhum arquivo encontrado'
@@ -178,6 +180,7 @@ keys:
   statusDownloading: 'Baixando'
   statusErrored: 'Falhou'
   statusPaused: 'Pausado'
+  statusLivestream: 'Gravando'
   statusMetadata: 'Lendo metadados'
   statusPending: 'Preparando'
   stopDownload: 'Parar'

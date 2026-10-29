@@ -69,6 +69,8 @@ export type RPCResult = Readonly<{
   id: string
   progress: DownloadProgress
   info: DownloadInfo
+  /** seconds; how long the video is, known before a byte is transferred */
+  duration?: number
   output: {
     savedFilePath: string
     /** actual bytes on disk; 0 when the file is gone */
@@ -99,6 +101,14 @@ export type DLMetadata = {
   subtitles?: Record<string, unknown>
   /** generated caption tracks, keyed by language code (yt-dlp field name) */
   automatic_captions?: Record<string, unknown>
+  /**
+   * Whether the source is a livestream that is running now.
+   *
+   * yt-dlp works it out per site, so this does not depend on a list of hosts
+   * kept in the application. It is absent when the extractor does not say —
+   * most do not have the field — and absent means "not known to be live".
+   */
+  is_live?: boolean
 }
 
 export type DLFormat = {

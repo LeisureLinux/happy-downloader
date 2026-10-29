@@ -100,6 +100,33 @@ func (m *Monitor) Remove(url string) error {
 	return stream.Kill()
 }
 
+// Forget drops a stream that is over.
+//
+// A stream is in the monitor for as long as it can still be stopped, and
+// the stop button in the footer is drawn from that list. A recording that
+// has finished cannot be stopped any more, so the stream has to leave the
+// list then — otherwise the footer said a livestream was running long
+// after it was over.
+//
+// The stream is also dropped from the saved list, so that a restart does
+// not bring it back: it is over, and watching for it again would look
+// like it was about to start.
+func (m *Monitor) Forget(url string) {
+	m.mu.Lock()
+	_, ok := m.streams[url]
+	delete(m.streams, url)
+	m.mu.Unlock()
+
+	if !ok {
+		return
+	}
+
+	m.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucket)
+		return b.Delete([]byte(url))
+	})
+}
+
 func (m *Monitor) RemoveAll() error {
 	m.mu.Lock()
 	streams := make([]*LiveStream, 0, len(m.streams))
