@@ -91,11 +91,23 @@ func (l *LiveStreamDownloader) Start() error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	// stdout = media stream
-	media, err := cmd.StdoutPipe()
+	//
+	// The pipe is made here rather than with cmd.StdoutPipe, because
+	// cmd.Wait closes the pipes it opened — and it does so the moment the
+	// process exits, discarding whatever was still in the buffer and
+	// closing the read end under the copy that was reading it. The
+	// recording came out empty, and stopping it by hand lost everything
+	// that had been recorded.
+	//
+	// A pipe given to cmd.Stdout is left alone by cmd.Wait, so the copy
+	// reads to the end of the stream and the file is whole.
+	mediaReader, mediaWriter, err := os.Pipe()
 	if err != nil {
 		slog.Error("failed to get media stdout", slog.Any("err", err))
 		panic(err)
 	}
+
+	cmd.Stdout = mediaWriter
 
 	// stderr = log/progress
 	stderr, err := cmd.StderrPipe()
@@ -109,6 +121,11 @@ func (l *LiveStreamDownloader) Start() error {
 		panic(err)
 	}
 
+	// The write end is the child's now. Closing it here is what tells the
+	// copy that the stream has ended, once the child has gone.
+	mediaWriter.Close()
+	defer mediaReader.Close()
+
 	l.proc = cmd.Process
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -118,7 +135,7 @@ func (l *LiveStreamDownloader) Start() error {
 	}()
 
 	// build pipeline
-	reader := io.Reader(media)
+	reader := io.Reader(mediaReader)
 	for _, pipe := range l.pipes {
 		nr, err := pipe.Connect(reader)
 		if err != nil {
@@ -141,7 +158,20 @@ func (l *LiveStreamDownloader) Start() error {
 		// starts: the title arrives with the metadata, which is a moment
 		// after the stream begins, so a file named at the start was called
 		// "Twitch (live)" whatever the channel was.
+		//
+		// The copy is waited for before the process is waited for.
+		//
+		// Waiting for the process closes the pipe the media comes out of,
+		// and a copy that is still running when that happens gets nothing
+		// to read: the recording was empty, and stopping it by hand lost
+		// everything that had been recorded. The process is killed to end
+		// it, and the pipe is then read out to the end before the file is
+		// closed.
+		written := make(chan struct{})
+
 		go func() {
+			defer close(written)
+
 			raw, final := l.outputPath, ""
 			if raw == "" {
 				raw, final = l.recordingPath()
@@ -181,6 +211,17 @@ func (l *LiveStreamDownloader) Start() error {
 			RememberSource(l, final)
 
 			slog.Info("the recording was saved", slog.String("path", final))
+		}()
+
+		// The copy has to be finished before the recording is put into its
+		// container, and before the file is closed.
+		defer func() {
+			select {
+			case <-written:
+			case <-time.After(30 * time.Second):
+				slog.Error("the recording was not written in time",
+					slog.String("id", l.Id))
+			}
 		}()
 	}
 

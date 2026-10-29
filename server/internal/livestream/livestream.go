@@ -3,6 +3,7 @@ package livestream
 import (
 	"bufio"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strconv"
@@ -41,6 +42,18 @@ type LiveStream struct {
 	// recordMinutes is how long the recording should run.
 	recordMinutes int
 
+	// recorder is the download that is doing the recording, once the stream
+	// has been handed to the queue.
+	//
+	// It is what the stop button has to reach. The process this struct
+	// holds is the one that watches for the stream to start, and that one
+	// is finished long before the recording is: the recording is a
+	// separate yt-dlp process, running for as long as the stream lasts.
+	// Killing the watcher therefore stopped nothing at all — the button
+	// said the recording had stopped while it carried on.
+	recorder downloaders.Downloader
+	mu       sync.Mutex
+
 	// published says whether the stream has been handed to the queue, which
 	// is the point where it stopped being watched for and started being
 	// downloaded.
@@ -50,7 +63,6 @@ type LiveStream struct {
 	// reported — and one that was only being watched for is forgotten,
 	// because there is nothing left of it.
 	published bool
-	mu        sync.Mutex
 }
 
 // SetRecordMinutes says how long the recording should run.
@@ -137,6 +149,10 @@ func (l *LiveStream) Start() error {
 
 	l.mu.Lock()
 	l.published = true
+	// The recorder is kept so that the stop button can reach it. It is set
+	// before the stream is announced as published, so that a stop arriving
+	// right away finds the recorder rather than nothing.
+	l.recorder = d
 	l.mu.Unlock()
 
 	// The completion is signalled last, and only once the recording has
@@ -226,15 +242,36 @@ func (l *LiveStream) WaitTime() <-chan time.Duration {
 
 // Kills a livestream process and signal its completition
 func (l *LiveStream) Kill() error {
-	// The signal is sent after the process is killed, so that whoever
-	// receives it sees a stream that is really over. The channel is
-	// unbuffered, so sending first would block until the monitor took it —
-	// and the monitor would then look at a stream that was still running.
+	// The recording is what has to stop.
+	//
+	// The process this struct holds is the watcher — the one that waits for
+	// the stream to start — and it is finished long before the recording
+	// is. Killing it therefore stopped nothing: the button said the
+	// recording had stopped while it carried on, and the file kept growing.
+	l.mu.Lock()
+	recorder := l.recorder
+	l.mu.Unlock()
+
+	if recorder != nil {
+		if err := recorder.Stop(); err != nil {
+			slog.Debug("could not stop the recording",
+				slog.String("url", l.url),
+				slog.Any("err", err),
+			)
+		}
+	}
+
+	// The watcher is killed too, for the case where the stream has not
+	// started yet and there is no recording to stop.
 	if l.proc != nil {
 		l.proc.Kill()
 	}
 
-	l.done <- l
+	// The signal is sent after the process is killed, so that whoever
+	// receives it sees a stream that is really over. The channel is
+	// unbuffered, so sending first would block until the monitor took it —
+	// and the monitor would then look at a stream that was still running.
+	l.finish()
 
 	return nil
 }

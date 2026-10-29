@@ -36,10 +36,12 @@ const optionsAtom = atom<DownloadOptions>(defaultOptions)
 const playlistAtom = atom(false)
 // How long a livestream should be recorded, in minutes.
 //
-// A livestream does not end, so "download it" is a question without an
-// answer unless a length is given: the recording went on until somebody
-// noticed. Zero means until it is stopped by hand.
-const recordMinutesAtom = atom(60)
+// A livestream does not end, so the recording is stopped by hand: the
+// footer has a stop button for it, and that is what the length is for —
+// a limit for the case where nobody is watching.
+//
+// Zero means until the stop button is pressed.
+const recordMinutesAtom = atom(0)
 const filenameAtom = atom('')
 // Deliberately not persisted: a probe in flight belongs to this tab, and
 // restoring a stuck spinner after a reload would be worse than starting over.
