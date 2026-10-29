@@ -1,11 +1,7 @@
 package filebrowser
 
 import (
-	"context"
-	"encoding/json"
-	"os/exec"
 	"strings"
-	"time"
 )
 
 // Finding a file's source from the metadata inside it.
@@ -24,33 +20,19 @@ import (
 // that is no longer there, and the file itself still knows.
 
 // SourceFromMetadata reads the source URL out of a media file.
+//
+// It is a separate call for the callers that have no probe of the file to
+// hand — the caption downloader, for one — and it reads the file again. The
+// file browser does not use it: it reads the source out of the same probe
+// that gives it the length and the codecs, because spawning ffprobe twice
+// for every file in a listing is what made the browser take fifteen seconds.
+//
+// The answer is cached with the rest of the probe, so the second caller does
+// not pay for it again either.
 func SourceFromMetadata(path string) (string, bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	probed := mediaInfoFor(path)
 
-	cmd := exec.CommandContext(ctx, "ffprobe",
-		"-v", "error",
-		"-show_entries", "format_tags=comment,description,title",
-		"-of", "json",
-		path,
-	)
-
-	out, err := cmd.Output()
-	if err != nil {
-		return "", false
-	}
-
-	var parsed struct {
-		Format struct {
-			Tags map[string]string `json:"tags"`
-		} `json:"format"`
-	}
-
-	if err := json.Unmarshal(out, &parsed); err != nil {
-		return "", false
-	}
-
-	return sourceFromTags(parsed.Format.Tags)
+	return probed.source, probed.source != ""
 }
 
 // sourceFromTags picks the source URL out of a tag set.

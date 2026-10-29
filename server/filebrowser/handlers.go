@@ -193,7 +193,12 @@ func walkDir(root string) (*[]DirectoryEntry, error) {
 			// the fallback: a file that was moved before the index learned
 			// to move has a record naming a path that is no longer there,
 			// and the file itself still carries the URL yt-dlp wrote into it.
-			url, ok := sourceOf(path)
+			//
+			// The metadata has already been read for the length and the
+			// codecs, so the URL is taken from there rather than from a
+			// second ffprobe — spawning one for every file in the listing
+			// is what made the file browser take fifteen seconds.
+			url, ok := sourceOf(path, info)
 			if ok {
 				entry.SourceURL = url
 				entry.SourceSite = SiteOf(url)
@@ -626,16 +631,21 @@ func moveSource(from, to string) {
 // the index learned to move: their record names a path that is no longer
 // there, and the file still carries the URL inside it.
 //
-// The fallback costs a process spawn, so it is not used for every file — only
-// for the ones the index does not know.
-func sourceOf(path string) (string, bool) {
+// The metadata comes from the ffprobe run that read the length and the
+// codecs, so it is free as well. It used to be a second ffprobe of its own,
+// which cost a process spawn for every file in the listing.
+func sourceOf(path string, info mediaInfo) (string, bool) {
 	if sourceLookup != nil {
 		if url, ok := sourceLookup(path); ok {
 			return url, true
 		}
 	}
 
-	return SourceFromMetadata(path)
+	if info.source != "" {
+		return info.source, true
+	}
+
+	return "", false
 }
 
 func forgetSource(path string) {

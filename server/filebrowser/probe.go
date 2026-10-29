@@ -31,6 +31,12 @@ type mediaInfo struct {
 	videoCodec string
 	// audioCodec is ffprobe's name for the audio codec, e.g. "opus" or "aac"
 	audioCodec string
+	// source is the page the file came from, read out of the container's
+	// tags. It is read by the same ffprobe call as the length and the
+	// codecs, because a second call costs another process spawn — and
+	// spawning ffprobe twice for every file is what made the file browser
+	// take fifteen seconds to list a folder of seventeen files.
+	source string
 }
 
 type probeCacheEntry struct {
@@ -90,6 +96,7 @@ func mediaInfoFor(path string) mediaInfo {
 			duration:   cached.Duration,
 			videoCodec: cached.VideoCodec,
 			audioCodec: cached.AudioCodec,
+			source:     cached.Source,
 		}
 
 		probeMu.Lock()
@@ -132,7 +139,11 @@ func runFFprobe(path string) mediaInfo {
 		// some containers carry — from a real video stream. A file with a
 		// cover image reports two video streams, and the first one is the
 		// artwork.
-		"-show_entries", "stream=codec_type,codec_name,disposition:format=duration",
+		//
+		// The tags are read in the same call. They are where the source
+		// URL is, and asking for them in a second ffprobe cost another
+		// process spawn for every file in the listing.
+		"-show_entries", "stream=codec_type,codec_name,disposition:format=duration:format_tags=comment,description,title",
 		"-of", "json",
 		path,
 	)
@@ -152,6 +163,7 @@ func runFFprobe(path string) mediaInfo {
 		} `json:"streams"`
 		Format struct {
 			Duration string `json:"duration"`
+			Tags     map[string]string `json:"tags"`
 		} `json:"format"`
 	}
 
@@ -180,6 +192,12 @@ func runFFprobe(path string) mediaInfo {
 	seconds, _ := strconv.ParseFloat(strings.TrimSpace(parsed.Format.Duration), 64)
 	if seconds > 0 {
 		info.duration = seconds
+	}
+
+	// The source is in the tags, and it is read here rather than by a
+	// second ffprobe.
+	if url, ok := sourceFromTags(parsed.Format.Tags); ok {
+		info.source = url
 	}
 
 	return info

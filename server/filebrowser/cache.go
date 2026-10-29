@@ -36,6 +36,11 @@ type cachedProbe struct {
 	// VideoCodec and AudioCodec are ffprobe's names.
 	VideoCodec string `json:"videoCodec,omitempty"`
 	AudioCodec string `json:"audioCodec,omitempty"`
+	// Source is the page the file came from, read out of the container's
+	// tags. It is remembered with the rest, because reading it costs a
+	// process spawn: the file browser listed a folder of seventeen files in
+	// fifteen seconds because every one of them was read twice.
+	Source string `json:"source,omitempty"`
 	// ModTime and Size identify the file the answers belong to.
 	ModTime time.Time `json:"modTime"`
 	Size    int64     `json:"size"`
@@ -168,6 +173,7 @@ func rememberProbe(path string, modTime time.Time, size int64, info mediaInfo) {
 		Duration:   info.duration,
 		VideoCodec: info.videoCodec,
 		AudioCodec: info.audioCodec,
+		Source:     info.source,
 		ModTime:    modTime,
 		Size:       size,
 	}
