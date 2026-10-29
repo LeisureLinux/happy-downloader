@@ -35,7 +35,7 @@ import { useRPC } from '../hooks/useRPC'
 import { useI18n } from '../hooks/useI18n'
 import { ffetch } from '../lib/httpClient'
 import { DirectoryEntry, ProcessStatus } from '../types'
-import { base64URLEncode, formatDuration, formatSize } from '../utils'
+import { base64URLEncode, formatDateTime, formatDuration, formatSize } from '../utils'
 import { useAtomValue } from 'jotai'
 import { useTheme } from '@mui/material/styles'
 import { activeDownloadsState } from '../atoms/downloads'
@@ -444,7 +444,7 @@ export default function Filebrowser() {
                       {i18n.t('folderFileCount').replace('{count}', String(f.fileCount ?? 0))}
                     </TableCell>
                     <TableCell align="right">
-                      {f.folderModTime ? new Date(f.folderModTime).toLocaleString() : '—'}
+                      {formatDateTime(f.folderModTime)}
                     </TableCell>
                     <TableCell align="right">{formatSize(f.size)}</TableCell>
 
@@ -547,7 +547,7 @@ export default function Filebrowser() {
                     </TableCell>
                     <TableCell align="right">{formatDuration(f.duration) || '—'}</TableCell>
                     <TableCell align="right">
-                      {f.modTime ? new Date(f.modTime).toLocaleString() : '—'}
+                      {formatDateTime(f.modTime)}
                     </TableCell>
                     <TableCell align="right">{formatSize(f.size)}</TableCell>
                     {/* 宽屏时操作在这一列；窄屏时它们在名字旁边，

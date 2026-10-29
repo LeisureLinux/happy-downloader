@@ -30,7 +30,7 @@ import { serverURL } from '../atoms/settings'
 import { useRPC } from '../hooks/useRPC'
 import { useNavigate } from 'react-router-dom'
 import { ProcessStatus, RPCResult } from '../types'
-import { base64URLEncode, formatSize, formatSpeedMiB } from "../utils"
+import { base64URLEncode, formatDateTime, formatSize, formatSpeedMiB } from "../utils"
 import { useI18n } from '../hooks/useI18n'
 import { useToast } from '../hooks/toast'
 import { useAtomValue } from 'jotai'
@@ -212,17 +212,6 @@ const DownloadsTableView: React.FC = () => {
     r.output.fileSize && r.output.fileSize > 0 ? r.output.fileSize : 0
 
 
-  // joinedAt is when the row appeared, as far as the server has said.
-  const joinedAt = (r: RPCResult): string => {
-    const raw = r.info.created_at
-    if (!raw) return '—'
-
-    const at = new Date(raw)
-    if (Number.isNaN(at.getTime()) || at.getFullYear() < 1970) return '—'
-
-    return at.toLocaleString()
-  }
-
   const viewFile = (path: string) => {
     const encoded = base64URLEncode(path)
     window.open(`${serverAddr}/filebrowser/v/${encoded}`)
@@ -385,7 +374,7 @@ const DownloadsTableView: React.FC = () => {
               date. Rendering the zero value gave "1/1/1 08:05:43", which
               looks like a download from the year one rather than one that
               has just been asked for. */}
-          {joinedAt(download)}
+          {formatDateTime(download.info.created_at)}
         </TableCell>
         <TableCell align="right">
           <ButtonGroup size="small">

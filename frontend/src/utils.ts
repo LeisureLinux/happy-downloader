@@ -54,14 +54,43 @@ export function formatSize(bytes: number): string {
 // is replaced every ten minutes, so the second it happened on is not
 // information.
 export function formatTimestamp(iso?: string): string {
-  if (!iso) return '—'
-
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  const d = parseTimestamp(iso)
+  if (!d) return '—'
 
   const p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
     `${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+// A time and a date, in the reader's own format.
+//
+// Same rule as formatTimestamp about what counts as no date at all: the zero
+// time is what Go writes for a field that was never set, and rendering it
+// gives "1/1/1 08:05:43" — a file from the year one.
+export function formatDateTime(iso?: string): string {
+  const d = parseTimestamp(iso)
+  if (!d) return '—'
+
+  return d.toLocaleString()
+}
+
+// parseTimestamp turns a timestamp into a date, or into nothing.
+//
+// A timestamp is absent in three ways: missing, unparseable, and the zero
+// value a Go struct carries when nobody set it (0001-01-01). The last one is a
+// valid date and renders as one, which is how an empty folder came to have a
+// download time in the year 1.
+function parseTimestamp(iso?: string): Date | null {
+  if (!iso) return null
+
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+
+  // Nothing this application records predates 1970, and the zero value is
+  // exactly the year 1.
+  if (d.getFullYear() < 1970) return null
+
+  return d
 }
 
 export const formatSpeedMiB = (val: number) =>
