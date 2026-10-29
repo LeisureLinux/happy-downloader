@@ -151,7 +151,15 @@ func extractList(raw any) ([]Cookie, error) {
 		for _, item := range v {
 			c, err := decodeCookie(item)
 			if err != nil {
-				return nil, err
+				// One unusable entry does not discard the file.
+				//
+				// A browser export holds an entry for every cookie of
+				// every site, and one of them is often a placeholder with
+				// no name — the browser's own way of saying "this
+				// domain". Throwing the whole export away for it meant
+				// that a file with seventy-two good cookies could not
+				// be imported at all.
+				continue
 			}
 			out = append(out, c)
 		}
@@ -200,6 +208,16 @@ func decodeCookie(item any) (Cookie, error) {
 			c.Session = c.Session || c.ExpirationDate == 0
 			break
 		}
+	}
+
+	// An expiry in the past is not an expiry.
+	//
+	// A browser writes "-1" for a cookie that has already expired, and
+	// the number is written out as it is: a negative timestamp in the
+	// cookie file is a line that means nothing to the reader.
+	if c.ExpirationDate < 0 {
+		c.ExpirationDate = 0
+		c.Session = true
 	}
 
 	if c.ExpirationDate == 0 {

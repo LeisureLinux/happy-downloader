@@ -63,6 +63,8 @@ keys:
   probing: '元数据读取中'
   downloadQueued: '已加入下载队列'
   livestreamQueued: '正在等待直播开始'
+  recordMinutesLabel: '录制时长（分钟）'
+  recordMinutesHint: '填 0 表示一直录，直到手动停止。'
   livestreamRunning: '直播进行中'
   livestreamStop: '停止直播'
   playlistDetected: '这是一个播放列表，所有条目都会加入队列'

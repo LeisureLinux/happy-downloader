@@ -136,6 +136,8 @@ keys:
   downloadQueue: 'Nedladdningskö'
   downloadQueued: 'Nedladdning köad'
   livestreamQueued: 'Väntar på att sändningen börjar'
+  recordMinutesLabel: 'Spela in (minuter)'
+  recordMinutesHint: 'Noll betyder tills den stoppas manuellt.'
   livestreamRunning: 'Sändningen pågår'
   livestreamStop: 'Stoppa sändningen'
   downloadSelected: 'Ladda ned'

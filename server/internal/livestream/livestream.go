@@ -38,6 +38,9 @@ type LiveStream struct {
 	mq    *queue.MessageQueue
 	store *kv.Store
 
+	// recordMinutes is how long the recording should run.
+	recordMinutes int
+
 	// published says whether the stream has been handed to the queue, which
 	// is the point where it stopped being watched for and started being
 	// downloaded.
@@ -48,6 +51,17 @@ type LiveStream struct {
 	// because there is nothing left of it.
 	published bool
 	mu        sync.Mutex
+}
+
+// SetRecordMinutes says how long the recording should run.
+//
+// A livestream does not end, so the length is what makes "download it" a
+// thing that finishes. It is in minutes, because that is how long a
+// recording is thought about.
+func (l *LiveStream) SetRecordMinutes(minutes int) {
+	l.mu.Lock()
+	l.recordMinutes = minutes
+	l.mu.Unlock()
 }
 
 func New(url string, done chan *LiveStream, mq *queue.MessageQueue, store *kv.Store) *LiveStream {
@@ -64,15 +78,21 @@ func New(url string, done chan *LiveStream, mq *queue.MessageQueue, store *kv.St
 
 // Start the livestream monitoring process, once completion signals on the done channel
 func (l *LiveStream) Start() error {
-	cmd := exec.Command(
-		config.Instance().Paths.DownloaderPath,
-		l.url,
-		"--wait-for-video", "30", // wait for the stream to be live and recheck every 10 secs
+	// The same arguments as any other request: the runtime, the cookie and
+	// the proxy.
+	//
+	// They were missing here, which meant the stage that decides whether
+	// the stream is live at all could not reach Twitch — a stream that was
+	// live was reported as not live, and nothing was recorded.
+	params := downloaders.BuildArgs(l.url,
+		"--wait-for-video", "30", // wait for the stream to be live and recheck every 30 secs
 		"--no-colors", // no ansi color fuzz
 		"--simulate",
 		"--newline",
 		"--paths", config.Instance().Paths.DownloadPath,
 	)
+
+	cmd := exec.Command(config.Instance().Paths.DownloaderPath, params...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -103,7 +123,13 @@ func (l *LiveStream) Start() error {
 	// Send the started livestream to the message queue! :D
 
 	//TODO: add pipes
-	d := downloaders.NewLiveStreamDownloader(l.url, []pipes.Pipe{})
+	d := downloaders.NewLiveStreamDownloader(l.url, []pipes.Pipe{}).(*downloaders.LiveStreamDownloader)
+
+	l.mu.Lock()
+	duration := l.recordMinutes
+	l.mu.Unlock()
+
+	d.SetRecordMinutes(duration)
 
 	l.store.Set(d)
 	l.mq.Publish(d)

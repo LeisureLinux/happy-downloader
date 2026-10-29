@@ -67,8 +67,14 @@ func (m *Monitor) Schedule() {
 	}
 }
 
-func (m *Monitor) Add(url string) {
+// Add starts watching a stream.
+//
+// The minutes are how long the recording should run. Zero means until it is
+// stopped.
+func (m *Monitor) Add(url string, minutes int) {
 	ls := New(url, m.done, m.mq, m.store)
+
+	ls.SetRecordMinutes(minutes)
 
 	go ls.Start()
 
@@ -132,7 +138,7 @@ func (m *Monitor) Restore() error {
 	return m.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		return b.ForEach(func(k, v []byte) error {
-			m.Add(string(k))
+			m.Add(string(k), 0)
 			return nil
 		})
 	})

@@ -136,6 +136,8 @@ keys:
   downloadQueue: 'Download-Warteschlange'
   downloadQueued: 'Download eingereiht'
   livestreamQueued: 'Warten darauf, dass der Stream beginnt'
+  recordMinutesLabel: 'Aufnehmen für (Minuten)'
+  recordMinutesHint: 'Null heißt, bis es von Hand gestoppt wird.'
   livestreamRunning: 'Der Stream läuft'
   livestreamStop: 'Stream anhalten'
   downloadSelected: 'Herunterladen'

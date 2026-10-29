@@ -62,6 +62,8 @@ keys:
   probing: 'Reading metadata'
   downloadQueued: 'Download queued'
   livestreamQueued: 'Waiting for the stream to start'
+  recordMinutesLabel: 'Record for (minutes)'
+  recordMinutesHint: 'Zero means until it is stopped by hand.'
   livestreamRunning: 'The livestream is running'
   livestreamStop: 'Stop the livestream'
   playlistDetected: 'This is a playlist; every item will be queued'

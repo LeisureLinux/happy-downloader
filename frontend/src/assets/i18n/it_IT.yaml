@@ -136,6 +136,8 @@ keys:
   downloadQueue: 'Coda dei download'
   downloadQueued: 'Download in coda'
   livestreamQueued: 'In attesa che la trasmissione inizi'
+  recordMinutesLabel: 'Registra per (minuti)'
+  recordMinutesHint: 'Zero significa fino all''arresto manuale.'
   livestreamRunning: 'La trasmissione è in corso'
   livestreamStop: 'Ferma la trasmissione'
   downloadSelected: 'Scarica'

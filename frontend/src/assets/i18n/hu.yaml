@@ -136,6 +136,8 @@ keys:
   downloadQueue: 'Letöltési sor'
   downloadQueued: 'Letöltés sorba állítva'
   livestreamQueued: 'Várakozás a közvetítés kezdetére'
+  recordMinutesLabel: 'Felvétel ideje (perc)'
+  recordMinutesHint: 'A nulla azt jelenti, hogy manuálisan leállítod.'
   livestreamRunning: 'A közvetítés fut'
   livestreamStop: 'Közvetítés leállítása'
   downloadSelected: 'Letöltés'

@@ -34,6 +34,12 @@ const urlAtom = atom('')
 const metaAtom = atom<DLMetadata | undefined>(undefined)
 const optionsAtom = atom<DownloadOptions>(defaultOptions)
 const playlistAtom = atom(false)
+// How long a livestream should be recorded, in minutes.
+//
+// A livestream does not end, so "download it" is a question without an
+// answer unless a length is given: the recording went on until somebody
+// noticed. Zero means until it is stopped by hand.
+const recordMinutesAtom = atom(60)
 const filenameAtom = atom('')
 // Deliberately not persisted: a probe in flight belongs to this tab, and
 // restoring a stuck spinner after a reload would be worse than starting over.
@@ -58,6 +64,7 @@ const DownloadForm: React.FC = () => {
   const [options, setOptions] = useAtom(optionsAtom)
   const [probing, setProbing] = useAtom(probingAtom)
   const [asPlaylist, setAsPlaylist] = useAtom(playlistAtom)
+  const [recordMinutes, setRecordMinutes] = useAtom(recordMinutesAtom)
   const [filename, setFilename] = useAtom(filenameAtom)
 
   // Elapsed seconds while probing. Twenty seconds of a disabled button and no
@@ -119,7 +126,7 @@ const DownloadForm: React.FC = () => {
       // doing. The monitor waits for the stream to start instead, and it can
       // be stopped.
       if (isLivestreamURL(url)) {
-        await client.execLivestream(url.trim())
+        await client.execLivestream(url.trim(), recordMinutes)
         pushMessage(`${i18n.t('livestreamQueued')}: ${url.trim()}`, 'success')
         setUrl('')
         return
@@ -233,6 +240,21 @@ const DownloadForm: React.FC = () => {
           }
           label={i18n.t('playlistCheckbox')}
         />
+
+        {/* 直播要录多久。直播不会结束，所以不问清楚就会一直录下去，
+            直到有人想起来。 */}
+        {isLivestreamURL(url) && (
+          <TextField
+            size="small"
+            type="number"
+            label={i18n.t('recordMinutesLabel')}
+            value={recordMinutes}
+            onChange={e => setRecordMinutes(Math.max(0, Number(e.target.value) || 0))}
+            inputProps={{ min: 0, style: { width: 90 } }}
+            helperText={i18n.t('recordMinutesHint')}
+            sx={{ maxWidth: 260 }}
+          />
+        )}
 
         {meta && (
           <Box>

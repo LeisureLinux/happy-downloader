@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -25,9 +26,26 @@ type LiveStreamDownloader struct {
 
 	proc *os.Process
 
+	// stopped says the recording was stopped on purpose, so its exit code
+	// means nothing.
+	stopped bool
+
 	logConsumer LogConsumer
 
 	pipes []pipes.Pipe
+
+	// Duration is how long to record, in minutes. Zero means until the
+	// stream ends or the recording is stopped.
+	//
+	// A livestream does not end, so "download it" is a question without an
+	// answer unless a length is given: the recording went on until somebody
+	// noticed. yt-dlp has no option for it in this version, so the length
+	// is kept here and the process is stopped when it has passed.
+	Duration int
+
+	// The file the recording is written to, and the name it is known by.
+	outputPath string
+	outputName string
 
 	// embedded
 	DownloaderBase
@@ -48,8 +66,12 @@ func NewLiveStreamDownloader(url string, pipes []pipes.Pipe) Downloader {
 func (l *LiveStreamDownloader) Start() error {
 	l.SetPending(true)
 
-	// Same builder as the other stages, so the runtime and cookie flags
-	// cannot drift apart between them.
+	// Same builder as the other stages, so the runtime, the cookie and the
+	// proxy cannot drift apart between them.
+	//
+	// The proxy matters most here: a livestream is reached through it, and
+	// the monitoring stage that decides whether the stream is live at all
+	// needs it too.
 	baseParams := BuildArgs(l.URL,
 		"--newline",
 		"--no-colors",
@@ -103,16 +125,27 @@ func (l *LiveStreamDownloader) Start() error {
 	}
 
 	if !l.hasFileWriter() {
+		// The recording is written to a file of its own, with the title and
+		// the time in its name.
+		//
+		// It used to be written to the download directory itself — the
+		// path was built and thrown away, and the file was created with an
+		// empty name. Every recording landed on top of the last one, and
+		// the file browser never saw them.
+		//
+		// The name is settled when the recording ends rather than when it
+		// starts: the title arrives with the metadata, which is a moment
+		// after the stream begins, so a file named at the start was called
+		// "Twitch (live)" whatever the channel was.
 		go func() {
-			filepath.Join(
-				config.Instance().Paths.DownloadPath,
-				fmt.Sprintf("%s (live) %s.mp4", l.Id, time.Now().Format(time.ANSIC)),
-			)
+			path := l.outputPath
+			if path == "" {
+				path = l.recordingPath()
+			}
 
-			defaultPath := filepath.Join(config.Instance().Paths.DownloadPath)
-			f, err := os.Create(defaultPath)
+			f, err := os.Create(path)
 			if err != nil {
-				slog.Error("failed to create fallback file", slog.Any("err", err))
+				slog.Error("failed to create the recording file", slog.Any("err", err))
 				return
 			}
 			defer f.Close()
@@ -121,7 +154,10 @@ func (l *LiveStreamDownloader) Start() error {
 			if err != nil {
 				slog.Error("copy error", slog.Any("err", err))
 			}
-			slog.Info("download saved", slog.String("path", defaultPath))
+
+			l.UpdateSavedFilePath(path)
+
+			slog.Info("the recording was saved", slog.String("path", path))
 		}()
 	}
 
@@ -131,10 +167,124 @@ func (l *LiveStreamDownloader) Start() error {
 
 	l.progress.Status = internal.StatusLiveStream
 
-	return cmd.Wait()
+	// The recording is stopped when the time is up.
+	//
+	// yt-dlp has no option for it in this version, so the length is kept
+	// here: a livestream does not end, so "download it" means "record it for
+	// this long" — otherwise the recording went on until somebody noticed.
+	//
+	// The recording is also stopped when the stream itself ends, which is
+	// what yt-dlp does when the stream drops.
+	stopped := make(chan struct{})
+
+	if l.Duration > 0 {
+		go func() {
+			select {
+			case <-stopped:
+				return
+			case <-time.After(time.Duration(l.Duration) * time.Minute):
+			}
+
+			slog.Info("the recording has run for its time",
+				slog.String("id", l.Id),
+				slog.Int("minutes", l.Duration),
+			)
+
+			if err := l.Stop(); err != nil {
+				slog.Debug("could not stop the recording", slog.Any("err", err))
+			}
+		}()
+	}
+
+	waitErr := cmd.Wait()
+	close(stopped)
+
+	// A recording that was stopped on purpose is not a failure.
+	//
+	// The process is killed, so it exits with an error, and the error was
+	// reported as a failed download — which is what a recording that ran its
+	// time always looked like.
+	if l.stopped {
+		l.progress.Status = internal.StatusCompleted
+		l.Complete()
+		return nil
+	}
+
+	if waitErr != nil {
+		slog.Error("the recording failed", slog.String("id", l.Id), slog.Any("err", waitErr))
+		l.progress.Status = internal.StatusErrored
+		return waitErr
+	}
+
+	l.progress.Status = internal.StatusCompleted
+	l.Complete()
+
+	return nil
+}
+
+// Title returns the name the recording is known by.
+//
+// It is the video's title, and it is what the file is named after — a
+// recording called "download-1 (live)" is not something anybody can find
+// again.
+func (l *LiveStreamDownloader) Title() string {
+	if l.Metadata.Title != "" {
+		return l.Metadata.Title
+	}
+
+	return "Twitch"
+}
+
+// recordingPath is where the recording is written.
+//
+// The name is made of the title and the time, so two recordings of the same
+// channel do not land on top of each other.
+//
+// The characters a filename cannot hold are replaced: the title of a stream is
+// whatever the streamer typed, and it can hold anything.
+func (l *LiveStreamDownloader) recordingPath() string {
+	name := sanitizeFilename(l.Title())
+	when := time.Now().Format("2006-01-02 15-04-05")
+
+	return filepath.Join(
+		config.Instance().Paths.DownloadPath,
+		fmt.Sprintf("%s (live) %s.mp4", name, when),
+	)
+}
+
+// sanitizeFilename makes a string usable as a file name.
+func sanitizeFilename(name string) string {
+	replacer := strings.NewReplacer(
+		"/", "_",
+		"\\", "_",
+		":", "_",
+		"*", "_",
+		"?", "_",
+		"\"", "_",
+		"<", "_",
+		">", "_",
+		"|", "_",
+		"\n", " ",
+		"\r", " ",
+	)
+
+	cleaned := strings.TrimSpace(replacer.Replace(name))
+	if cleaned == "" {
+		return "Twitch"
+	}
+
+	// A name that is too long is refused by the filesystem, and the
+	// recording would fail at the last moment.
+	if len(cleaned) > 120 {
+		cleaned = cleaned[:120]
+	}
+
+	return cleaned
 }
 
 func (l *LiveStreamDownloader) Stop() error {
+	l.stopped = true
+
 	defer func() {
 		l.progress.Status = internal.StatusCompleted
 		l.Complete()
@@ -186,6 +336,19 @@ func (l *LiveStreamDownloader) GetId() string  { return l.Id }
 func (l *LiveStreamDownloader) GetUrl() string { return l.URL }
 
 // A livestream has no probe to learn a length or a caption list from.
+// SetRecordMinutes says how long the recording should run.
+//
+// Zero means until the stream ends or the recording is stopped.
+//
+// It is not called SetDuration because that name is taken: it is the length
+// of a video, which is a different thing — a recording has no length until
+// it is over.
+func (l *LiveStreamDownloader) SetRecordMinutes(minutes int) { l.Duration = minutes }
+
+// SetDuration records the length of the video, in seconds.
+//
+// A recording has no length until it is over, so this is not what the
+// recording limit is set with — that is SetRecordMinutes.
 func (l *LiveStreamDownloader) SetDuration(float64)                 {}
 func (l *LiveStreamDownloader) SetCaptions([]internal.CaptionTrack) {}
 

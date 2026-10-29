@@ -59,7 +59,7 @@ func (s *Service) ExecPlaylist(args internal.DownloadRequest, result *string) er
 
 // TODO: docs
 func (s *Service) ExecLivestream(args internal.DownloadRequest, result *string) error {
-	s.lm.Add(args.URL)
+	s.lm.Add(args.URL, args.RecordMinutes)
 
 	*result = args.URL
 	return nil

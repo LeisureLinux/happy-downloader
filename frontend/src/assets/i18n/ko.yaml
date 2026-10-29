@@ -134,6 +134,8 @@ keys:
   downloadQueue: '다운로드 대기열'
   downloadQueued: '다운로드를 추가했습니다'
   livestreamQueued: '방송이 시작되기를 기다리는 중'
+  recordMinutesLabel: '녹화 시간(분)'
+  recordMinutesHint: '0이면 직접 중지할 때까지 녹화합니다.'
   livestreamRunning: '방송이 진행 중입니다'
   livestreamStop: '방송 중지'
   downloadSelected: '다운로드'

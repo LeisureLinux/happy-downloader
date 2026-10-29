@@ -134,6 +134,8 @@ keys:
   downloadQueue: 'Kolejka pobierania'
   downloadQueued: 'Dodano do kolejki'
   livestreamQueued: 'Czeka na rozpoczęcie transmisji'
+  recordMinutesLabel: 'Nagrywaj przez (minuty)'
+  recordMinutesHint: 'Zero oznacza do czasu ręcznego zatrzymania.'
   livestreamRunning: 'Transmisja trwa'
   livestreamStop: 'Zatrzymaj transmisję'
   downloadSelected: 'Pobierz'

@@ -183,11 +183,16 @@ export class RPCClient {
     })
   }
 
-  public execLivestream(url: string) {
+  // Start recording a livestream.
+  //
+  // The minutes are how long the recording should run. A livestream does not
+  // end, so without a length the recording went on until somebody noticed.
+  public execLivestream(url: string, recordMinutes = 0) {
     return this.sendHTTP({
       method: 'Service.ExecLivestream',
       params: [{
-        URL: url
+        URL: url,
+        RecordMinutes: recordMinutes,
       }]
     })
   }

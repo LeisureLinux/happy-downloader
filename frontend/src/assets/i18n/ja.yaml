@@ -135,6 +135,8 @@ keys:
   downloadQueue: 'ダウンロード待ち'
   downloadQueued: 'ダウンロードを追加しました'
   livestreamQueued: '配信の開始を待っています'
+  recordMinutesLabel: '録画時間（分）'
+  recordMinutesHint: '0 を入れると手動で止めるまで記録します。'
   livestreamRunning: '配信中です'
   livestreamStop: '配信を停止'
   downloadSelected: 'ダウンロード'

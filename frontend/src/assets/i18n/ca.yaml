@@ -134,6 +134,8 @@ keys:
   downloadQueue: 'Cua de descàrregues'
   downloadQueued: 'Descàrrega a la cua'
   livestreamQueued: 'S''està esperant que l''emissió comenci'
+  recordMinutesLabel: 'Grava durant (minuts)'
+  recordMinutesHint: 'Zero vol dir fins que s''aturi a mà.'
   livestreamRunning: 'La transmissió està en marxa'
   livestreamStop: 'Atura la transmissió'
   downloadSelected: 'Descarrega'

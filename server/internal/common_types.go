@@ -101,6 +101,12 @@ type DownloadRequest struct {
 	Path   string   `json:"path"`
 	Rename string   `json:"rename"`
 	Params []string `json:"params"`
+	// RecordMinutes is how long to record a livestream for. Zero means
+	// until it is stopped.
+	//
+	// A livestream does not end, so the length is the answer to "how long
+	// do I want this".
+	RecordMinutes int `json:"recordMinutes,omitempty"`
 }
 
 // struct representing request of creating a netscape cookies file

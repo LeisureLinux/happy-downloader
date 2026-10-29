@@ -134,6 +134,8 @@ keys:
   downloadQueue: 'Cola de descargas'
   downloadQueued: 'Descarga en cola'
   livestreamQueued: 'Esperando a que empiece la emisión'
+  recordMinutesLabel: 'Grabar durante (minutos)'
+  recordMinutesHint: 'Cero significa hasta que se detenga a mano.'
   livestreamRunning: 'La emisión está en marcha'
   livestreamStop: 'Detener la emisión'
   downloadSelected: 'Descargar'

@@ -134,6 +134,8 @@ keys:
   downloadQueue: 'Черга завантажень'
   downloadQueued: 'Завантаження додано до черги'
   livestreamQueued: 'Очікування початку трансляції'
+  recordMinutesLabel: 'Записувати (хвилин)'
+  recordMinutesHint: 'Нуль означає до ручної зупинки.'
   livestreamRunning: 'Трансляція триває'
   livestreamStop: 'Зупинити трансляцію'
   downloadSelected: 'Завантажити'

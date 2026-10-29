@@ -65,7 +65,7 @@ func (s *Service) ExecPlaylist(req internal.DownloadRequest) error {
 }
 
 func (s *Service) ExecLivestream(req internal.DownloadRequest) {
-	s.lm.Add(req.URL)
+	s.lm.Add(req.URL, req.RecordMinutes)
 }
 
 func (s *Service) Running(ctx context.Context) (*[]internal.ProcessSnapshot, error) {

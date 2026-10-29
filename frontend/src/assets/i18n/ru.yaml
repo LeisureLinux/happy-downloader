@@ -134,6 +134,8 @@ keys:
   downloadQueue: 'Очередь загрузок'
   downloadQueued: 'Загрузка добавлена в очередь'
   livestreamQueued: 'Ожидание начала трансляции'
+  recordMinutesLabel: 'Записывать (минут)'
+  recordMinutesHint: 'Ноль — до ручной остановки.'
   livestreamRunning: 'Трансляция идёт'
   livestreamStop: 'Остановить трансляцию'
   downloadSelected: 'Скачать'
