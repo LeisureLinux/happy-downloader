@@ -9,6 +9,11 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   Tooltip,
   Typography
 } from '@mui/material'
@@ -37,6 +42,25 @@ type Props = {
   open: boolean
   onClose: () => void
 }
+
+// The table's cells.
+//
+// Fixed padding and no wrapping, so the columns line up: a site name that
+// wraps pushes every number below it out of its column, and the table is
+// there to be read down the columns.
+const headCell = {
+  py: 0.25,
+  px: 0.5,
+  whiteSpace: 'nowrap' as const,
+  fontSize: '0.72rem',
+} as const
+
+const cell = {
+  py: 0.25,
+  px: 0.5,
+  borderBottom: 'none',
+  whiteSpace: 'nowrap' as const,
+} as const
 
 // The cookie itself, as the icon.
 //
@@ -204,92 +228,117 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
         {/* Per site, because the file is one list for every site and the
             question is which site's session is stale. A single figure for
             the whole file answers the wrong question: a file can be
-            enormous and have nothing for the site that is failing. */}
+            enormous and have nothing for the site that is failing.
+
+            A table rather than a row of loose text: the columns are what
+            make it readable, and without a header the numbers beside a
+            site name say nothing about what they are. */}
         {status.sites && status.sites.length > 0 && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="caption" color="text.secondary">
               {i18n.t('cookieSitesTitle')}
             </Typography>
 
-            <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-              {status.sites.slice(0, 12).map(s => {
-                // Compared as a number, not as a truthiness test: `0 && ..`
-                // is 0, and React renders the 0.
-                const expiring = (s.expired ?? 0) > 0
-                const noLogin = (s.missingLogin?.length ?? 0) > 0
+            <Table size="small" sx={{ mt: 0.5, tableLayout: 'fixed' }}>
+              <colgroup>
+                {/* The name is the only column that gives up width; the
+                    rest are sized to their content so a number and a date
+                    stay in their own column. */}
+                <col />
+                <col style={{ width: 56 }} />
+                <col style={{ width: 138 }} />
+                <col style={{ width: 96 }} />
+              </colgroup>
 
-                return (
-                  <Stack
-                    key={s.site}
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    sx={{ minWidth: 0 }}
-                  >
-                    <Box
-                      component="span"
-                      sx={{ display: 'inline-flex', width: 20, flexShrink: 0 }}
-                    >
-                      {siteIcon(
-                        s.known ? s.site : undefined,
-                        theme.palette.primary.main,
-                        isDark(theme)
-                      )}
-                    </Box>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={headCell}>{i18n.t('cookieSitesSite')}</TableCell>
+                  <TableCell align="right" sx={headCell}>
+                    {i18n.t('cookieSitesCount')}
+                  </TableCell>
+                  <TableCell align="right" sx={headCell}>
+                    {i18n.t('cookieSitesExpiry')}
+                  </TableCell>
+                  <TableCell align="right" sx={headCell}>
+                    {i18n.t('cookieSitesStatus')}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
 
-                    <Tooltip title={s.domains.join(' · ')}>
-                      <Typography
-                        variant="body2"
-                        noWrap
-                        sx={{ flexGrow: 1, minWidth: 0 }}
-                      >
-                        {s.site}
-                      </Typography>
-                    </Tooltip>
+              <TableBody>
+                {status.sites.slice(0, 12).map(s => {
+                  // Compared as a number, not as a truthiness test: `0 && ..`
+                  // is 0, and React renders the 0.
+                  const broken = (s.expired ?? 0) > 0
+                  const noLogin = (s.missingLogin?.length ?? 0) > 0
 
-                    <Typography variant="caption" color="text.secondary">
-                      {s.count}
-                    </Typography>
+                  return (
+                    <TableRow key={s.site}>
+                      <TableCell sx={cell}>
+                        <Stack direction="row" spacing={0.75} alignItems="center">
+                          <Box
+                            component="span"
+                            sx={{ display: 'inline-flex', flexShrink: 0 }}
+                          >
+                            {siteIcon(
+                              s.known ? s.site : undefined,
+                              theme.palette.primary.main,
+                              isDark(theme)
+                            )}
+                          </Box>
+                          <Tooltip title={s.domains.join(' · ')}>
+                            <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>
+                              {s.site}
+                            </Typography>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
 
-                    {/* When this site's newest cookie dies. A session
-                        cookie has no date; that is not an error.
+                      <TableCell align="right" sx={cell}>
+                        {s.count}
+                      </TableCell>
 
-                        Some of them having expired does not make the date
-                        useless: the others are still good, and replacing the
-                        date with "expired" hid the ones that are. The count
-                        is shown beside it instead. */}
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ minWidth: 120, textAlign: 'right' }}
-                    >
-                      {s.newestExpiry
-                        ? formatTimestamp(s.newestExpiry)
-                        : i18n.t('cookieSiteSession')}
-                    </Typography>
+                      {/* When this site's newest cookie dies. A session
+                          cookie has no date; that is not an error. */}
+                      <TableCell align="right" sx={cell}>
+                        <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
+                          {s.newestExpiry
+                            ? formatTimestamp(s.newestExpiry)
+                            : i18n.t('cookieSiteSession')}
+                        </Box>
+                      </TableCell>
 
-                    {expiring && (
-                      <Typography
-                        variant="caption"
-                        color="error.main"
-                        sx={{ flexShrink: 0 }}
-                      >
-                        {s.expired} {i18n.t('cookieSiteExpired')}
-                      </Typography>
-                    )}
-
-                    {noLogin && (
-                      <Tooltip title={`${i18n.t('cookieSiteGuest')}: ${s.missingLogin?.join(', ')}`}>
-                        <WarningAmberIcon
-                          fontSize="small"
-                          sx={{ color: 'warning.main', flexShrink: 0 }}
-                        />
-                      </Tooltip>
-                    )}
-                  </Stack>
-                )
-              })}
-            </Stack>
+                      {/* A count of the ones that no longer work, said apart
+                          from the date. It used to replace the date, which
+                          read as "this site expires in 2027 and has
+                          expired" — and the date was the useful half. */}
+                      <TableCell align="right" sx={cell}>
+                        <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
+                          {broken ? (
+                            <Box component="span" sx={{ color: 'error.main' }}>
+                              {s.expired} {i18n.t('cookieSiteBroken')}
+                            </Box>
+                          ) : noLogin ? (
+                            <Tooltip
+                              title={`${i18n.t('cookieSiteGuest')}: ${s.missingLogin?.join(', ')}`}
+                            >
+                              <WarningAmberIcon
+                                fontSize="small"
+                                sx={{ color: 'warning.main', verticalAlign: 'middle' }}
+                              />
+                            </Tooltip>
+                          ) : (
+                            <Box component="span" sx={{ color: 'text.disabled' }}>
+                              —
+                            </Box>
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </Box>
         )}
 
