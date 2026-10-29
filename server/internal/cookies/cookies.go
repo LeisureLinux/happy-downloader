@@ -89,7 +89,7 @@ func Detect(content []byte) Format {
 func Convert(content []byte) (string, Format, error) {
 	switch Detect(content) {
 	case FormatNetscape:
-		return string(content), FormatNetscape, nil
+		return normalizeExpiries(string(content)), FormatNetscape, nil
 	case FormatJSON:
 		n, err := JSONToNetscape(content)
 		return n, FormatJSON, err
@@ -99,6 +99,95 @@ func Convert(content []byte) (string, Format, error) {
 	default:
 		return "", FormatUnknown, fmt.Errorf("unrecognised cookie export format")
 	}
+}
+
+// The difference between 1601 and 1970, in seconds.
+//
+// Chrome's cookie database stores an expiry as microseconds since 1601, and a
+// dump of that database writes the number as it is. It is two epochs away from
+// what every other tool means by a timestamp, so the number is not merely
+// large — it is in a different calendar.
+const chromeEpochOffset = 11644473600
+
+// normalizeExpiry turns whatever unit an exporter wrote into Unix seconds.
+//
+// There is no field saying which unit it is, so the value itself has to say:
+// a sane expiry read as seconds lands between 2000 and 2100, and only one of
+// the four readings does. That is a guess, but it is a guess with a check —
+// the alternative is trusting a number and writing a date four hundred
+// million years away into a file that something else will read.
+//
+// This is how a site's cookies came to be listed as session cookies: their
+// expiries were there all along, as 13472201709491024, which in Unix seconds
+// is the year 426 million and in Chrome's unit is December 2027.
+func normalizeExpiry(raw float64) float64 {
+	if raw <= 0 {
+		return 0
+	}
+
+	// Unix seconds, Unix milliseconds, Unix microseconds, and Chrome's
+	// microseconds since 1601.
+	candidates := []float64{
+		raw,
+		raw / 1e3,
+		raw / 1e6,
+		raw/1e6 - chromeEpochOffset,
+	}
+
+	for _, at := range candidates {
+		if at >= 946684800 && at <= 4102444800 { // 2000-01-01 .. 2100-01-01
+			return at
+		}
+	}
+
+	// Nothing plausible. It is left alone rather than guessed at: a date the
+	// reader can see is wrong is easier to report than one that was invented.
+	return raw
+}
+
+// normalizeExpiries rewrites the expiry column of a Netscape file.
+//
+// A Netscape export used to be passed through untouched, so a file written by
+// a browser-cookie dump kept its 1601-based timestamps and every reader had to
+// know about them. The file that is stored is the one the downloads use, so
+// this is the place to make it mean what it says.
+func normalizeExpiries(content string) string {
+	lines := strings.Split(content, "\n")
+
+	for i, line := range lines {
+		trimmed := strings.TrimRight(line, "\r")
+
+		httpOnly := strings.HasPrefix(trimmed, "#HttpOnly_")
+		if strings.HasPrefix(trimmed, "#") && !httpOnly {
+			continue
+		}
+
+		fields := strings.Split(strings.TrimPrefix(trimmed, "#HttpOnly_"), "\t")
+		if len(fields) < 7 {
+			continue
+		}
+
+		raw, err := strconv.ParseFloat(strings.TrimSpace(fields[4]), 64)
+		if err != nil {
+			continue
+		}
+
+		normalized := normalizeExpiry(raw)
+		if normalized == raw {
+			continue
+		}
+
+		fields[4] = strconv.FormatInt(int64(normalized), 10)
+
+		prefix := ""
+		if httpOnly {
+			prefix = "#HttpOnly_"
+		}
+
+		lines[i] = prefix + strings.Join(fields, "\t")
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 // JSONToNetscape converts the extension/Puppeteer JSON shape to Netscape.
@@ -204,7 +293,7 @@ func decodeCookie(item any) (Cookie, error) {
 	// the field was named differently turns every cookie into a session cookie.
 	for _, key := range []string{"expirationDate", "expires", "expiry"} {
 		if exp, ok := m[key]; ok && exp != nil {
-			c.ExpirationDate = asFloat(exp)
+			c.ExpirationDate = normalizeExpiry(asFloat(exp))
 			c.Session = c.Session || c.ExpirationDate == 0
 			break
 		}
@@ -364,7 +453,9 @@ func Summarize(netscape string) Summary {
 			s.Secure++
 		}
 
-		expiry, err := strconv.ParseInt(fields[4], 10, 64)
+		raw, err := strconv.ParseFloat(strings.TrimSpace(fields[4]), 64)
+		expiry := int64(normalizeExpiry(raw))
+
 		if err != nil || expiry == 0 {
 			s.Session++
 		} else if expiry < now {

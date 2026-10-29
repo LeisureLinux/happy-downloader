@@ -87,7 +87,12 @@ func SummarizeDomains(netscape string) []DomainSummary {
 		entry.Count++
 		names[domain][fields[5]] = true
 
-		expiry, err := strconv.ParseInt(fields[4], 10, 64)
+		// Normalised on the way in as well as on the way out: a file that
+		// was imported before the conversion learned about Chrome's unit is
+		// still on disk, and re-importing is not something to ask of anybody.
+		raw, err := strconv.ParseFloat(strings.TrimSpace(fields[4]), 64)
+		expiry := int64(normalizeExpiry(raw))
+
 		switch {
 		case err != nil || expiry == 0:
 			entry.Session++
