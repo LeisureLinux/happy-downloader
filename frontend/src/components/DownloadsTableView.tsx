@@ -169,6 +169,8 @@ const DownloadsTableView: React.FC = () => {
         return i18n.t('statusErrored')
       case ProcessStatus.PAUSED:
         return i18n.t('statusPaused')
+      case ProcessStatus.REMUXING:
+        return i18n.t('statusRemuxing')
       case ProcessStatus.LIVESTREAM:
         // A recording has no percentage to speak of — it is as long as the
         // stream lasts. What it has is how much has been recorded, so that
@@ -278,6 +280,8 @@ const DownloadsTableView: React.FC = () => {
                 ? download.progress.percentage
                 : undefined
             }
+            // A recording being remuxed keeps the time it recorded: that is
+            // how long the file is, and it is what the person is waiting for.
             value={
               done
                 ? 100
@@ -288,13 +292,14 @@ const DownloadsTableView: React.FC = () => {
             variant={
               // A recording that has not been asked for a length has no
               // percentage to show, so the bar moves instead of sitting
-              // at zero.
-              download.progress.process_status === ProcessStatus.LIVESTREAM &&
-              !download.progress.percentage
+              // at zero — and so does one that is being put into its
+              // container: the work is not measured in bytes.
+              download.progress.process_status === ProcessStatus.REMUXING ||
+              (download.progress.process_status === ProcessStatus.LIVESTREAM &&
+                !download.progress.percentage) ||
+              download.progress.process_status === 0
                 ? 'indeterminate'
-                : download.progress.process_status === 0
-                  ? 'indeterminate'
-                  : 'determinate'
+                : 'determinate'
             }
             color={'primary'}
           />
@@ -317,6 +322,20 @@ const DownloadsTableView: React.FC = () => {
                   <IconButton size="small" onClick={() => client.clear(download.id)}>
                     <DeleteIcon fontSize="small" />
                   </IconButton>
+                </Tooltip>
+              </>
+            ) : download.progress.process_status === ProcessStatus.REMUXING ? (
+              <>
+                {/* The file is being written and there is nothing to stop:
+                    the bytes are already recorded. Saying so is the point —
+                    the row used to vanish here, and the file was not in the
+                    browser yet either. */}
+                <Tooltip title={i18n.t('statusRemuxing')}>
+                  <span>
+                    <IconButton size="small" disabled>
+                      <PauseIcon fontSize="small" />
+                    </IconButton>
+                  </span>
                 </Tooltip>
               </>
             ) : download.progress.process_status === ProcessStatus.PAUSED ? (

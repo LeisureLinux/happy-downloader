@@ -56,6 +56,11 @@ export enum ProcessStatus {
   // stays in the queue: it has not produced a file, so it is not in the file
   // browser, and it can be resumed where it left off.
   PAUSED,
+  // A recording that has finished downloading and is being put into a
+  // container that plays. The bytes are all there; the file is not readable
+  // yet. It lasts seconds, and it is the difference between "nothing yet"
+  // and "working on it".
+  REMUXING,
 }
 
 type DownloadProgress = {

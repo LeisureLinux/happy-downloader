@@ -3,6 +3,7 @@ package downloaders
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -61,9 +62,17 @@ func (l *LiveStreamDownloader) recordingPath() (string, string) {
 	name := sanitizeFilename(l.Title())
 	when := l.startedAt.Format("2006-01-02 15-04-05")
 
-	// The stream is written as it arrives.
+	// The stream is written as it arrives, into the partial directory.
+	//
+	// It used to be written into the download directory, which meant the
+	// recording appeared in the file browser as soon as stop was pressed —
+	// as a ".ts" that became a ".mp4" a few seconds later. The file was
+	// there, listed, and not what it said it was; and a person watching for
+	// their recording saw a file that looked finished and was.
+	//
+	// Nothing half-made belongs in the directory the browser lists.
 	raw := filepath.Join(
-		config.Instance().Paths.DownloadPath,
+		tempDir(),
 		fmt.Sprintf("%s %s.ts", name, when),
 	)
 
@@ -85,6 +94,16 @@ func (l *LiveStreamDownloader) finishRecording(raw, final string) string {
 	if err := remuxRecording(raw, final); err != nil {
 		// No ffmpeg, or it failed. The raw file is still a recording, and
 		// its extension says what it is.
+		//
+		// The failure is logged rather than swallowed: the file left behind
+		// is not the one that was expected, and without this line there was
+		// nothing anywhere saying why the recording is a ".ts".
+		slog.Error("could not put the recording into its container",
+			slog.String("id", l.Id),
+			slog.String("raw", raw),
+			slog.String("err", err.Error()),
+		)
+
 		return raw
 	}
 

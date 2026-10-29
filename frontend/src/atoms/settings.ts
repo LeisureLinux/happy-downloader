@@ -208,20 +208,25 @@ export type CookieStatus = {
   // Where that export is, and when it was written.
   activePath?: string
   activeModifiedAt?: string
-  // The active export broken down by site: how many cookies each site has,
-  // when its newest one expires, and whether its login cookies are there.
-  // The file is one list for every site, and the question is per site.
+  // The state of each site's session cookie.
+  //
+  // Only the session cookie is reported: a cookie file holds hundreds per
+  // site and almost all are disposable, so a count says nothing about whether
+  // the site works. The one cookie that is the session does.
   sites?: {
     site: string
     // Whether the site is one the interface has an icon for; when it is not,
     // `site` is the domain itself and gets the globe.
     known: boolean
     domains: string[]
-    count: number
-    session?: number
-    expired?: number
-    newestExpiry?: string
-    missingLogin?: string[]
+    // The name of the session cookie, empty when it is not known for the site.
+    cookie?: string
+    // Whether the file has it: false means the export is signed out there.
+    present: boolean
+    // When it dies, empty for a session cookie.
+    expiry?: string
+    // Whether that date has passed.
+    expired: boolean
   }[]
   // The export the user uploaded, when there is one.
   imported?: {
@@ -233,13 +238,27 @@ export type CookieStatus = {
   }
 }
 
-export const cookieStatusState = atom<Promise<CookieStatus>>(async (get) => await pipe(
-  ffetch<CookieStatus>(`${get(serverURL)}/api/v1/cookies/status`),
-  matchW(
-    () => ({ exists: false, count: 0 }) as CookieStatus,
-    (r) => r
-  )
-)())
+// A counter that makes the cookie status be fetched again.
+//
+// The status is an async atom with no inputs of its own, so it is computed
+// once and remembered for the life of the page. That is wrong for this one:
+// importing a file changes what the status says, and the moment it changes is
+// the moment a person is looking at it. The dialog showed what was there
+// before the import, which reads as the import having done nothing.
+export const cookieStatusRefreshState = atom(0)
+
+export const cookieStatusState = atom<Promise<CookieStatus>>(async (get) => {
+  // Read, so that bumping the counter makes this be computed again.
+  get(cookieStatusRefreshState)
+
+  return await pipe(
+    ffetch<CookieStatus>(`${get(serverURL)}/api/v1/cookies/status`),
+    matchW(
+      () => ({ exists: false, count: 0 }) as CookieStatus,
+      (r) => r
+    )
+  )()
+})
 
 const themeSelector = atom<ThemeNarrowed>((get) => {
   const theme = get(themeState)

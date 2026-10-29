@@ -18,9 +18,9 @@ import {
   Typography
 } from '@mui/material'
 import { Suspense, useCallback, useEffect, useState } from 'react'
-import { useAtomValue } from 'jotai'
+import { useAtomValue, useSetAtom } from 'jotai'
 import { useTheme } from '@mui/material/styles'
-import { cookieStatusState, serverURL } from '../atoms/settings'
+import { cookieStatusRefreshState, cookieStatusState, serverURL } from '../atoms/settings'
 import { formatTimestamp } from '../utils'
 import { useI18n } from '../hooks/useI18n'
 import { useToast } from '../hooks/toast'
@@ -107,6 +107,7 @@ const CookieDialog: React.FC<Props> = ({ open, onClose }) => (
 
 const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
   const status = useAtomValue(cookieStatusState)
+  const refreshStatus = useSetAtom(cookieStatusRefreshState)
   const serverAddr = useAtomValue(serverURL)
   const theme = useTheme()
   const { i18n } = useI18n()
@@ -141,13 +142,16 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
         'success'
       )
 
-      onClose()
+      // The list above is about to be wrong: the file changed. Asking for it
+      // again is what makes the dialog show the cookie that was just
+      // imported rather than the one before it.
+      refreshStatus(n => n + 1)
     } catch (e) {
       setError(String(e))
     } finally {
       setBusy(false)
     }
-  }, [serverAddr, i18n, onClose, pushMessage])
+  }, [serverAddr, i18n, onClose, pushMessage, refreshStatus])
 
   const remove = useCallback(async () => {
     setBusy(true)
@@ -163,13 +167,14 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
       }
 
       pushMessage(i18n.t('cookieImportRemoved'), 'info')
+      refreshStatus(n => n + 1)
       onClose()
     } catch (e) {
       setError(String(e))
     } finally {
       setBusy(false)
     }
-  }, [serverAddr, i18n, onClose, pushMessage])
+  }, [serverAddr, i18n, onClose, pushMessage, refreshStatus])
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -242,20 +247,18 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
             <Table size="small" sx={{ mt: 0.5, tableLayout: 'fixed' }}>
               <colgroup>
                 {/* The name is the only column that gives up width; the
-                    rest are sized to their content so a number and a date
+                    rest are sized to their content so a date and a word
                     stay in their own column. */}
                 <col />
-                <col style={{ width: 56 }} />
-                <col style={{ width: 138 }} />
-                <col style={{ width: 96 }} />
+                <col style={{ width: 116 }} />
+                <col style={{ width: 132 }} />
+                <col style={{ width: 84 }} />
               </colgroup>
 
               <TableHead>
                 <TableRow>
                   <TableCell sx={headCell}>{i18n.t('cookieSitesSite')}</TableCell>
-                  <TableCell align="right" sx={headCell}>
-                    {i18n.t('cookieSitesCount')}
-                  </TableCell>
+                  <TableCell sx={headCell}>{i18n.t('cookieSitesCookie')}</TableCell>
                   <TableCell align="right" sx={headCell}>
                     {i18n.t('cookieSitesExpiry')}
                   </TableCell>
@@ -267,10 +270,13 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
 
               <TableBody>
                 {status.sites.slice(0, 12).map(s => {
-                  // Compared as a number, not as a truthiness test: `0 && ..`
-                  // is 0, and React renders the 0.
-                  const broken = (s.expired ?? 0) > 0
-                  const noLogin = (s.missingLogin?.length ?? 0) > 0
+                  // Three states, and only one of them is a problem: the
+                  // session cookie is absent, or it has died. A site whose
+                  // own session cookie this server has no name for is not
+                  // called broken — nothing about it is known.
+                  const signedOut = !!s.cookie && !s.present
+                  const dead = !!s.cookie && s.present && s.expired
+                  const alive = !!s.cookie && s.present && !s.expired
 
                   return (
                     <TableRow key={s.site}>
@@ -294,39 +300,41 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
                         </Stack>
                       </TableCell>
 
-                      <TableCell align="right" sx={cell}>
-                        {s.count}
+                      <TableCell sx={cell}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          noWrap
+                          sx={{ fontFamily: 'Roboto Mono' }}
+                        >
+                          {s.cookie || '—'}
+                        </Typography>
                       </TableCell>
 
-                      {/* When this site's newest cookie dies. A session
-                          cookie has no date; that is not an error. */}
                       <TableCell align="right" sx={cell}>
                         <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
-                          {s.newestExpiry
-                            ? formatTimestamp(s.newestExpiry)
-                            : i18n.t('cookieSiteSession')}
+                          {alive || dead
+                            ? s.expiry
+                              ? formatTimestamp(s.expiry)
+                              : i18n.t('cookieSiteSession')
+                            : '—'}
                         </Box>
                       </TableCell>
 
-                      {/* A count of the ones that no longer work, said apart
-                          from the date. It used to replace the date, which
-                          read as "this site expires in 2027 and has
-                          expired" — and the date was the useful half. */}
                       <TableCell align="right" sx={cell}>
                         <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
-                          {broken ? (
-                            <Box component="span" sx={{ color: 'error.main' }}>
-                              {s.expired} {i18n.t('cookieSiteBroken')}
+                          {signedOut ? (
+                            <Box component="span" sx={{ color: 'warning.main' }}>
+                              {i18n.t('cookieSiteGuest')}
                             </Box>
-                          ) : noLogin ? (
-                            <Tooltip
-                              title={`${i18n.t('cookieSiteGuest')}: ${s.missingLogin?.join(', ')}`}
-                            >
-                              <WarningAmberIcon
-                                fontSize="small"
-                                sx={{ color: 'warning.main', verticalAlign: 'middle' }}
-                              />
-                            </Tooltip>
+                          ) : dead ? (
+                            <Box component="span" sx={{ color: 'error.main' }}>
+                              {i18n.t('cookieSiteBroken')}
+                            </Box>
+                          ) : alive ? (
+                            <Box component="span" sx={{ color: 'success.main' }}>
+                              {i18n.t('cookieSiteAlive')}
+                            </Box>
                           ) : (
                             <Box component="span" sx={{ color: 'text.disabled' }}>
                               —
@@ -339,6 +347,7 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
                 })}
               </TableBody>
             </Table>
+
           </Box>
         )}
 

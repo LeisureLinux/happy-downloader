@@ -45,6 +45,13 @@ type LiveStreamDownloader struct {
 	outputPath string
 	outputName string
 
+	// output is the file that was written, once there is one.
+	//
+	// It was never kept before: the recording reported no output at all, so
+	// its row in the queue had no size and no play button, and the file
+	// browser only learned about the file from the directory listing.
+	output internal.DownloadOutput
+
 	// startedAt is when the recording began. The name of the file carries
 	// it, and it is settled when the recording ends — so it has to be
 	// remembered from the beginning.
@@ -145,7 +152,14 @@ func (l *LiveStreamDownloader) Start() error {
 		reader = nr
 	}
 
+	// written is closed when the file is finished: the stream copied out,
+	// the container written, the source recorded. It is what the end of
+	// Start waits for.
+	var written chan struct{}
+
 	if !l.hasFileWriter() {
+		written = make(chan struct{})
+
 		// The recording is written to a file of its own, with the title and
 		// the time in its name.
 		//
@@ -167,8 +181,6 @@ func (l *LiveStreamDownloader) Start() error {
 		// everything that had been recorded. The process is killed to end
 		// it, and the pipe is then read out to the end before the file is
 		// closed.
-		written := make(chan struct{})
-
 		go func() {
 			defer close(written)
 
@@ -213,16 +225,6 @@ func (l *LiveStreamDownloader) Start() error {
 			slog.Info("the recording was saved", slog.String("path", final))
 		}()
 
-		// The copy has to be finished before the recording is put into its
-		// container, and before the file is closed.
-		defer func() {
-			select {
-			case <-written:
-			case <-time.After(30 * time.Second):
-				slog.Error("the recording was not written in time",
-					slog.String("id", l.Id))
-			}
-		}()
 	}
 
 	logs := make(chan []byte)
@@ -263,12 +265,45 @@ func (l *LiveStreamDownloader) Start() error {
 	waitErr := cmd.Wait()
 	close(stopped)
 
+	// The stream has stopped arriving. The file is not finished yet: it is
+	// still being copied out of the pipe and put into its container, which
+	// for a long recording takes a few seconds.
+	//
+	// So the row says so. It stays in the queue until the file exists,
+	// because until then there is nothing for the file browser to show, and
+	// an entry that vanished and came back would be worse than one that says
+	// what it is doing.
+	if written != nil {
+		l.progress.Status = internal.StatusRemuxing
+
+		select {
+		case <-written:
+		case <-time.After(30 * time.Minute):
+			slog.Error("the recording was not written in time", slog.String("id", l.Id))
+		}
+	}
+
 	// A recording that was stopped on purpose is not a failure.
 	//
 	// The process is killed, so it exits with an error, and the error was
 	// reported as a failed download — which is what a recording that ran its
 	// time always looked like.
 	if l.stopped {
+		l.progress.Status = internal.StatusCompleted
+		l.Complete()
+		signalFinished(l)
+		return nil
+	}
+
+	// A recording that produced a file is a success, whatever the exit code
+	// said.
+	//
+	// yt-dlp exits non-zero when a stream ends under it — the connection
+	// dropped, the streamer stopped, a segment came back short — and every
+	// one of those leaves a perfectly good recording behind. Reporting them
+	// as failures put a red row in the queue for a recording that worked,
+	// which is the one thing a person watching for it must not be told.
+	if recorded := l.recordedBytes(); recorded > 0 {
 		l.progress.Status = internal.StatusCompleted
 		l.Complete()
 		signalFinished(l)
@@ -385,14 +420,38 @@ func (l *LiveStreamDownloader) Status() internal.ProcessSnapshot {
 		// zero no matter how long it had run.
 		Duration: float64(l.Duration) * 60,
 		FromIP:   l.FromIP,
+		Output:   l.output,
 	}
 }
 
-func (l *LiveStreamDownloader) UpdateSavedFilePath(p string) {}
+// recordedBytes is the size of the file the recording was written to, or zero
+// when there is none yet.
+func (l *LiveStreamDownloader) recordedBytes() int64 {
+	path := l.output.SavedFilePath
+	if path == "" {
+		return 0
+	}
+
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return 0
+	}
+
+	return info.Size()
+}
+
+func (l *LiveStreamDownloader) UpdateSavedFilePath(p string) {
+	l.output.SavedFilePath = p
+
+	if info, err := os.Stat(p); err == nil && !info.IsDir() {
+		l.output.FileSize = info.Size()
+		l.output.FileExists = true
+	}
+}
 
 func (l *LiveStreamDownloader) UpdateOutputDimensions(width, height float64) {}
 
-func (l *LiveStreamDownloader) SetOutput(o internal.DownloadOutput)     {}
+func (l *LiveStreamDownloader) SetOutput(o internal.DownloadOutput)     { l.output = o }
 func (l *LiveStreamDownloader) SetProgress(p internal.DownloadProgress) { l.progress = p }
 
 func (l *LiveStreamDownloader) SetMetadata(fetcher func(url string) (*common.DownloadMetadata, error)) {

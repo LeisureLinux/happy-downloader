@@ -208,17 +208,15 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	go lm.Schedule()
 	go lm.Restore()
 
-	// A recording leaves the queue when it is over. Nothing else announces
-	// that, because a recording is written from the media stream rather than
-	// by yt-dlp's own postprocessing — so the hook that would have said so
-	// was never called, and every finished recording stayed in the queue for
-	// ever.
+	// A finished recording is done as far as the monitor is concerned: it
+	// cannot be stopped any more, and the stream it came from is over.
 	//
-	// The monitor is told as well, because it is the one the footer's stop
-	// button is drawn from. A finished recording cannot be stopped, so the
-	// footer said a livestream was running long after it was over.
+	// The entry stays in the queue, the way a finished download does. It
+	// used to be deleted, which meant the last thing a person saw was the
+	// row disappearing — with the file not yet in the browser, because the
+	// remux was still running. Nothing anywhere said the recording had
+	// worked.
 	downloaders.SetFinishedRecorder(func(d downloaders.Downloader) {
-		mdb.Delete(d.GetId())
 		lm.Forget(d.GetUrl())
 	})
 

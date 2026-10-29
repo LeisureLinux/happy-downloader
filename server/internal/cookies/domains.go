@@ -35,7 +35,34 @@ type DomainSummary struct {
 	// MissingLogin lists the login cookies this domain's rule requires and
 	// the file does not have. Empty for a site with no rule, or one that
 	// satisfies it.
+	//
+	// It is the import rule, which is strict on purpose: it refuses a file
+	// that would be a guest session. KeyCookie is the different, softer
+	// question of what a person wants to see.
 	MissingLogin []string
+
+	// KeyCookie is the session cookie for this domain's site, when the site
+	// is one whose name is known.
+	//
+	// Present says whether the file has it at all: absent means the export
+	// is signed out for that site, which is the thing that makes a download
+	// fail. Expiry is when it dies, zero for a session cookie.
+	KeyCookie KeyCookie
+}
+
+// KeyCookie is the state of one site's session cookie.
+type KeyCookie struct {
+	// Name is the cookie the site uses for its session, e.g. "SESSDATA".
+	Name string
+	// Known is false when the site is not one this package knows a name
+	// for, in which case the rest of the fields mean nothing.
+	Known bool
+	// Present is whether the file has the cookie at all.
+	Present bool
+	// Expiry is when it dies. Zero for a session cookie, which has no date.
+	Expiry time.Time
+	// Expired is whether that date has passed.
+	Expired bool
 }
 
 // saneExpiry is the furthest future an expiry is believed.
@@ -93,6 +120,20 @@ func SummarizeDomains(netscape string) []DomainSummary {
 		raw, err := strconv.ParseFloat(strings.TrimSpace(fields[4]), 64)
 		expiry := int64(normalizeExpiry(raw))
 
+		// The site's session cookie is the only one whose date is worth
+		// reporting, so it is recorded as it goes past.
+		if name, ok := KeyCookieFor(domain); ok && fields[5] == name {
+			entry.KeyCookie = KeyCookie{
+				Name:    name,
+				Known:   true,
+				Present: true,
+			}
+			if expiry > 0 {
+				entry.KeyCookie.Expiry = time.Unix(expiry, 0)
+				entry.KeyCookie.Expired = expiry < now
+			}
+		}
+
 		switch {
 		case err != nil || expiry == 0:
 			entry.Session++
@@ -120,6 +161,14 @@ func SummarizeDomains(netscape string) []DomainSummary {
 	out := make([]DomainSummary, 0, len(byDomain))
 	for domain, entry := range byDomain {
 		entry.MissingLogin = missingLoginFor(domain, names[domain])
+
+		// A site whose session cookie is not in the file at all is signed
+		// out, and that is the state worth reporting: it is why a download
+		// from that site comes back as a guest.
+		if name, ok := KeyCookieFor(domain); ok && !entry.KeyCookie.Present {
+			entry.KeyCookie = KeyCookie{Name: name, Known: true}
+		}
+
 		out = append(out, *entry)
 	}
 

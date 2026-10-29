@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -120,7 +119,13 @@ type CookieStatus struct {
 	Imported *ImportedCookie `json:"imported,omitempty"`
 }
 
-// CookieSite is what one site's cookies look like.
+// CookieSite is the state of one site's session cookie.
+//
+// Only the session cookie is reported. A cookie file holds hundreds per site
+// and almost all of them are disposable — page tokens, experiment flags,
+// counters — so a count of them says nothing about whether the site works.
+// What does is whether the one cookie that is the session is there and still
+// alive.
 type CookieSite struct {
 	// Site is the label: the name the interface knows the site by, e.g.
 	// "youtube", or the domain when it is one nobody knows.
@@ -129,18 +134,23 @@ type CookieSite struct {
 	Known bool `json:"known"`
 	// Domains are the cookie domains that were merged into this row.
 	Domains []string `json:"domains"`
-	// Count is how many cookies there are for it.
-	Count int `json:"count"`
-	// Session is how many of them have no expiry.
-	Session int `json:"session"`
-	// Expired is how many have already expired.
-	Expired int `json:"expired"`
-	// NewestExpiry is the latest expiry among them, empty when they are all
-	// session cookies.
-	NewestExpiry string `json:"newestExpiry,omitempty"`
-	// MissingLogin lists the login cookies this site's rule wants and the
-	// file does not have: the difference between a session and a guest.
-	MissingLogin []string `json:"missingLogin,omitempty"`
+
+	// Cookie is the name of the session cookie, e.g. "SESSDATA".
+	//
+	// Empty when the site is one whose session cookie this server does not
+	// know the name of; the row then says only where the cookies are from,
+	// rather than guessing a name and reporting the guess as a fact.
+	Cookie string `json:"cookie,omitempty"`
+
+	// Present is whether the file has that cookie: false means the export is
+	// signed out for the site, which is why a download comes back a guest.
+	Present bool `json:"present"`
+
+	// Expiry is when the cookie dies, empty for a session cookie.
+	Expiry string `json:"expiry,omitempty"`
+
+	// Expired is whether that date has passed.
+	Expired bool `json:"expired"`
 }
 
 // ImportedCookie describes the cookie export the user uploaded.
@@ -384,6 +394,7 @@ func readSites(path string) []CookieSite {
 	}
 
 	merged := map[string]*CookieSite{}
+	order := []string{}
 
 	for _, s := range cookies.SummarizeDomains(string(content)) {
 		site, known := filebrowser.SiteOfHost(s.Domain)
@@ -397,37 +408,60 @@ func readSites(path string) []CookieSite {
 		if !ok {
 			row = &CookieSite{Site: label, Known: known}
 			merged[label] = row
+			order = append(order, label)
 		}
 
 		row.Domains = append(row.Domains, s.Domain)
-		row.Count += s.Count
-		row.Session += s.Session
-		row.Expired += s.Expired
 
-		if !s.NewestExpiry.IsZero() {
-			at := s.NewestExpiry.Format(time.RFC3339)
-			if row.NewestExpiry == "" || at > row.NewestExpiry {
-				row.NewestExpiry = at
-			}
+		if !s.KeyCookie.Known {
+			continue
 		}
 
-		for _, missing := range s.MissingLogin {
-			if !slices.Contains(row.MissingLogin, missing) {
-				row.MissingLogin = append(row.MissingLogin, missing)
+		// The domains of one site disagree about the session cookie: it is
+		// set on the site's main domain and not on the delivery host, and a
+		// dump can hold one without the other. The present one wins, and a
+		// live date wins over a passed one.
+		switch {
+		case row.Cookie == "":
+			row.Cookie = s.KeyCookie.Name
+			row.Present = s.KeyCookie.Present
+			row.Expired = s.KeyCookie.Expired
+			if !s.KeyCookie.Expiry.IsZero() {
+				row.Expiry = s.KeyCookie.Expiry.Format(time.RFC3339)
+			}
+		case s.KeyCookie.Present && !row.Present:
+			row.Present = true
+			row.Expired = s.KeyCookie.Expired
+			row.Expiry = ""
+			if !s.KeyCookie.Expiry.IsZero() {
+				row.Expiry = s.KeyCookie.Expiry.Format(time.RFC3339)
 			}
 		}
 	}
 
-	out := make([]CookieSite, 0, len(merged))
-	for _, row := range merged {
-		out = append(out, *row)
+	// Sites whose session is live first, then the ones signed out, then the
+	// ones nobody knows a cookie name for. A person opens this to find the
+	// site that is not working, so the broken ones belong at the top of what
+	// is left.
+	out := make([]CookieSite, 0, len(order))
+	for _, label := range order {
+		out = append(out, *merged[label])
 	}
 
-	// Most cookies first: the sites actually in use come before the ones a
-	// browser merely passed through.
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].Count != out[j].Count {
-			return out[i].Count > out[j].Count
+	sort.SliceStable(out, func(i, j int) bool {
+		rank := func(c CookieSite) int {
+			switch {
+			case c.Cookie == "":
+				return 2
+			case !c.Present || c.Expired:
+				return 0
+			default:
+				return 1
+			}
+		}
+
+		if rank(out[i]) != rank(out[j]) {
+			return rank(out[i]) < rank(out[j])
 		}
 		return out[i].Site < out[j].Site
 	})

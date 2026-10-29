@@ -10,7 +10,6 @@ import { totalDownloadSpeedState } from '../atoms/ui'
 import { useI18n } from '../hooks/useI18n'
 import { formatSpeedMiB } from '../utils'
 import CookieDialog from './CookieDialog'
-import LivestreamIndicator from './LivestreamIndicator'
 import { isDark, siteIcon } from './SiteIcon'
 import CookieIndicator from './CookieIndicator'
 import FreeSpaceIndicator from './FreeSpaceIndicator'
@@ -162,14 +161,6 @@ const Footer: React.FC = () => {
               <Suspense fallback={null}>
                 <CookieIndicator onImport={() => setCookieDialog(true)} />
               </Suspense>
-            </Box>
-
-            {/* The livestreams being watched for. They are the one thing
-                that can run for hours, so they need to be visible and they
-                need to be stoppable. */}
-            <Box sx={{ display: { xs: 'none', lg: 'flex' }, alignItems: 'center', flexShrink: 0 }}>
-              <Divider orientation="vertical" flexItem />
-              <LivestreamIndicator />
             </Box>
           </Box>
         </Box>

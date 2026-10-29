@@ -144,4 +144,14 @@ const (
 	// file, and treating it as finished put it in the browser as a file that
 	// was never written.
 	StatusPaused
+
+	// StatusRemuxing is a recording that has finished downloading and is
+	// being put into a container that plays.
+	//
+	// It is a state of its own because it is the one moment the file is
+	// neither a download nor a finished recording: the bytes are all there
+	// and the file on disk is not playable yet. It lasts seconds, but a
+	// person who has just pressed stop is watching for the file, and
+	// "nothing yet" and "working on it" look the same from outside.
+	StatusRemuxing
 )
