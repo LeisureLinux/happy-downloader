@@ -132,7 +132,7 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	// The media probe cache is written to disk, so that the first visit to
 	// the file browser after a restart is as fast as the one after it.
 	filebrowser.StartProbeCacheWriter()
-	filebrowser.SetSourceLookup(func(path string) (string, bool) {
+	filebrowser.SetSourceLookup(func(path string) (string, string, bool) {
 		rec, ok := sourceIndex.Lookup(path)
 		if !ok {
 			// The file was moved before the index learned to move, so its
@@ -141,9 +141,9 @@ func Run(ctx context.Context, rc *RunConfig) error {
 			rec, ok = sourceIndex.LookupByName(path)
 		}
 		if !ok {
-			return "", false
+			return "", "", false
 		}
-		return rec.URL, true
+		return rec.URL, rec.Site, true
 	})
 	filebrowser.SetSourceMover(sourceIndex.Move)
 
@@ -160,15 +160,11 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	importedCookies.Restore()
 	cookies.SetGlobal(importedCookies)
 
-	if cur := importedCookies.Current(); cur != nil {
-		downloaders.SetImportedCookiePath(cur.Path)
-	}
-
 	// A refusal of the imported export is what eventually replaces it.
 	cookies.SetFailureHook(func() {
 		if importedCookies.Failed() == nil {
-			// The export was removed: the automatic one takes over.
-			downloaders.SetImportedCookiePath("")
+			// The export was removed, so the automatic one is the only one
+			// left; which export is in use is worked out per download.
 			slog.Info("the imported cookie export was refused twice and has been removed")
 		}
 	})

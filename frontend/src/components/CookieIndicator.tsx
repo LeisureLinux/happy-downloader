@@ -38,22 +38,29 @@ const CookieIndicator: React.FC<Props> = ({ onImport }) => {
   const status = useAtomValue(cookieStatusState)
   const { i18n } = useI18n()
 
-  const imported = status.imported
-
   const open = () => onImport()
 
-  // The imported export is in use: it is the cookie the downloads use, so it
-  // is what the timestamp has to be about.
-  if (imported) {
+  // The export in use, whichever it is.
+  //
+  // The server decides which of the two exports is newer, and reports it. It
+  // used to be the interface's job, and it read the imported one whenever
+  // there was one — while the downloads had long since fallen back to the
+  // automatic one. The number was showing a file that was not being used.
+  if (status.activePath) {
+    const kind =
+      status.active === 'imported'
+        ? i18n.t('cookieActiveImported')
+        : i18n.t('cookieActiveAutomatic')
+
     return (
-      <Tooltip title={`${i18n.t('cookieModifiedAt')} · ${imported.path}`}>
+      <Tooltip title={`${kind} · ${status.activePath}`}>
         <IconButton
           size="small"
           onClick={open}
           sx={{ color: 'primary.main', gap: 0.5 }}
         >
           <CookieIcon fontSize="small" />
-          <span>{formatTimestamp(imported.modifiedAt)}</span>
+          <span>{formatTimestamp(status.activeModifiedAt ?? '')}</span>
         </IconButton>
       </Tooltip>
     )

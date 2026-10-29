@@ -20,20 +20,29 @@ import (
 // "youtube.com" are the same site and the icon should not depend on which
 // one the link happened to use.
 func SiteOf(rawURL string) string {
-	if rawURL == "" {
-		return ""
-	}
-
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
 		return ""
 	}
 
-	host := strings.ToLower(parsed.Hostname())
+	site, _ := SiteOfHost(parsed.Hostname())
+	return site
+}
+
+// SiteOfHost is SiteOf for a bare host, and it says whether the site is one
+// the application knows.
+//
+// The distinction matters where a host is listed rather than labelled with an
+// icon: a known site is worth naming ("youtube"), and an unknown one is only
+// meaningful as the domain itself — the fallback in SiteOf reduces
+// "accounts.google.com" to "accounts", which is not a site and reads as one.
+func SiteOfHost(rawHost string) (site string, known bool) {
+	host := strings.ToLower(strings.TrimSpace(rawHost))
 	host = strings.TrimPrefix(host, "www.")
+	host = strings.Trim(host, ".")
 
 	if host == "" {
-		return ""
+		return "", false
 	}
 
 	// The known sites, matched on the part of the host that identifies them.
@@ -50,36 +59,36 @@ func SiteOf(rawURL string) string {
 	// short link the name of the shortener.
 	switch host {
 	case "t.cn", "weibo.cn":
-		return "weibo"
+		return "weibo", true
 	case "packaged-media.redd.it", "redd.it", "i.redd.it", "preview.redd.it", "v.redd.it":
-		return "reddit"
+		return "reddit", true
 	}
 
 	switch {
 	case strings.HasSuffix(host, "youtube.com"), strings.HasSuffix(host, "youtu.be"):
-		return "youtube"
+		return "youtube", true
 	case strings.HasSuffix(host, "bilibili.com"), strings.HasSuffix(host, "b23.tv"):
-		return "bilibili"
+		return "bilibili", true
 	case strings.HasSuffix(host, "x.com"), strings.HasSuffix(host, "twitter.com"):
-		return "x"
+		return "x", true
 	case strings.HasSuffix(host, "xiaohongshu.com"), strings.HasSuffix(host, "xhslink.com"):
-		return "xiaohongshu"
+		return "xiaohongshu", true
 	case strings.HasSuffix(host, "douyin.com"), strings.HasSuffix(host, "iesdouyin.com"):
-		return "douyin"
+		return "douyin", true
 	case strings.HasSuffix(host, "tiktok.com"):
-		return "tiktok"
+		return "tiktok", true
 	case strings.HasSuffix(host, "reddit.com"):
-		return "reddit"
+		return "reddit", true
 	case strings.HasSuffix(host, "instagram.com"):
-		return "instagram"
+		return "instagram", true
 	case strings.HasSuffix(host, "vimeo.com"):
-		return "vimeo"
+		return "vimeo", true
 	case strings.HasSuffix(host, "twitch.tv"):
-		return "twitch"
+		return "twitch", true
 	case strings.HasSuffix(host, "facebook.com"), strings.HasSuffix(host, "fb.watch"):
-		return "facebook"
+		return "facebook", true
 	case strings.HasSuffix(host, "nicovideo.jp"):
-		return "niconico"
+		return "niconico", true
 	}
 
 	// The first label of the host, so "example.co.uk" reads as "example".
@@ -95,5 +104,5 @@ func SiteOf(rawURL string) string {
 		host = host[:dot]
 	}
 
-	return host
+	return host, false
 }

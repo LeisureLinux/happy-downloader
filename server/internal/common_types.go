@@ -67,6 +67,9 @@ type ProcessSnapshot struct {
 	// so the queue can show it without reading the finished file.
 	Duration float64 `json:"duration,omitempty"`
 
+	// FromIP is the address the download was asked for from.
+	FromIP string `json:"fromIp,omitempty"`
+
 	// The caption tracks the source offered. Kept so the player can offer the
 	// languages that were actually available, rather than guessing from the
 	// filename.
@@ -107,6 +110,12 @@ type DownloadRequest struct {
 	// A livestream does not end, so the length is the answer to "how long
 	// do I want this".
 	RecordMinutes int `json:"recordMinutes,omitempty"`
+
+	// FromIP is the address the request came from. It is filled in by the
+	// transport that received the call, not sent by the browser: the
+	// browser cannot be trusted to say where it is, and behind a reverse
+	// proxy it does not know.
+	FromIP string `json:"from_ip,omitempty"`
 }
 
 // struct representing request of creating a netscape cookies file

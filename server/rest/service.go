@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/filebrowser"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookiewatch"
@@ -96,14 +99,48 @@ type CookieStatus struct {
 
 	// The cookie the downloads are actually using.
 	//
-	// The imported export takes precedence over the automatic one, and this
-	// says which is in effect — otherwise the footer would show the
-	// automatic export's timestamp while the downloads were using
-	// something else entirely.
+	// There are two exports and the newer one wins, so this says which is in
+	// effect — otherwise the footer would show one export's timestamp while
+	// the downloads were using the other.
 	Active string `json:"active,omitempty"`
+
+	// ActivePath and ActiveModifiedAt describe that export.
+	//
+	// They are reported directly rather than left for the interface to pick
+	// out of Imported and the automatic fields: the choice is made here, and
+	// a second implementation of it in the interface is a second answer.
+	ActivePath       string `json:"activePath,omitempty"`
+	ActiveModifiedAt string `json:"activeModifiedAt,omitempty"`
+
+	// Sites is the file broken down by site, which is the question a person
+	// looking at this dialog actually has: which site's session is stale.
+	Sites []CookieSite `json:"sites,omitempty"`
 
 	// The imported export, when there is one.
 	Imported *ImportedCookie `json:"imported,omitempty"`
+}
+
+// CookieSite is what one site's cookies look like.
+type CookieSite struct {
+	// Site is the label: the name the interface knows the site by, e.g.
+	// "youtube", or the domain when it is one nobody knows.
+	Site string `json:"site"`
+	// Known says whether Site is a site the interface has an icon for.
+	Known bool `json:"known"`
+	// Domains are the cookie domains that were merged into this row.
+	Domains []string `json:"domains"`
+	// Count is how many cookies there are for it.
+	Count int `json:"count"`
+	// Session is how many of them have no expiry.
+	Session int `json:"session"`
+	// Expired is how many have already expired.
+	Expired int `json:"expired"`
+	// NewestExpiry is the latest expiry among them, empty when they are all
+	// session cookies.
+	NewestExpiry string `json:"newestExpiry,omitempty"`
+	// MissingLogin lists the login cookies this site's rule wants and the
+	// file does not have: the difference between a session and a guest.
+	MissingLogin []string `json:"missingLogin,omitempty"`
 }
 
 // ImportedCookie describes the cookie export the user uploaded.
@@ -129,6 +166,27 @@ type ImportedCookie struct {
 func (s *Service) CookieStatus() (*CookieStatus, error) {
 	status := &CookieStatus{}
 
+	// Which export is in use, and what is in it.
+	//
+	// This is answered by the same call the downloader makes, so the footer
+	// and the downloads cannot disagree about which file is being used.
+	active := cookies.Active()
+	if active.Path != "" {
+		status.Active = active.Kind
+
+		// The source is what a person recognises: the file they uploaded, or
+		// the browser export a timer replaces. The converted copy it is read
+		// from is an implementation detail.
+		status.ActivePath = active.Source
+		if status.ActivePath == "" {
+			status.ActivePath = active.Path
+		}
+		if !active.ModifiedAt.IsZero() {
+			status.ActiveModifiedAt = active.ModifiedAt.Format(time.RFC3339)
+		}
+		status.Sites = readSites(active.Path)
+	}
+
 	// The imported export, when there is one.
 	//
 	// It is the cookie the downloads use, so it is reported first and the
@@ -143,7 +201,9 @@ func (s *Service) CookieStatus() (*CookieStatus, error) {
 				ModifiedAt: cur.ModifiedAt.Format(time.RFC3339),
 				Failures:   cur.Failures,
 			}
-			status.Active = "imported"
+			if status.Active == "" {
+				status.Active = cookies.KindImported
+			}
 		}
 	}
 
@@ -297,4 +357,95 @@ func (s *Service) GetVersion(ctx context.Context) (string, string, string, error
 	// seconds to start — which the page waited for, on every load, because
 	// the footer shows the version.
 	return serverVersion, ServerBuiltAt, ytDlpVersion(ctx), nil
+}
+
+// readSites breaks the active cookie file down by site.
+//
+// The file is one list for every site a browser has visited, and the question
+// a person has is per site: which session is stale. A single figure for the
+// whole file cannot answer it — a file can be enormous and hold nothing for
+// the site that is failing.
+//
+// The domains are merged by site, because a site sets cookies on several of
+// them: "douyin.com" and "www.douyin.com" are one account, and two rows for
+// them would read as two problems. The site name comes from the one place that
+// knows how a host maps to a site, so the icon is the same one the file
+// browser shows. A host nobody knows keeps its own domain as the label: the
+// fallback would reduce "accounts.google.com" to "accounts", which is not a
+// site and reads as one.
+//
+// A cookie is a credential, so only the shape is returned: how many, when the
+// newest one expires, and whether the site's login cookies are there. No value
+// is ever read out of the file.
+func readSites(path string) []CookieSite {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+
+	merged := map[string]*CookieSite{}
+
+	for _, s := range cookies.SummarizeDomains(string(content)) {
+		site, known := filebrowser.SiteOfHost(s.Domain)
+
+		label := site
+		if !known {
+			label = registrableDomain(s.Domain)
+		}
+
+		row, ok := merged[label]
+		if !ok {
+			row = &CookieSite{Site: label, Known: known}
+			merged[label] = row
+		}
+
+		row.Domains = append(row.Domains, s.Domain)
+		row.Count += s.Count
+		row.Session += s.Session
+		row.Expired += s.Expired
+
+		if !s.NewestExpiry.IsZero() {
+			at := s.NewestExpiry.Format(time.RFC3339)
+			if row.NewestExpiry == "" || at > row.NewestExpiry {
+				row.NewestExpiry = at
+			}
+		}
+
+		for _, missing := range s.MissingLogin {
+			if !slices.Contains(row.MissingLogin, missing) {
+				row.MissingLogin = append(row.MissingLogin, missing)
+			}
+		}
+	}
+
+	out := make([]CookieSite, 0, len(merged))
+	for _, row := range merged {
+		out = append(out, *row)
+	}
+
+	// Most cookies first: the sites actually in use come before the ones a
+	// browser merely passed through.
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Count != out[j].Count {
+			return out[i].Count > out[j].Count
+		}
+		return out[i].Site < out[j].Site
+	})
+
+	return out
+}
+
+// registrableDomain reduces a host to the part that names the site.
+//
+// It is the last two labels, which is right for "accounts.google.com" and for
+// "www.douyin.com". It is wrong for "example.co.uk", and that is accepted: the
+// label is only used for hosts nobody has an icon for, and a slightly short
+// name is better than a different row for every subdomain.
+func registrableDomain(host string) string {
+	parts := strings.Split(strings.Trim(host, "."), ".")
+	if len(parts) <= 2 {
+		return strings.Join(parts, ".")
+	}
+
+	return strings.Join(parts[len(parts)-2:], ".")
 }

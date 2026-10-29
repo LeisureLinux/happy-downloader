@@ -384,6 +384,7 @@ func (l *LiveStreamDownloader) Status() internal.ProcessSnapshot {
 		// measures the bar against it, so without it a recording sat at
 		// zero no matter how long it had run.
 		Duration: float64(l.Duration) * 60,
+		FromIP:   l.FromIP,
 	}
 }
 
@@ -437,6 +438,7 @@ func (l *LiveStreamDownloader) RestoreFromSnapshot(snap *internal.ProcessSnapsho
 	if l.URL == "" {
 		l.URL = s.Info.URL
 	}
+	l.FromIP = s.FromIP
 
 	return nil
 }

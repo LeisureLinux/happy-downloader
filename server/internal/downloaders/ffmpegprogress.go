@@ -58,6 +58,14 @@ func (f *ffmpegLogConsumer) ParseLogEntry(entry []byte, d Downloader) {
 
 	seconds, ok := recordedSeconds(line)
 	if !ok {
+		// An error is kept, because a recording that fails is the one case
+		// where the log is read afterwards and has to say why. The process
+		// only reports an exit code, and the ffmpeg log consumer is the
+		// only thing that sees what yt-dlp said.
+		if strings.HasPrefix(strings.TrimSpace(line), "ERROR") {
+			d.SetFailureReason(line)
+		}
+
 		// Not a progress line. The output ffmpeg writes about the
 		// streams themselves is worth having in the log, but it is not
 		// progress and it is not an error either.

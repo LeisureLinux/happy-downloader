@@ -198,10 +198,17 @@ func walkDir(root string) (*[]DirectoryEntry, error) {
 			// codecs, so the URL is taken from there rather than from a
 			// second ffprobe — spawning one for every file in the listing
 			// is what made the file browser take fifteen seconds.
-			url, ok := sourceOf(path, info)
+			url, site, ok := sourceOf(path, info)
 			if ok {
 				entry.SourceURL = url
-				entry.SourceSite = SiteOf(url)
+
+				// A site that was recorded by hand wins over one derived
+				// from the URL, because there may be no URL at all.
+				if site != "" {
+					entry.SourceSite = site
+				} else {
+					entry.SourceSite = SiteOf(url)
+				}
 			}
 		}
 
@@ -598,10 +605,14 @@ func SetSourceForgetter(fn func(path string)) {
 // The index lives in another package, and this package only needs one thing
 // from it: where the file came from. So it is a function rather than an
 // interface, the same way the forgetter is.
-var sourceLookup func(path string) (url string, ok bool)
+var sourceLookup func(path string) (url, site string, ok bool)
 
 // SetSourceLookup installs the callback.
-func SetSourceLookup(fn func(path string) (string, bool)) {
+//
+// It answers with the site as well as the URL, because a file whose URL could
+// not be recovered can still have its site known — and a site name is what the
+// icon needs.
+func SetSourceLookup(fn func(path string) (url, site string, ok bool)) {
 	sourceLookup = fn
 }
 
@@ -634,18 +645,18 @@ func moveSource(from, to string) {
 // The metadata comes from the ffprobe run that read the length and the
 // codecs, so it is free as well. It used to be a second ffprobe of its own,
 // which cost a process spawn for every file in the listing.
-func sourceOf(path string, info mediaInfo) (string, bool) {
+func sourceOf(path string, info mediaInfo) (url, site string, ok bool) {
 	if sourceLookup != nil {
-		if url, ok := sourceLookup(path); ok {
-			return url, true
+		if url, site, ok := sourceLookup(path); ok {
+			return url, site, true
 		}
 	}
 
 	if info.source != "" {
-		return info.source, true
+		return info.source, "", true
 	}
 
-	return "", false
+	return "", "", false
 }
 
 func forgetSource(path string) {

@@ -30,4 +30,13 @@ type Downloader interface {
 
 	GetId() string
 	GetUrl() string
+
+	// SetFromIP records the address the download was asked for from.
+	SetFromIP(ip string)
+	GetFromIP() string
+
+	// SetFailureReason records what yt-dlp said when it gave up, so that
+	// the download log can say more than the exit code.
+	SetFailureReason(reason string)
+	GetFailureReason() string
 }

@@ -228,7 +228,7 @@ func (g *GenericDownloader) Start() error {
 	go consumeLogs(ctx, logs, g.logConsumer, g)
 
 	go func() {
-		if err := printYtDlpErrors(stderr, g.Id, g.URL); err != nil {
+		if err := printYtDlpErrors(stderr, g.Id, g.URL, g); err != nil {
 			stop()
 		}
 	}()
@@ -321,6 +321,7 @@ func (g *GenericDownloader) Status() internal.ProcessSnapshot {
 		Params:         g.Params,
 		DownloaderName: "generic",
 		Duration:       g.duration,
+		FromIP:         g.FromIP,
 		Captions:       g.captions,
 	}
 }
@@ -376,6 +377,7 @@ func (g *GenericDownloader) RestoreFromSnapshot(snap *internal.ProcessSnapshot) 
 	g.progress = s.Progress
 	g.output = s.Output
 	g.Params = s.Params
+	g.FromIP = s.FromIP
 
 	// Prefer the requested URL; older snapshots only recorded the metadata one.
 	g.URL = s.URL

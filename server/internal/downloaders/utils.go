@@ -174,7 +174,7 @@ func consumeLogs(ctx context.Context, logs <-chan []byte, c LogConsumer, d Downl
 	}
 }
 
-func printYtDlpErrors(stdout io.Reader, shortId, url string) error {
+func printYtDlpErrors(stdout io.Reader, shortId, url string, d Downloader) error {
 	scanner := bufio.NewScanner(stdout)
 
 	for scanner.Scan() {
@@ -204,6 +204,16 @@ func printYtDlpErrors(stdout io.Reader, shortId, url string) error {
 			slog.String("url", url),
 			slog.String("err", line),
 		)
+
+		// The reason is kept for the download log, which says why a
+		// download failed. The process only reports an exit code, and
+		// "exit status 1" is not an answer to anything.
+		//
+		// The last error wins: yt-dlp tries formats in turn and prints an
+		// error for each attempt, so the final one is the verdict.
+		if d != nil && strings.HasPrefix(strings.TrimSpace(line), "ERROR") {
+			d.SetFailureReason(line)
+		}
 
 		// A refused credential is worth more than a log line: it is the
 		// signal that the cookie the user imported is not working, and it is

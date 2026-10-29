@@ -162,7 +162,7 @@ func runFFprobe(path string) mediaInfo {
 			} `json:"disposition"`
 		} `json:"streams"`
 		Format struct {
-			Duration string `json:"duration"`
+			Duration string            `json:"duration"`
 			Tags     map[string]string `json:"tags"`
 		} `json:"format"`
 	}

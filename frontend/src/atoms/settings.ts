@@ -201,8 +201,28 @@ export type CookieStatus = {
   expired?: number
   missing?: string[]
   modifiedAt?: string
-  // Which cookie the downloads are using: "imported" or "automatic".
+  // Which cookie the downloads are using: "imported" or "automatic". The
+  // newer of the two wins, and the server decides — so this is the one answer
+  // to "which file is in effect".
   active?: string
+  // Where that export is, and when it was written.
+  activePath?: string
+  activeModifiedAt?: string
+  // The active export broken down by site: how many cookies each site has,
+  // when its newest one expires, and whether its login cookies are there.
+  // The file is one list for every site, and the question is per site.
+  sites?: {
+    site: string
+    // Whether the site is one the interface has an icon for; when it is not,
+    // `site` is the domain itself and gets the globe.
+    known: boolean
+    domains: string[]
+    count: number
+    session?: number
+    expired?: number
+    newestExpiry?: string
+    missingLogin?: string[]
+  }[]
   // The export the user uploaded, when there is one.
   imported?: {
     path: string

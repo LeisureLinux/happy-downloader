@@ -31,6 +31,14 @@ type ServerConfig struct {
 type LoggingConfig struct {
 	LogPath           string `mapstructure:"log_path"`
 	EnableFileLogging bool   `mapstructure:"enable_file_logging"`
+
+	// DownloadLogPath is where the download access log is written.
+	//
+	// It is separate from LogPath, and it is not the same kind of thing: the
+	// log file carries everything the server does, while this one carries
+	// one line per finished download and nothing else. Empty means the
+	// default, which is "downloads.log" in the state directory.
+	DownloadLogPath string `mapstructure:"download_log_path"`
 }
 
 type PathsConfig struct {

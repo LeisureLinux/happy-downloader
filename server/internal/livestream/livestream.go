@@ -42,6 +42,11 @@ type LiveStream struct {
 	// recordMinutes is how long the recording should run.
 	recordMinutes int
 
+	// fromIP is the address the stream was asked for from. It is handed to
+	// the download the monitor publishes, which is the one that ends up in
+	// the download log.
+	fromIP string
+
 	// recorder is the download that is doing the recording, once the stream
 	// has been handed to the queue.
 	//
@@ -63,6 +68,13 @@ type LiveStream struct {
 	// reported — and one that was only being watched for is forgotten,
 	// because there is nothing left of it.
 	published bool
+}
+
+// SetFromIP records the address the stream was asked for from.
+func (l *LiveStream) SetFromIP(ip string) {
+	l.mu.Lock()
+	l.fromIP = ip
+	l.mu.Unlock()
 }
 
 // SetRecordMinutes says how long the recording should run.
@@ -143,6 +155,10 @@ func (l *LiveStream) Start() error {
 	l.mu.Unlock()
 
 	d.SetRecordMinutes(duration)
+
+	l.mu.Lock()
+	d.SetFromIP(l.fromIP)
+	l.mu.Unlock()
 
 	l.store.Set(d)
 	l.mq.Publish(d)

@@ -90,11 +90,14 @@ func BuildArgs(url string, extra ...string) []string {
 	// the person using the interface chose — an export from their own
 	// machine, signed into their own account. The automatic export belongs
 	// to whoever set up the host, which is not always the same person.
-	cookieSource := config.ResolvedCookieSource()
-
-	if imported := ImportedCookiePath(); imported != "" {
-		cookieSource = imported
-	}
+	// Whichever export was written last, decided now rather than at startup.
+	//
+	// It used to be a flag: "the imported one, if there is one". The flag was
+	// set when the process started and when a file was uploaded, and never
+	// looked at again — so after the automatic export had been refreshed a
+	// few times the downloads were still on a file uploaded yesterday, or
+	// the other way round, and the interface reported the flag either way.
+	cookieSource := cookies.Active().Path
 
 	cookieStaging := ""
 	if cookieSource != "" {

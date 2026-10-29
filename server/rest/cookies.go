@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
-	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 )
 
 // Importing a cookie export.
@@ -67,10 +66,9 @@ func (h *Handler) ImportCookies() http.HandlerFunc {
 			return
 		}
 
-		// The downloads have to use it from now on. The path is published
-		// rather than the file's content, so the downloader does not have to
-		// know anything about how it was imported.
-		downloaders.SetImportedCookiePath(imported.Path)
+		// Nothing has to be published: the downloads ask which export is the
+		// newer of the two when they are built, so an import takes effect on
+		// the next download without anything being told.
 
 		w.Header().Set("Content-Type", "application/json")
 
@@ -100,7 +98,6 @@ func (h *Handler) RemoveImportedCookies() http.HandlerFunc {
 		}
 
 		store.Forget()
-		downloaders.SetImportedCookiePath("")
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode("ok")

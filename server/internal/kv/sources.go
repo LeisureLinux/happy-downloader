@@ -29,6 +29,17 @@ type SourceRecord struct {
 	Path string `json:"path"`
 	// URL is the page the file came from.
 	URL string `json:"url"`
+	// Site is the site the file came from, when the URL is not known.
+	//
+	// It exists for the files whose source cannot be recovered any more:
+	// the container has no tags, and whatever recorded the download is
+	// gone. The file's own name often says it — Instagram names its files
+	// "Video by <user>" — and a site name that is known is better than the
+	// globe that says nothing.
+	//
+	// The URL wins when there is one: the site is derived from it, and a
+	// derived name cannot go stale the way a typed one can.
+	Site string `json:"site,omitempty"`
 	// Title is the title at the time of the download.
 	Title string `json:"title"`
 	// Captions are the caption languages the source offered.

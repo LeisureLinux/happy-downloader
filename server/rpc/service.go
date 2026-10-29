@@ -37,6 +37,7 @@ func (s *Service) Exec(args internal.DownloadRequest, result *string) error {
 		Path:     args.Path,
 		Filename: args.Rename,
 	})
+	d.SetFromIP(args.FromIP)
 
 	s.db.Set(d)
 	s.mq.Publish(d)
@@ -59,7 +60,7 @@ func (s *Service) ExecPlaylist(args internal.DownloadRequest, result *string) er
 
 // TODO: docs
 func (s *Service) ExecLivestream(args internal.DownloadRequest, result *string) error {
-	s.lm.Add(args.URL, args.RecordMinutes)
+	s.lm.AddFrom(args.URL, args.RecordMinutes, args.FromIP)
 
 	*result = args.URL
 	return nil

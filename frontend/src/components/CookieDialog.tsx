@@ -1,4 +1,5 @@
 import UploadFileIcon from '@mui/icons-material/UploadFile'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import {
   Alert,
   Box,
@@ -15,6 +16,7 @@ import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useAtomValue } from 'jotai'
 import { useTheme } from '@mui/material/styles'
 import { cookieStatusState, serverURL } from '../atoms/settings'
+import { formatTimestamp } from '../utils'
 import { useI18n } from '../hooks/useI18n'
 import { useToast } from '../hooks/toast'
 import { isDark, siteIcon } from './SiteIcon'
@@ -180,19 +182,116 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
         {/* What is in use now. */}
         <Alert severity="info" sx={{ mb: 2 }}>
           <Typography variant="body2">
-            {status.imported
+            {status.active === 'imported'
               ? i18n.t('cookieInUseImported')
               : i18n.t('cookieInUseAutomatic')}
           </Typography>
-          {(status.imported?.path ?? status.sourcePath) && (
+          {status.activePath && (
             <Typography
               variant="caption"
               sx={{ display: 'block', wordBreak: 'break-all', mt: 0.5 }}
             >
-              {status.imported?.path ?? status.sourcePath}
+              {status.activePath}
+            </Typography>
+          )}
+          {status.activeModifiedAt && (
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              {i18n.t('cookieModifiedAt')} · {formatTimestamp(status.activeModifiedAt)}
             </Typography>
           )}
         </Alert>
+
+        {/* Per site, because the file is one list for every site and the
+            question is which site's session is stale. A single figure for
+            the whole file answers the wrong question: a file can be
+            enormous and have nothing for the site that is failing. */}
+        {status.sites && status.sites.length > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="caption" color="text.secondary">
+              {i18n.t('cookieSitesTitle')}
+            </Typography>
+
+            <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+              {status.sites.slice(0, 12).map(s => {
+                // Compared as a number, not as a truthiness test: `0 && ..`
+                // is 0, and React renders the 0.
+                const expiring = (s.expired ?? 0) > 0
+                const noLogin = (s.missingLogin?.length ?? 0) > 0
+
+                return (
+                  <Stack
+                    key={s.site}
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{ minWidth: 0 }}
+                  >
+                    <Box
+                      component="span"
+                      sx={{ display: 'inline-flex', width: 20, flexShrink: 0 }}
+                    >
+                      {siteIcon(
+                        s.known ? s.site : undefined,
+                        theme.palette.primary.main,
+                        isDark(theme)
+                      )}
+                    </Box>
+
+                    <Tooltip title={s.domains.join(' · ')}>
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        sx={{ flexGrow: 1, minWidth: 0 }}
+                      >
+                        {s.site}
+                      </Typography>
+                    </Tooltip>
+
+                    <Typography variant="caption" color="text.secondary">
+                      {s.count}
+                    </Typography>
+
+                    {/* When this site's newest cookie dies. A session
+                        cookie has no date; that is not an error.
+
+                        Some of them having expired does not make the date
+                        useless: the others are still good, and replacing the
+                        date with "expired" hid the ones that are. The count
+                        is shown beside it instead. */}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ minWidth: 120, textAlign: 'right' }}
+                    >
+                      {s.newestExpiry
+                        ? formatTimestamp(s.newestExpiry)
+                        : i18n.t('cookieSiteSession')}
+                    </Typography>
+
+                    {expiring && (
+                      <Typography
+                        variant="caption"
+                        color="error.main"
+                        sx={{ flexShrink: 0 }}
+                      >
+                        {s.expired} {i18n.t('cookieSiteExpired')}
+                      </Typography>
+                    )}
+
+                    {noLogin && (
+                      <Tooltip title={`${i18n.t('cookieSiteGuest')}: ${s.missingLogin?.join(', ')}`}>
+                        <WarningAmberIcon
+                          fontSize="small"
+                          sx={{ color: 'warning.main', flexShrink: 0 }}
+                        />
+                      </Tooltip>
+                    )}
+                  </Stack>
+                )
+              })}
+            </Stack>
+          </Box>
+        )}
 
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           {i18n.t('cookieImportHint')}
