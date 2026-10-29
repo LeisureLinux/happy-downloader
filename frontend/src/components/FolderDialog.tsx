@@ -21,6 +21,7 @@ import { useAtomValue } from 'jotai'
 import { serverURL } from '../atoms/settings'
 import { useI18n } from '../hooks/useI18n'
 import { useToast } from '../hooks/toast'
+import { moveTargets } from '../lib/moveTargets'
 import { DirectoryEntry } from '../types'
 
 // Making a folder, and moving files into one.
@@ -63,12 +64,7 @@ const FolderDialog: React.FC<Props> = ({
   open, parent, destinations, files = [], mode, folder, onClose, onDone, onOpenMove,
 }) => {
 
-  // The folder the files are in is not a destination, and neither is any
-  // folder being moved: a folder cannot be put inside itself.
-  const candidates = destinations.filter(dir =>
-    dir !== parent &&
-    !files.some(f => f === dir || f.startsWith(dir + '/'))
-  )
+  const candidates = moveTargets(destinations, parent, files)
   const serverAddr = useAtomValue(serverURL)
   const { i18n } = useI18n()
   const { pushMessage } = useToast()
