@@ -5,8 +5,10 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"syscall"
@@ -170,8 +172,10 @@ func (l *LiveStreamDownloader) Start() error {
 		//
 		// The name is settled when the recording ends rather than when it
 		// starts: the title arrives with the metadata, which is a moment
-		// after the stream begins, so a file named at the start was called
-		// "Twitch (live)" whatever the channel was.
+		// after the stream begins, so a name taken at the start is whatever
+		// the fallback happens to be — which is how a YouTube recording came
+		// to be called "Twitch 2026-10-29 14-16-20". It said so in this
+		// comment for a while; the code went on naming the file at the start.
 		//
 		// The copy is waited for before the process is waited for.
 		//
@@ -184,9 +188,16 @@ func (l *LiveStreamDownloader) Start() error {
 		go func() {
 			defer close(written)
 
-			raw, final := l.outputPath, ""
+			// The stream is copied into a file with a provisional name,
+			// because the title is not known yet. The real name is settled
+			// below, once the recording has ended, and the file is moved
+			// there.
+			raw := l.outputPath
+			provisional := false
+
 			if raw == "" {
-				raw, final = l.recordingPath()
+				raw = filepath.Join(tempDir(), "recording-"+l.Id+".ts")
+				provisional = true
 			}
 
 			f, err := os.Create(raw)
@@ -202,12 +213,18 @@ func (l *LiveStreamDownloader) Start() error {
 				slog.Error("copy error", slog.Any("err", err))
 			}
 
-			// The recording is put into an MP4, so that it plays.
+			// The recording is put into an MP4, so that it plays, and into
+			// its real name.
 			//
 			// The media comes out of the stream as MPEG-TS and the file
 			// was named as an MP4, which is a file whose extension lies
 			// about its contents — and nothing plays it.
-			if final != "" {
+			final := raw
+			if provisional {
+				_, final = l.recordingPath()
+			}
+
+			if final != "" && final != raw {
 				final = l.finishRecording(raw, final)
 			}
 
@@ -359,7 +376,71 @@ func (l *LiveStreamDownloader) Title() string {
 		return l.Metadata.Title
 	}
 
-	return "Twitch"
+	// A name the request asked for wins over anything derived.
+	if l.output.Filename != "" {
+		return l.output.Filename
+	}
+
+	// The metadata did not arrive, or arrived without a title. The fallback
+	// used to be the literal "Twitch", which named a YouTube recording
+	// "Twitch 2026-10-29 14-16-20" — a file that is wrong about where it came
+	// from, in the one place a person looks to find out.
+	return nameFromURL(l.URL)
+}
+
+// nameFromURL is what a recording is called when nothing else says.
+//
+// The site, and the channel when the address carries one: "Twitch sidsicksevan"
+// says which stream it was, where "Twitch" alone could be any of them. The
+// file is also stamped with the time it started, so two recordings of one
+// channel do not collide.
+func nameFromURL(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return "recording"
+	}
+
+	host := strings.TrimPrefix(strings.ToLower(parsed.Hostname()), "www.")
+	if host == "" {
+		return "recording"
+	}
+
+	site := host
+	for suffix, name := range map[string]string{
+		"youtube.com":  "YouTube",
+		"youtu.be":     "YouTube",
+		"twitch.tv":    "Twitch",
+		"bilibili.com": "Bilibili",
+		"nicovideo.jp": "Niconico",
+		"tiktok.com":   "TikTok",
+		"douyin.com":   "Douyin",
+	} {
+		if host == suffix || strings.HasSuffix(host, "."+suffix) {
+			site = name
+			break
+		}
+	}
+
+	// The last meaningful part of the path is the channel for Twitch and the
+	// handle for YouTube. The generic words are not names.
+	generic := map[string]bool{
+		"live": true, "watch": true, "video": true, "videos": true,
+		"channel": true, "c": true, "stream": true, "streams": true,
+	}
+
+	segment := ""
+	for _, part := range strings.Split(strings.Trim(parsed.Path, "/"), "/") {
+		if part == "" || generic[strings.ToLower(part)] {
+			continue
+		}
+		segment = strings.TrimPrefix(part, "@")
+	}
+
+	if segment == "" {
+		return site
+	}
+
+	return site + " " + segment
 }
 
 // sanitizeFilename makes a string usable as a file name.
@@ -387,7 +468,7 @@ func sanitizeFilename(name string) string {
 
 	cleaned := strings.TrimSpace(replacer.Replace(name))
 	if cleaned == "" {
-		return "Twitch"
+		return "recording"
 	}
 
 	// A name that is too long is refused by the filesystem, and the

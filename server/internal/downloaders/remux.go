@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
@@ -97,6 +98,17 @@ func (l *LiveStreamDownloader) recordingPath() (string, string) {
 // The raw file is removed afterwards: it is the same content, and leaving it
 // behind would put two copies of every recording in the download directory.
 func (l *LiveStreamDownloader) finishRecording(raw, final string) string {
+	// A file with nothing in it is not a recording.
+	//
+	// It happens when the stream never delivered anything: the connection
+	// never got going, or the recording was stopped while yt-dlp was still
+	// negotiating one. Keeping it puts a 0-byte file in the browser, named
+	// after a recording that does not exist.
+	if info, err := os.Stat(raw); err != nil || info.Size() == 0 {
+		os.Remove(raw)
+		return ""
+	}
+
 	if err := remuxRecording(raw, final); err != nil {
 		// No ffmpeg, or it failed. The raw file is still a recording, and
 		// its extension says what it is.
@@ -114,7 +126,11 @@ func (l *LiveStreamDownloader) finishRecording(raw, final string) string {
 		// been, out of the partial directory: that is where the temporary
 		// files live and they are cleaned up, and a recording left there is
 		// one that exists and then does not.
-		kept := filepath.Join(filepath.Dir(final), filepath.Base(raw))
+		//
+		// It takes the name it was going to have. While the recording runs
+		// its file is called "recording-<id>", because the title is not known
+		// yet; a kept recording is finished, so it gets the real name.
+		kept := strings.TrimSuffix(final, ".mp4") + ".ts"
 
 		if err := os.Rename(raw, kept); err != nil {
 			slog.Error("could not keep the recording",
