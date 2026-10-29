@@ -1,6 +1,5 @@
 import DownloadIcon from '@mui/icons-material/Download'
 import GitHubIcon from '@mui/icons-material/GitHub'
-import SettingsEthernet from '@mui/icons-material/SettingsEthernet'
 import TerminalIcon from '@mui/icons-material/Terminal'
 import { AppBar, Box, Divider, IconButton, Stack, Toolbar, Tooltip } from '@mui/material'
 import { Suspense, useState } from 'react'
@@ -120,23 +119,19 @@ const Footer: React.FC = () => {
               </Box>
             </Box>
 
-            {/* The host address is the first thing to go on a narrow screen:
-                it is the least useful of the four, and the connection state
-                is the part that matters. */}
-            <Box
-              sx={{
-                display: { xs: 'none', md: 'flex' },
-                alignItems: 'center',
-                gap: 0.5,
-                flexShrink: 0,
-              }}
-            >
-              <Divider orientation="vertical" flexItem />
-              <SettingsEthernet sx={{ color: 'primary.main' }} />
-              <Box component="span" sx={{ color: 'primary.main' }}>
-                {isConnected ? settings.serverAddr : i18n.t('notConnectedText')}
+            {/* The host address is not shown: it is the address the browser
+                is already on, so it tells nobody anything. The connection
+                state is worth knowing, and it is the only thing left here —
+                a page that has lost the server should say so rather than
+                quietly showing stale numbers. */}
+            {!isConnected && (
+              <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <Divider orientation="vertical" flexItem />
+                <Box component="span" sx={{ color: 'error.main', ml: 1 }}>
+                  {i18n.t('notConnectedText')}
+                </Box>
               </Box>
-            </Box>
+            )}
 
             <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', flexShrink: 0 }}>
               <Divider orientation="vertical" flexItem />

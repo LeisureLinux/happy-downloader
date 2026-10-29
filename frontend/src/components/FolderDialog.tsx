@@ -33,8 +33,16 @@ type Props = {
   open: boolean
   /** The directory the folder is made in. */
   parent: string
-  /** The folders that can be moved into. */
-  folders: DirectoryEntry[]
+  /**
+   * Every folder a file can be moved into, as full paths.
+   *
+   * It is the whole tree under the download directory rather than the
+   * subfolders of the current one: a file could be moved down into a folder
+   * and then never back out, because the parent was not on the list.
+   */
+  destinations: string[]
+  /** Called when the dialog is opened, to refresh the list. */
+  onOpenMove?: () => void
   /** The files to move. Empty means "make a folder". */
   files?: string[]
   /** The name of the folder to make, when making one. */
@@ -45,9 +53,22 @@ type Props = {
   onDone: () => void
 }
 
+// The last part of a path, which is what a folder is called.
+const basename = (path: string): string => {
+  const parts = path.split('/').filter(Boolean)
+  return parts[parts.length - 1] ?? path
+}
+
 const FolderDialog: React.FC<Props> = ({
-  open, parent, folders, files = [], mode, folder, onClose, onDone,
+  open, parent, destinations, files = [], mode, folder, onClose, onDone, onOpenMove,
 }) => {
+
+  // The folder the files are in is not a destination, and neither is any
+  // folder being moved: a folder cannot be put inside itself.
+  const candidates = destinations.filter(dir =>
+    dir !== parent &&
+    !files.some(f => f === dir || f.startsWith(dir + '/'))
+  )
   const serverAddr = useAtomValue(serverURL)
   const { i18n } = useI18n()
   const { pushMessage } = useToast()
@@ -56,6 +77,12 @@ const FolderDialog: React.FC<Props> = ({
   const [target, setTarget] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (open && mode === 'move') {
+      onOpenMove?.()
+    }
+  }, [open, mode, onOpenMove])
 
   useEffect(() => {
     if (open) {
@@ -198,20 +225,21 @@ const FolderDialog: React.FC<Props> = ({
               {i18n.t('folderMoveHint').replace('{count}', String(files.length))}
             </Typography>
 
-            {folders.length === 0 ? (
+            {candidates.length === 0 ? (
               <Alert severity="info">{i18n.t('folderMoveNoFolders')}</Alert>
             ) : (
               <List dense disablePadding sx={{ maxHeight: 320, overflow: 'auto' }}>
-                {folders.map(f => (
-                  <ListItem key={f.path} disableGutters>
+                {candidates.map(dir => (
+                  <ListItem key={dir} disableGutters>
                     <ListItemButton
-                      selected={target === f.path}
-                      onClick={() => setTarget(f.path)}
+                      selected={target === dir}
+                      onClick={() => setTarget(dir)}
                     >
                       <ListItemText
-                        primary={f.name}
-                        secondary={i18n.t('folderFileCount')
-                          .replace('{count}', String(f.fileCount ?? 0))}
+                        primary={basename(dir)}
+                        secondary={dir}
+                        primaryTypographyProps={{ noWrap: true }}
+                        secondaryTypographyProps={{ noWrap: true, sx: { fontSize: '0.72rem' } }}
                       />
                     </ListItemButton>
                   </ListItem>

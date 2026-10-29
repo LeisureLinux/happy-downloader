@@ -31,6 +31,7 @@ import { matchW } from 'fp-ts/lib/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
 import { serverURL } from '../atoms/settings'
 import { useToast } from '../hooks/toast'
+import { useRPC } from '../hooks/useRPC'
 import { useI18n } from '../hooks/useI18n'
 import { ffetch } from '../lib/httpClient'
 import { DirectoryEntry, ProcessStatus } from '../types'
@@ -71,6 +72,7 @@ export default function Filebrowser() {
   const serverAddr = useAtomValue(serverURL)
   const { i18n } = useI18n()
   const { pushMessage } = useToast()
+  const { client } = useRPC()
   // The accent colour, for a site that has no colour of its own.
   const theme = useTheme()
 
@@ -193,6 +195,23 @@ export default function Filebrowser() {
   const files = useMemo(() => rows.filter(r => !r.isDirectory), [rows])
   const folders = useMemo(() => rows.filter(r => r.isDirectory), [rows])
 
+  // Where a file can be moved to: every folder under the download directory,
+  // not only the ones in the folder being looked at.
+  //
+  // The list used to be the subfolders of the current directory, which meant a
+  // file could be moved down but never up — moving it back out of the folder
+  // it was in was not offered at all.
+  const [destinations, setDestinations] = useState<string[]>([])
+
+  const loadDestinations = useCallback(async () => {
+    try {
+      const res = await client.directoryTree()
+      setDestinations(res?.result ?? [])
+    } catch {
+      setDestinations([])
+    }
+  }, [client])
+
   const allSelected = files.length > 0 && files.every(f => selected.has(f.path))
 
   const toggleAll = () => {
@@ -259,6 +278,7 @@ export default function Filebrowser() {
     onCaptions: (f: Row) => setCaptioning(f),
     onMove: (f: Row) => {
       setSelected(new Set([f.path]))
+      void loadDestinations()
       setFolderDialog('move')
     },
     onDownload: (f: Row) => setDownloading(f),
@@ -547,7 +567,8 @@ export default function Filebrowser() {
         open={folderDialog !== null}
         mode={folderDialog ?? 'create'}
         parent={subdir}
-        folders={folders}
+        destinations={destinations}
+        onOpenMove={() => { void loadDestinations() }}
         files={selectedFiles.map(f => f.path)}
         folder={renaming ?? undefined}
         onClose={() => { setFolderDialog(null); setRenaming(null) }}
