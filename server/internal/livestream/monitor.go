@@ -2,6 +2,7 @@ package livestream
 
 import (
 	"errors"
+	"log/slog"
 	"sync"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
@@ -82,17 +83,50 @@ func (m *Monitor) Add(url string, minutes int) {
 // resolved once, at the request, because a recording outlives the request
 // that started it by hours.
 func (m *Monitor) AddFrom(url string, minutes int, fromIP, dir string) {
+	// One watching of a URL at a time.
+	//
+	// The map is keyed by URL, and a second Add used to overwrite the first
+	// entry: the first watcher kept running with nothing pointing at it, and
+	// when it decided the stream was live it published a recording of its
+	// own. Two rows for one recording, both live, both writing a file.
+	//
+	// It happens without anybody asking twice: the monitor re-adds everything
+	// it had in its saved list when the server starts, so a stream that was
+	// being recorded across a restart is already there when the person — who
+	// has just seen the queue come back empty — asks for it again.
+	m.mu.Lock()
+	existing, already := m.streams[url]
+	m.mu.Unlock()
+
+	if already {
+		// What the second request asked for is still worth recording: a
+		// person who picked a directory and then asked again means that
+		// directory, not the one from the attempt that happens to be running.
+		// The segment already being written cannot move — its name and place
+		// were settled when it started — so this applies from the next one.
+		if dir != "" {
+			existing.SetOutputPath(dir)
+		}
+
+		slog.Info("the stream is already being watched",
+			slog.String("url", url),
+			slog.Bool("recording", existing.published),
+			slog.String("dir", dir),
+		)
+		return
+	}
+
 	ls := New(url, m.done, m.mq, m.store)
 
 	ls.SetRecordMinutes(minutes)
 	ls.SetFromIP(fromIP)
 	ls.SetOutputPath(dir)
 
-	go ls.Start()
-
 	m.mu.Lock()
 	m.streams[url] = ls
 	m.mu.Unlock()
+
+	go ls.Start()
 
 	m.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)

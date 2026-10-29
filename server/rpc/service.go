@@ -351,7 +351,30 @@ func (s *Service) Resume(args string, resumed *string) error {
 // Remove a process from the db rendering it unusable if active
 func (s *Service) Clear(args string, killed *string) error {
 	slog.Info("Clearing process with id", slog.String("id", args))
+
+	download, err := s.db.Get(args)
+
+	// The row goes first, whatever happens next: the person asked for it to
+	// be gone from the list.
 	s.db.Delete(args)
+
+	if err != nil || download == nil {
+		return nil
+	}
+
+	// A download that is still running has to be stopped with it.
+	//
+	// Deleting only the row left the process writing into a file that
+	// nothing pointed at any more: no row to stop it from, and a recording
+	// that grew in the temporary directory until something else cleaned it
+	// up. Removing a download and leaving it running is not removal.
+	if err := download.Stop(); err != nil {
+		slog.Debug("the cleared download had already stopped",
+			slog.String("id", args),
+			slog.Any("err", err),
+		)
+	}
+
 	return nil
 }
 

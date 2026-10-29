@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 )
 
 // makeMedia writes a few seconds of video, using ffmpeg.
@@ -110,5 +112,60 @@ func TestFinishRecordingKeepsTheRawFileWhenTheRemuxFails(t *testing.T) {
 
 	if _, err := os.Stat(raw); err != nil {
 		t.Errorf("the raw recording should have been kept: %v", err)
+	}
+}
+
+// TestRecoverPartialRecordingsFinishesWhatWasLeftBehind is the crash path.
+//
+// A recording is written into the partial directory and moved out when it is
+// put into its container. A process that dies between those two leaves a
+// finished recording where only the temporary files live — invisible to the
+// file browser and swept up with them. This is what gets it back.
+func TestRecoverPartialRecordingsFinishesWhatWasLeftBehind(t *testing.T) {
+	home := t.TempDir()
+	state := t.TempDir()
+
+	c := &config.Config{}
+	c.Paths.DownloadPath = home
+	c.Paths.LocalDatabasePath = state
+	config.SetInstance(c)
+	t.Cleanup(func() { config.SetInstance(&config.Config{}) })
+
+	partial := filepath.Join(state, "partial")
+	if err := os.MkdirAll(partial, 0o755); err != nil {
+		t.Fatalf("creating the partial directory: %v", err)
+	}
+
+	// A recording as the crash left it: MP4 bytes in a file named ".ts",
+	// which is what an interrupted remux looks like.
+	makeMedia(t, partial, "left behind.ts")
+
+	RecoverPartialRecordings()
+
+	recovered := filepath.Join(home, "left behind.mp4")
+	info, err := os.Stat(recovered)
+	if err != nil {
+		t.Fatalf("the recording was not recovered: %v", err)
+	}
+
+	if info.Size() == 0 {
+		t.Error("the recovered recording is empty")
+	}
+
+	if _, err := os.Stat(filepath.Join(partial, "left behind.ts")); !os.IsNotExist(err) {
+		t.Error("the raw file should have been consumed")
+	}
+
+	// An empty file is a recording that never got a byte: an artefact of a
+	// process that was killed before it could record anything.
+	empty := filepath.Join(partial, "nothing.ts")
+	if err := os.WriteFile(empty, nil, 0o600); err != nil {
+		t.Fatalf("writing the empty file: %v", err)
+	}
+
+	RecoverPartialRecordings()
+
+	if _, err := os.Stat(empty); !os.IsNotExist(err) {
+		t.Error("an empty recording should have been dropped")
 	}
 }

@@ -131,6 +131,13 @@ func Run(ctx context.Context, rc *RunConfig) error {
 
 	// The media probe cache is written to disk, so that the first visit to
 	// the file browser after a restart is as fast as the one after it.
+	// A recording left in the partial directory is one that was interrupted:
+	// the process stopped between writing it and putting it into its
+	// container. It is finished here rather than swept up with the rest of
+	// the temporary files — nothing is using the directory yet, so anything
+	// in it is somebody's recording.
+	go downloaders.RecoverPartialRecordings()
+
 	filebrowser.StartProbeCacheWriter()
 	filebrowser.SetSourceLookup(func(path string) (string, string, bool) {
 		rec, ok := sourceIndex.Lookup(path)
