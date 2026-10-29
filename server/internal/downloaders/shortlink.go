@@ -2,8 +2,10 @@ package downloaders
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -13,12 +15,16 @@ import (
 // Resolving a short link into the address it points at.
 //
 // A link pasted from an app is a short link — "t.cn/abc" for Weibo,
-// "b23.tv/abc" for Bilibili — and the extractors do not know them. The video is
-// one page away, behind a link that has to be followed.
+// "b23.tv/abc" for Bilibili, "v.douyin.com/abc" for Douyin, "qy.net/abc"
+// for iQiyi — and the extractors do not know them. The video is one page
+// away, behind a link that has to be followed.
 //
 // The follow is not always a redirect. Weibo answers with a page that carries
 // the destination in a script and sends the browser there with
-// "location.replace", so the address has to be read out of the page.
+// "location.replace", and iQiyi's short link lands on a page that carries
+// the video's id in a parameter rather than in the address. So the answer is
+// not always the address the link points at — sometimes it is a number that
+// has to be turned into one.
 //
 // The answers are remembered, because the same link is often pasted twice —
 // once to probe it and once to download it — and each resolution is a request
@@ -26,10 +32,13 @@ import (
 
 // shortLinkHosts are the hosts whose links are short links.
 var shortLinkHosts = map[string]string{
-	"t.cn":         "weibo",
-	"weibo.cn":     "weibo",
-	"b23.tv":       "bilibili",
-	"v.douyin.com": "douyin",
+	"t.cn":          "weibo",
+	"weibo.cn":      "weibo",
+	"b23.tv":        "bilibili",
+	"v.douyin.com":  "douyin",
+	"iesdouyin.com": "douyin",
+	"qy.net":        "iqiyi",
+	"iqiyi.com":     "iqiyi",
 }
 
 // resolvedLink is what a short link pointed at.
@@ -127,10 +136,14 @@ func followShortLink(ctx context.Context, raw, site string) resolvedLink {
 	}
 	defer res.Body.Close()
 
+	// The address the link ended at. It is often the answer already: a
+	// Bilibili short link redirects straight to the video.
+	final := res.Request.URL.String()
+
 	// A redirect that was not followed is the destination itself.
 	if res.StatusCode >= 300 && res.StatusCode < 400 {
 		if location := res.Header.Get("Location"); location != "" {
-			return resolvedLink{URL: location, Site: site}
+			return resolvedLink{URL: absolute(location, final), Site: site}
 		}
 	}
 
@@ -139,13 +152,124 @@ func followShortLink(ctx context.Context, raw, site string) resolvedLink {
 		return resolvedLink{Err: err}
 	}
 
+	// iQiyi's short link lands on a page that carries the video's id in a
+	// parameter rather than in the address. The id is all that is needed:
+	// the video's page is built from it.
+	if site == "iqiyi" {
+		if url := iqiyiURL(string(body), final); url != "" {
+			return resolvedLink{URL: url, Site: site}
+		}
+	}
+
 	// The destination is in the page, in the script that sends the browser
 	// there.
 	if url := destinationIn(string(body)); url != "" {
-		return resolvedLink{URL: url, Site: site}
+		return resolvedLink{URL: absolute(url, final), Site: site}
 	}
 
-	return resolvedLink{Err: errNoDestination}
+	// The address the link ended at is still better than the short link: the
+	// extractor may know it even when the short link is not in its list.
+	return resolvedLink{URL: final, Site: site}
+}
+
+// The iQiyi video's address, worked out from the page its short link leads to.
+//
+// The short link redirects to a share page whose parameters carry the video's
+// id twice: once plainly, as "positiveId", and once base64-encoded, as
+// "shareId". The plain one is there to be read; the encoded one is there to
+// be put in a link.
+//
+// The page carries the same number as "tvid", which is what the extractor
+// needs, and the video's own id, which it needs as well.
+func iqiyiURL(page, final string) string {
+	params := queryOf(final)
+
+	tvid := params.Get("positiveId")
+	if tvid == "" {
+		tvid = params.Get("shareId")
+		if decoded, err := base64.StdEncoding.DecodeString(tvid); err == nil {
+			tvid = string(decoded)
+		}
+	}
+
+	if tvid == "" {
+		return ""
+	}
+
+	// The page has the video's own id, which is what the extractor pairs
+	// with the tvid.
+	videoID := iqiyiVideoID(page)
+
+	if videoID == "" {
+		// Without it there is nothing to build an address from, and an
+		// address with only half of it would be worse than none.
+		return ""
+	}
+
+	return "https://www.iqiyi.com/v_" + videoID + ".html"
+}
+
+// The iQiyi video's own id, read from the page.
+//
+// It is a run of hex characters, and it is the one that is paired with the
+// tvid. The page has several: the cover images' ids are of the same shape,
+// so the one that sits next to the tvid is the one that is wanted.
+var iqiyiVideoIDPattern = regexp.MustCompile(
+	`(?i)["']?vid["']?\s*[:=]\s*["']([a-f0-9]{32})["']`)
+
+// A looser pattern, for a page that spells it differently.
+var iqiyiLooseVideoIDPattern = regexp.MustCompile(`\b([a-f0-9]{32})\b`)
+
+// iqiyiVideoID reads the video's id out of an iQiyi page.
+func iqiyiVideoID(page string) string {
+	if m := iqiyiVideoIDPattern.FindStringSubmatch(page); len(m) > 1 {
+		return m[1]
+	}
+
+	// The id is also in the address the page ends at, when the short link
+	// was followed all the way to the video.
+	if m := iqiyiLooseVideoIDPattern.FindStringSubmatch(page); len(m) > 1 {
+		return m[1]
+	}
+
+	return ""
+}
+
+// queryOf returns the parameters of an address.
+func queryOf(raw string) url.Values {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return url.Values{}
+	}
+
+	return parsed.Query()
+}
+
+// absolute turns a relative address into one that can be fetched.
+//
+// A page that says where the browser should go may say it relatively, and
+// the page it was found on is what makes it meaningful.
+func absolute(candidate, base string) string {
+	candidate = strings.TrimSpace(candidate)
+	if candidate == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(candidate)
+	if err != nil {
+		return candidate
+	}
+
+	if parsed.IsAbs() {
+		return parsed.String()
+	}
+
+	baseURL, err := url.Parse(base)
+	if err != nil {
+		return candidate
+	}
+
+	return baseURL.ResolveReference(parsed).String()
 }
 
 // browserAgent is what the request says it is.

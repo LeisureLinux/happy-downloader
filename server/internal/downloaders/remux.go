@@ -1,0 +1,94 @@
+package downloaders
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"time"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+)
+
+// Putting a recording into a container that plays.
+//
+// A Twitch stream arrives as MPEG-TS — that is what an HLS stream is — and
+// the recording is written out as it comes.
+//
+// A file called ".mp4" that holds MPEG-TS is a file that will not play:
+// the container says one thing and the bytes are another, and the player
+// believes the extension. So the recording is put into an MP4 after it is
+// finished.
+//
+// Nothing is re-encoded. The streams are copied across as they are, so it
+// takes a second rather than as long as the recording, and the quality is
+// exactly what was streamed.
+//
+// If ffmpeg is not there, the recording is left as it is, with the extension
+// that says what it is. A file that plays in a player that knows MPEG-TS is
+// better than no file.
+func remuxRecording(from, to string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.CommandContext(ctx, ffmpeg,
+		"-hide_banner", "-loglevel", "error",
+		"-i", from,
+		"-c", "copy",
+		"-movflags", "+faststart",
+		to,
+	)
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// The name the recording is known by, and where it is written.
+//
+// It ends in ".mp4" when the recording could be put into an MP4, and in
+// ".ts" when it could not — a file whose extension lies about its contents
+// is worse than one whose extension does not.
+func (l *LiveStreamDownloader) recordingPath() (string, string) {
+	name := sanitizeFilename(l.Title())
+	when := l.startedAt.Format("2006-01-02 15-04-05")
+
+	// The stream is written as it arrives.
+	raw := filepath.Join(
+		config.Instance().Paths.DownloadPath,
+		fmt.Sprintf("%s %s.ts", name, when),
+	)
+
+	// And the one that is kept is the same thing in an MP4, if ffmpeg can
+	// put it there.
+	final := filepath.Join(
+		config.Instance().Paths.DownloadPath,
+		fmt.Sprintf("%s %s.mp4", name, when),
+	)
+
+	return raw, final
+}
+
+// finishRecording puts the recording into its final file.
+//
+// The raw file is removed afterwards: it is the same content, and leaving it
+// behind would put two copies of every recording in the download directory.
+func (l *LiveStreamDownloader) finishRecording(raw, final string) string {
+	if err := remuxRecording(raw, final); err != nil {
+		// No ffmpeg, or it failed. The raw file is still a recording, and
+		// its extension says what it is.
+		return raw
+	}
+
+	os.Remove(raw)
+
+	return final
+}

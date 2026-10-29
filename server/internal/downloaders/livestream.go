@@ -3,12 +3,10 @@ package downloaders
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
 	"strings"
 	"syscall"
@@ -47,6 +45,11 @@ type LiveStreamDownloader struct {
 	outputPath string
 	outputName string
 
+	// startedAt is when the recording began. The name of the file carries
+	// it, and it is settled when the recording ends — so it has to be
+	// remembered from the beginning.
+	startedAt time.Time
+
 	// embedded
 	DownloaderBase
 }
@@ -65,6 +68,7 @@ func NewLiveStreamDownloader(url string, pipes []pipes.Pipe) Downloader {
 
 func (l *LiveStreamDownloader) Start() error {
 	l.SetPending(true)
+	l.startedAt = time.Now()
 
 	// Same builder as the other stages, so the runtime, the cookie and the
 	// proxy cannot drift apart between them.
@@ -138,26 +142,45 @@ func (l *LiveStreamDownloader) Start() error {
 		// after the stream begins, so a file named at the start was called
 		// "Twitch (live)" whatever the channel was.
 		go func() {
-			path := l.outputPath
-			if path == "" {
-				path = l.recordingPath()
+			raw, final := l.outputPath, ""
+			if raw == "" {
+				raw, final = l.recordingPath()
 			}
 
-			f, err := os.Create(path)
+			f, err := os.Create(raw)
 			if err != nil {
 				slog.Error("failed to create the recording file", slog.Any("err", err))
 				return
 			}
-			defer f.Close()
 
 			_, err = io.Copy(f, reader)
+			f.Close()
+
 			if err != nil {
 				slog.Error("copy error", slog.Any("err", err))
 			}
 
-			l.UpdateSavedFilePath(path)
+			// The recording is put into an MP4, so that it plays.
+			//
+			// The media comes out of the stream as MPEG-TS and the file
+			// was named as an MP4, which is a file whose extension lies
+			// about its contents — and nothing plays it.
+			if final != "" {
+				final = l.finishRecording(raw, final)
+			}
 
-			slog.Info("the recording was saved", slog.String("path", path))
+			l.UpdateSavedFilePath(final)
+
+			// Where the recording came from.
+			//
+			// Nothing else records it: the recording is written from the
+			// media stream rather than by yt-dlp's own postprocessing, so
+			// the hook that records a downloaded file's source is never
+			// called for it. A recording with no source showed the globe
+			// icon in the file browser rather than the site's.
+			RememberSource(l, final)
+
+			slog.Info("the recording was saved", slog.String("path", final))
 		}()
 	}
 
@@ -235,25 +258,15 @@ func (l *LiveStreamDownloader) Title() string {
 	return "Twitch"
 }
 
-// recordingPath is where the recording is written.
-//
-// The name is made of the title and the time, so two recordings of the same
-// channel do not land on top of each other.
-//
-// The characters a filename cannot hold are replaced: the title of a stream is
-// whatever the streamer typed, and it can hold anything.
-func (l *LiveStreamDownloader) recordingPath() string {
-	name := sanitizeFilename(l.Title())
-	when := time.Now().Format("2006-01-02 15-04-05")
-
-	return filepath.Join(
-		config.Instance().Paths.DownloadPath,
-		fmt.Sprintf("%s (live) %s.mp4", name, when),
-	)
-}
-
 // sanitizeFilename makes a string usable as a file name.
+//
+// The "(live)" the title of a Twitch stream carries is dropped: the file is
+// a recording and the name says so, but a title that already ends with it
+// would otherwise be given it twice.
 func sanitizeFilename(name string) string {
+	name = strings.TrimSpace(name)
+	name = strings.TrimSuffix(name, " (live)")
+	name = strings.TrimSuffix(name, "（直播）")
 	replacer := strings.NewReplacer(
 		"/", "_",
 		"\\", "_",
@@ -310,7 +323,11 @@ func (l *LiveStreamDownloader) Stop() error {
 
 func (l *LiveStreamDownloader) Status() internal.ProcessSnapshot {
 	return internal.ProcessSnapshot{
-		Id:             l.Id,
+		Id: l.Id,
+		// The URL is what says where the recording came from, and the
+		// file browser shows the site's icon because of it. It was left
+		// out, so a recording had no source and showed the globe.
+		URL:            l.URL,
 		Info:           l.Metadata,
 		Progress:       l.progress,
 		DownloaderName: "livestream",

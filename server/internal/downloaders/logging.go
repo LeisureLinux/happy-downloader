@@ -65,7 +65,7 @@ func (j *JSONLogConsumer) ParseLogEntry(entry []byte, d Downloader) {
 
 	if err := json.Unmarshal(sanitizeProgressJSON(entry), &postprocess); err == nil {
 		d.UpdateSavedFilePath(postprocess.FilePath)
-		rememberSource(d, postprocess.FilePath)
+		RememberSource(d, postprocess.FilePath)
 		if postprocess.Width > 0 && postprocess.Height > 0 {
 			d.UpdateOutputDimensions(postprocess.Width, postprocess.Height)
 		}
@@ -107,8 +107,13 @@ func SetSourceRecorder(fn func(d Downloader, path string)) {
 	sourceRecorder = fn
 }
 
-// rememberSource records the file's source, if anything is listening.
-func rememberSource(d Downloader, path string) {
+// RememberSource records the file's source, if anything is listening.
+//
+// It is exported because a livestream recording is not written by yt-dlp's
+// own postprocessing — it is written from the media stream — so nothing else
+// records where it came from. A recording with no source showed the globe
+// icon in the file browser instead of the site's.
+func RememberSource(d Downloader, path string) {
 	if sourceRecorder == nil || path == "" {
 		return
 	}
