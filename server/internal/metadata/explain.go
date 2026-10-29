@@ -3,6 +3,8 @@ package metadata
 import (
 	"regexp"
 	"strings"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/sites"
 )
 
 // Explaining a failure that says only "Unsupported URL".
@@ -23,27 +25,20 @@ import (
 // siteNames are the sites the application is known to work with.
 //
 // A link to one of them is either a link the extractor cannot read — a feed
-// link rather than a video link — or one that needs something the request
-// did not have.
-var siteNames = map[string]string{
-	"youtube.com":     "YouTube",
-	"youtu.be":        "YouTube",
-	"bilibili.com":    "Bilibili",
-	"b23.tv":          "Bilibili",
-	"douyin.com":      "Douyin",
-	"v.douyin.com":    "Douyin",
-	"iesdouyin.com":   "Douyin",
-	"tiktok.com":      "TikTok",
-	"xiaohongshu.com": "Xiaohongshu",
-	"xhslink.com":     "Xiaohongshu",
-	"weibo.com":       "Weibo",
-	"twitter.com":     "X",
-	"x.com":           "X",
-	"instagram.com":   "Instagram",
-	"reddit.com":      "Reddit",
-	"vimeo.com":       "Vimeo",
-	"twitch.tv":       "Twitch",
-}
+// link rather than a video link — or one that needs something the request did
+// not have. The catalogue decides which hosts those are; this is only the
+// lookup for a message.
+var siteNames = func() map[string]string {
+	names := map[string]string{}
+
+	for _, site := range sites.All() {
+		for _, host := range site.Hosts {
+			names[host] = site.Name
+		}
+	}
+
+	return names
+}()
 
 // The sites that have no downloader at all.
 //

@@ -190,14 +190,7 @@ func SummarizeDomains(netscape string) []DomainSummary {
 func missingLoginFor(domain string, present map[string]bool) []string {
 	host := strings.TrimPrefix(strings.ToLower(domain), "www.")
 
-	var rule []string
-	for site, want := range loginCookiesBySite {
-		if host == site || strings.HasSuffix(host, "."+site) {
-			rule = want
-			break
-		}
-	}
-
+	rule := loginCookiesFor(host)
 	if len(rule) == 0 {
 		return nil
 	}

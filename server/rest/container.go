@@ -24,6 +24,10 @@ func ApplyRouter(args *ContainerArgs) func(chi.Router) {
 		// Cookies are configured by path (paths.cookie_path) and picked up
 		// automatically, so the UI only needs to report the current state.
 		r.Get("/cookies/status", h.CookiesStatus())
+
+		// The catalogue of video sites: icons, colours and session cookies
+		// are keyed by it, and it is the only list of them.
+		r.Get("/sites", Sites)
 		r.Post("/template", h.AddTemplate())
 		r.Patch("/template", h.UpdateTemplate())
 		r.Get("/template/all", h.GetTemplates())

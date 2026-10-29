@@ -20,7 +20,7 @@ import {
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useTheme } from '@mui/material/styles'
-import { cookieStatusRefreshState, cookieStatusState, serverURL } from '../atoms/settings'
+import { cookieStatusRefreshState, cookieStatusState, serverURL, siteCatalogueState } from '../atoms/settings'
 import { formatTimestamp } from '../utils'
 import { useI18n } from '../hooks/useI18n'
 import { useToast } from '../hooks/toast'
@@ -73,23 +73,6 @@ const CookieIconForDialog = () => (
   </svg>
 )
 
-// The sites the application can download from, in the order they are most
-// likely to be used.
-const supportedSites = [
-  'youtube',
-  'bilibili',
-  'douyin',
-  'tiktok',
-  'xiaohongshu',
-  'weibo',
-  'x',
-  'instagram',
-  'reddit',
-  'vimeo',
-  'twitch',
-  'niconico',
-]
-
 // The cookie status is a promise — the atom fetches it — so it can only be
 // read inside a Suspense boundary.
 //
@@ -107,6 +90,7 @@ const CookieDialog: React.FC<Props> = ({ open, onClose }) => (
 
 const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
   const status = useAtomValue(cookieStatusState)
+  const catalogue = useAtomValue(siteCatalogueState)
   const refreshStatus = useSetAtom(cookieStatusRefreshState)
   const serverAddr = useAtomValue(serverURL)
   const theme = useTheme()
@@ -195,13 +179,13 @@ const CookieDialogContent: React.FC<Props> = ({ open, onClose }) => {
             {i18n.t('supportedSites')}
           </Typography>
           <Stack direction="row" spacing={0.75} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
-            {supportedSites.map(site => (
-              <Tooltip key={site} title={site}>
+            {catalogue.map(site => (
+              <Tooltip key={site.key} title={site.name}>
                 <Box
                   component="span"
                   sx={{ display: 'inline-flex', alignItems: 'center' }}
                 >
-                  {siteIcon(site, theme.palette.primary.main, isDark(theme))}
+                  {siteIcon(site.key, theme.palette.primary.main, isDark(theme))}
                 </Box>
               </Tooltip>
             ))}

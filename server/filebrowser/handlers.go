@@ -19,7 +19,9 @@ import (
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloadlog"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
+	middlewares "github.com/LeisureLinux/happy-downloader/v4/server/middleware"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -333,9 +335,12 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := os.Remove(path); err != nil {
+		recordNote(r, downloadlog.KindDelete, path, "", err.Error(), false)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	recordNote(r, downloadlog.KindDelete, path, "", "", true)
 
 	// The file is gone, so its source record has nothing to point at.
 	forgetSource(path)
@@ -657,6 +662,33 @@ func sourceOf(path string, info mediaInfo) (url, site string, ok bool) {
 	}
 
 	return "", "", false
+}
+
+// recordNote writes one line to the operations log.
+//
+// What happens to a file after it is downloaded is the rest of the same
+// question: a video that is not in the folder it was put in was moved by
+// somebody, and the log is where that is written down. The address is taken
+// from the request, never from the body.
+func recordNote(r *http.Request, kind, path, to, reason string, ok bool) {
+	status := downloadlog.StatusSuccess
+	if !ok {
+		status = downloadlog.StatusFailed
+	}
+
+	fromIP := ""
+	if r != nil {
+		fromIP = middlewares.ClientIP(r)
+	}
+
+	downloadlog.Record(downloadlog.Outcome{
+		Kind:   kind,
+		Status: status,
+		FromIP: fromIP,
+		Path:   path,
+		To:     to,
+		Reason: reason,
+	})
 }
 
 func forgetSource(path string) {

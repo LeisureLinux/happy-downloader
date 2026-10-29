@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material'
+import { Box, IconButton, Paper, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import PauseIcon from '@mui/icons-material/Pause'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
@@ -21,7 +21,13 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
   const serverAddr = useAtomValue(serverURL)
   const { i18n } = useI18n()
 
+  // Which log is being read. The application log says what the server is
+  // doing right now; the download log says what has finished and whether it
+  // worked. They are read at different times, by the same panel.
+  const [view, setView] = useState<'app' | 'downloads'>('app')
+
   const [lines, setLines] = useState<string[]>([])
+  const [downloadLines, setDownloadLines] = useState<string[]>([])
   const [connected, setConnected] = useState(false)
   const [paused, setPaused] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -96,6 +102,36 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
     pausedRef.current = true
   }
 
+  useEffect(() => {
+    if (!open || view !== 'downloads') return
+
+    let cancelled = false
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`${serverAddr}/log/downloads?lines=500`)
+        if (!res.ok) return
+        const body = await res.json()
+        if (!cancelled) setDownloadLines(body?.lines ?? [])
+      } catch {
+        // The next poll will do.
+      }
+    }
+
+    void poll()
+
+    // A line is written once per finished download, so this is not a stream:
+    // a slow poll is enough and costs nothing while the panel is closed.
+    const timer = setInterval(poll, 5000)
+
+    return () => { cancelled = true; clearInterval(timer) }
+  }, [open, view, serverAddr])
+
+  // The application log arrives newest first, because that is how the server
+  // sends it. The download log is a file written in order, so it is shown as
+  // it is: a log of finished things reads forwards.
+  const shown = view === 'app' ? lines : downloadLines
+
   if (!open) return null
 
   return (
@@ -123,6 +159,22 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
         <Typography variant="h6" color="primary" sx={{ flexGrow: 1 }}>
           {i18n.t('logsTitle')}
         </Typography>
+
+        {/* Two logs, one panel: the same place, the same habit. */}
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={view}
+          onChange={(_, next) => { if (next) setView(next) }}
+          sx={{ mr: 1 }}
+        >
+          <ToggleButton value="app" sx={{ py: 0.25, px: 1, textTransform: 'none' }}>
+            {i18n.t('logsTabApp')}
+          </ToggleButton>
+          <ToggleButton value="downloads" sx={{ py: 0.25, px: 1, textTransform: 'none' }}>
+            {i18n.t('logsTabDownloads')}
+          </ToggleButton>
+        </ToggleButtonGroup>
         {/* 一个在跳的圆点：日志不动的时候，至少能看出连接还活着。 */}
         <Box
           sx={{
@@ -136,8 +188,8 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
           }}
         />
         <Typography variant="caption" color="text.secondary">
-          {lines.length}
-          {pendingCount > 0 && (
+          {view === 'app' ? lines.length : downloadLines.length}
+          {view === 'app' && pendingCount > 0 && (
             <Box component="span" sx={{ ml: 0.5, color: 'warning.main' }}>
               (+{pendingCount})
             </Box>
@@ -192,18 +244,21 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
           wordBreak: 'break-all',
         }}
       >
-        {lines.length === 0 && (
+        {shown.length === 0 && (
           <Typography variant="caption" sx={{ color: 'grey.500' }}>
-            {connected ? i18n.t('awaitingLogs') : '…'}
+            {view === 'app'
+              ? (connected ? i18n.t('awaitingLogs') : '…')
+              : i18n.t('downloadLogEmpty')}
           </Typography>
         )}
-        {lines.map((line, i) => (
+        {shown.map((line, i) => (
           <div
             key={i}
             style={{
               color: line.includes('level=ERROR') ? '#ff6b6b'
                 : line.includes('level=WARN') ? '#ffb86b'
-                  : undefined,
+                  : line.includes('\tfailed\t') ? '#ff6b6b'
+                    : undefined,
             }}
           >
             {line}

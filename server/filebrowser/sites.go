@@ -3,6 +3,8 @@ package filebrowser
 import (
 	"net/url"
 	"strings"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/sites"
 )
 
 // Which site a file came from.
@@ -45,50 +47,11 @@ func SiteOfHost(rawHost string) (site string, known bool) {
 		return "", false
 	}
 
-	// The known sites, matched on the part of the host that identifies them.
-	//
-	// A subdomain is not a different site: "music.youtube.com" is YouTube and
-	// "www.bilibili.com" is Bilibili.
-	// The short links and the delivery domains.
-	//
-	// A link pasted from an app is a short link — "t.cn/abc" for Weibo,
-	// "b23.tv/abc" for Bilibili — and the file that comes out of one is
-	// often served from the site's own delivery host: Reddit's videos live
-	// on "packaged-media.redd.it", not on "reddit.com". Matching only the
-	// obvious host gave a Reddit video the name of its CDN, and a Weibo
-	// short link the name of the shortener.
-	switch host {
-	case "t.cn", "weibo.cn":
-		return "weibo", true
-	case "packaged-media.redd.it", "redd.it", "i.redd.it", "preview.redd.it", "v.redd.it":
-		return "reddit", true
-	}
-
-	switch {
-	case strings.HasSuffix(host, "youtube.com"), strings.HasSuffix(host, "youtu.be"):
-		return "youtube", true
-	case strings.HasSuffix(host, "bilibili.com"), strings.HasSuffix(host, "b23.tv"):
-		return "bilibili", true
-	case strings.HasSuffix(host, "x.com"), strings.HasSuffix(host, "twitter.com"):
-		return "x", true
-	case strings.HasSuffix(host, "xiaohongshu.com"), strings.HasSuffix(host, "xhslink.com"):
-		return "xiaohongshu", true
-	case strings.HasSuffix(host, "douyin.com"), strings.HasSuffix(host, "iesdouyin.com"):
-		return "douyin", true
-	case strings.HasSuffix(host, "tiktok.com"):
-		return "tiktok", true
-	case strings.HasSuffix(host, "reddit.com"):
-		return "reddit", true
-	case strings.HasSuffix(host, "instagram.com"):
-		return "instagram", true
-	case strings.HasSuffix(host, "vimeo.com"):
-		return "vimeo", true
-	case strings.HasSuffix(host, "twitch.tv"):
-		return "twitch", true
-	case strings.HasSuffix(host, "facebook.com"), strings.HasSuffix(host, "fb.watch"):
-		return "facebook", true
-	case strings.HasSuffix(host, "nicovideo.jp"):
-		return "niconico", true
+	// The catalogue is the one place that knows which hosts mean which site.
+	// It used to be a switch here, a map in the cookie package and a list in
+	// the interface, and they drifted apart.
+	if site, ok := sites.ForHost(host); ok {
+		return site.Key, true
 	}
 
 	// The first label of the host, so "example.co.uk" reads as "example".

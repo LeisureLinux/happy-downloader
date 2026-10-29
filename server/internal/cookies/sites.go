@@ -2,6 +2,8 @@ package cookies
 
 import (
 	"strings"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/sites"
 )
 
 // Which site's rule applies to a cookie export.
@@ -14,12 +16,19 @@ import (
 // So the rule is asked of the site the file is for, and a file that has
 // cookies for several sites is judged by the one that has a rule.
 
-// The cookies that say a session is signed in, by site.
+// loginCookiesFor is the rule for one host, from the catalogue.
 //
-// A site that is not here has no such rule: its cookies are accepted as they
-// are, because there is nothing to check them against.
-var loginCookiesBySite = map[string][]string{
-	"youtube.com": {"LOGIN_INFO", "HSID", "SID", "__Secure-3PSID"},
+// It is a separate question from the session cookie the interface reports:
+// this one refuses an import that would be a guest session, so it asks for
+// every cookie the site uses to establish one. Only some sites have such a
+// rule — for the others there is nothing to check a file against.
+func loginCookiesFor(host string) []string {
+	site, ok := sites.ForHost(host)
+	if !ok {
+		return nil
+	}
+
+	return site.LoginCookies
 }
 
 // The site a cookie file is for.
@@ -32,10 +41,8 @@ func siteOf(content string) string {
 		host := strings.TrimPrefix(strings.ToLower(domain), ".")
 		host = strings.TrimPrefix(host, "www.")
 
-		for site := range loginCookiesBySite {
-			if host == site || strings.HasSuffix(host, "."+site) {
-				return site
-			}
+		if len(loginCookiesFor(host)) > 0 {
+			return host
 		}
 	}
 
@@ -48,12 +55,12 @@ func siteOf(content string) string {
 // An empty answer means there is nothing to check: either the file is for a
 // site with no rule, or it carries what that site needs.
 func missingForSite(content string, summary Summary) []string {
-	site := siteOf(content)
-	if site == "" {
+	host := siteOf(content)
+	if host == "" {
 		return nil
 	}
 
-	wanted := loginCookiesBySite[site]
+	wanted := loginCookiesFor(host)
 
 	present := make(map[string]bool, len(summary.Names))
 	for _, name := range summary.Names {

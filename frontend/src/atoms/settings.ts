@@ -245,6 +245,32 @@ export type CookieStatus = {
 // importing a file changes what the status says, and the moment it changes is
 // the moment a person is looking at it. The dialog showed what was there
 // before the import, which reads as the import having done nothing.
+// The catalogue of video sites, from the server.
+//
+// It is the only list of them. The footer and the cookie dialog each had one
+// of their own, and they disagreed: Facebook had an icon in the footer and was
+// missing from the dialog that is about cookies. A site added on the server
+// appears in both now, and one whose mark does not exist yet is drawn as a
+// globe.
+export type SiteCatalogueEntry = {
+  key: string
+  name: string
+  hosts: string[]
+  keyCookie?: string
+}
+
+export const siteCatalogueState = atom<Promise<SiteCatalogueEntry[]>>(async (get) => {
+  const body = await pipe(
+    ffetch<{ sites?: SiteCatalogueEntry[] }>(`${get(serverURL)}/api/v1/sites`),
+    matchW(
+      () => ({ sites: [] as SiteCatalogueEntry[] }),
+      (r) => r,
+    ),
+  )()
+
+  return body?.sites ?? []
+})
+
 export const cookieStatusRefreshState = atom(0)
 
 export const cookieStatusState = atom<Promise<CookieStatus>>(async (get) => {

@@ -3,7 +3,7 @@ import GitHubIcon from '@mui/icons-material/GitHub'
 import TerminalIcon from '@mui/icons-material/Terminal'
 import { AppBar, Box, Divider, IconButton, Stack, Toolbar, Tooltip } from '@mui/material'
 import { Suspense, useState } from 'react'
-import { settingsState } from '../atoms/settings'
+import { settingsState, siteCatalogueState } from '../atoms/settings'
 import { connectedState } from '../atoms/status'
 import { totalDownloadSpeedState } from '../atoms/ui'
 import { useI18n } from '../hooks/useI18n'
@@ -27,22 +27,30 @@ import { logPanelOpenAtom } from '../atoms/ui'
 // product name on a phone. The repository link is at the other end because it
 // is not navigation at all — it is where this deployment came from — and the
 // end of the bar is where something like that belongs.
-// The sites the application can download from, in the order they are most
-// likely to be used.
-const supportedSites = [
-  'youtube',
-  'bilibili',
-  'douyin',
-  'tiktok',
-  'xiaohongshu',
-  'weibo',
-  'x',
-  'instagram',
-  'reddit',
-  'vimeo',
-  'twitch',
-  'niconico',
-]
+// The sites, as icons.
+//
+// Split out because it is the only part of the footer that waits for the
+// server: the catalogue is a promise, and a promise read outside a Suspense
+// boundary is a crash.
+const SiteIcons: React.FC = () => {
+  const catalogue = useAtomValue(siteCatalogueState)
+  const theme = useTheme()
+
+  return (
+    <>
+      {catalogue.map(site => (
+        <Tooltip key={site.key} title={site.name}>
+          <Box
+            component="span"
+            sx={{ display: 'inline-flex', alignItems: 'center' }}
+          >
+            {siteIcon(site.key, theme.palette.primary.main, isDark(theme))}
+          </Box>
+        </Tooltip>
+      ))}
+    </>
+  )
+}
 
 const Footer: React.FC = () => {
   const settings = useAtomValue(settingsState)
@@ -170,16 +178,13 @@ const Footer: React.FC = () => {
             alignItems="center"
             sx={{ flexShrink: 0, mr: 0.5 }}
           >
-            {supportedSites.map(site => (
-              <Tooltip key={site} title={site}>
-                <Box
-                  component="span"
-                  sx={{ display: 'inline-flex', alignItems: 'center' }}
-                >
-                  {siteIcon(site, theme.palette.primary.main, isDark(theme))}
-                </Box>
-              </Tooltip>
-            ))}
+            {/* The catalogue arrives as a promise, so it is read inside a
+                Suspense boundary like every other indicator here. Reading an
+                async atom without one takes the page down with a minified
+                React error that says nothing about what was wrong. */}
+            <Suspense fallback={null}>
+              <SiteIcons />
+            </Suspense>
           </Stack>
 
           <Tooltip title={i18n.t('sourceCode')}>

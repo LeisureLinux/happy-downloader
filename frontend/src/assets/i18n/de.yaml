@@ -70,6 +70,9 @@ keys:
   logsTitle: 'Protokoll'
   awaitingLogs: 'Warte auf Protokoll...'
   pauseLogs: 'Protokoll anhalten'
+  logsTabApp: 'Betrieb'
+  logsTabDownloads: 'Downloads'
+  downloadLogEmpty: 'Noch nichts abgeschlossen.'
   resumeLogs: 'Protokoll fortsetzen'
   accentSelect: 'Akzentfarbe'
   urlBase: URL-Basis für Reverse-Proxy-Unterstützung (Unterverzeichnis), standardmäßig leer

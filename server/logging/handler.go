@@ -121,5 +121,6 @@ func ApplyRouter(logger *ObservableLogger) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Get("/ws", webSocket(logger))
 		r.Get("/sse", sse(logger))
+		r.Get("/downloads", downloads)
 	}
 }

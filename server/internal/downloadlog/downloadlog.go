@@ -19,6 +19,7 @@
 package downloadlog
 
 import (
+	"bufio"
 	"encoding/csv"
 	"fmt"
 	"log/slog"
@@ -37,11 +38,28 @@ import (
 // The header is written when the file is created, and it is the only line
 // that starts with a '#', so a reader can skip it with grep -v '^#'.
 var headerFields = []string{
-	"finished_at", "status", "from_ip", "url", "path", "size_bytes", "elapsed_s", "downloader", "reason",
+	"finished_at", "kind", "status", "from_ip", "url", "path", "to",
+	"size_bytes", "elapsed_s", "downloader", "reason",
 }
 
-// Outcome is one finished download.
+// The kinds of line in this log.
+//
+// It began as a log of downloads and is now a log of what happened to the
+// files: a recording that finished, a file that was moved, a folder that was
+// deleted. The question "what happened to that video" is one question.
+const (
+	KindDownload = "download"
+	KindMove     = "move"
+	KindCopy     = "copy"
+	KindDelete   = "delete"
+	KindRename   = "rename"
+	KindFolder   = "folder"
+)
+
+// Outcome is one finished thing: a download, or an operation on a file.
 type Outcome struct {
+	// Kind is KindDownload, KindMove, KindDelete and so on.
+	Kind string
 	// Status is "success" or "failed".
 	Status string
 	// FromIP is the machine that asked for the download, as the server saw
@@ -49,8 +67,10 @@ type Outcome struct {
 	FromIP string
 	// URL is what was asked for.
 	URL string
-	// Path is the file that was written, empty when nothing was.
+	// Path is the file that was written, or the one that was acted on.
 	Path string
+	// To is where it went, for a move or a rename.
+	To string
 	// Size is the bytes on disk, zero when unknown.
 	Size int64
 	// Elapsed is how long the download took.
@@ -127,12 +147,19 @@ func fields(o Outcome) []string {
 		elapsed = fmt.Sprintf("%.1f", o.Elapsed.Seconds())
 	}
 
+	kind := o.Kind
+	if kind == "" {
+		kind = KindDownload
+	}
+
 	return []string{
 		time.Now().Format(time.RFC3339),
+		kind,
 		status,
 		sanitize(o.FromIP),
 		sanitize(o.URL),
 		sanitize(o.Path),
+		sanitize(o.To),
 		size,
 		elapsed,
 		sanitize(o.Downloader),
@@ -156,10 +183,40 @@ func sanitize(v string) string {
 	return v
 }
 
+// hasDifferentHeader reports whether a log file was written by a different
+// version of this format.
+func hasDifferentHeader(path string) (bool, bool) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, false
+	}
+	defer f.Close()
+
+	reader := bufio.NewReader(f)
+	first, err := reader.ReadString('\n')
+	if err != nil && first == "" {
+		return false, false
+	}
+
+	want := "#" + headerFields[0] + "\t" + strings.Join(headerFields[1:], "\t")
+
+	return strings.TrimRight(first, "\n") != want, true
+}
+
 // appendFields writes one line, adding the header first when the file is new.
 func appendFields(path string, values []string) error {
 	_, statErr := os.Stat(path)
 	fresh := os.IsNotExist(statErr)
+
+	// A file written by an older shape of this log is moved aside rather than
+	// appended to: the columns would not line up, and a log whose columns
+	// mean different things on different lines cannot be read by anything.
+	if !fresh {
+		if older, ok := hasDifferentHeader(path); ok && older {
+			os.Rename(path, path+".1")
+			fresh = true
+		}
+	}
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err

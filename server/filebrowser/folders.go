@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloadlog"
 )
 
 // Folders.
@@ -90,9 +91,12 @@ func CreateFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := os.MkdirAll(path, 0o755); err != nil {
+		recordNote(r, downloadlog.KindFolder, path, "", err.Error(), false)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	recordNote(r, downloadlog.KindFolder, path, "", "", true)
 
 	slog.Info("folder created", slog.String("path", path))
 
@@ -172,9 +176,12 @@ func RenameFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := os.Rename(from, to); err != nil {
+		recordNote(r, downloadlog.KindRename, from, to, err.Error(), false)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	recordNote(r, downloadlog.KindRename, from, to, "", true)
 
 	slog.Info("folder renamed",
 		slog.String("from", from),
@@ -253,8 +260,11 @@ func MoveFiles(w http.ResponseWriter, r *http.Request) {
 
 			if err := os.Rename(s, to); err != nil {
 				failures = append(failures, fmt.Sprintf("%s: %v", filepath.Base(s), err))
+				recordNote(r, downloadlog.KindMove, s, to, err.Error(), false)
 				continue
 			}
+
+			recordNote(r, downloadlog.KindMove, s, to, "", true)
 
 			// The source index is keyed by the path, so the record has to
 			// move with the file. Without this the file shows no source at
@@ -323,9 +333,12 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := os.Remove(clean); err != nil {
+		recordNote(r, downloadlog.KindDelete, clean, "", err.Error(), false)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	recordNote(r, downloadlog.KindDelete, clean, "", "", true)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode("ok")
