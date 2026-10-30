@@ -190,14 +190,20 @@ jobs:
       # Merging the artifacts afterwards would put the folder inside another
       # copy of itself, because the artifact holds the folder rather than its
       # contents.
+      # Every artifact is downloaded, because the publish job has no matrix
+      # of its own — it does not know which platforms were built.
+      #
+      # The bundles are downloaded on their own, because an artifact holds
+      # the folder rather than its contents, and merging them with the
+      # binaries would put each bundle inside another copy of itself.
       - uses: actions/download-artifact@v4
         with:
-          name: bundle_${{ matrix.suffix }}
+          pattern: bundle_*
           path: dist
 
       - uses: actions/download-artifact@v4
         with:
-          name: happy-downloader_${{ matrix.suffix }}
+          pattern: happy-downloader_*
           path: dist
           merge-multiple: true
 
