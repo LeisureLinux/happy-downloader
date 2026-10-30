@@ -15,6 +15,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/metadata"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/probeinfo"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 func ParseURL(url string) (*Metadata, error) {
@@ -32,6 +33,13 @@ func ParseURL(url string) (*Metadata, error) {
 
 	stdout, err := cmd.Output()
 	if err != nil {
+		// A missing yt-dlp is not a failure of the URL: it is a failure of
+		// the installation, and it is worth saying so, because "exec: no
+		// command" names neither what is missing nor what to do about it.
+		if tools.YtDlp() == "" {
+			return nil, downloaders.MissingYtDlp()
+		}
+
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
 			msg = err.Error()

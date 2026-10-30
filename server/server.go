@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/rpc"
 	"strings"
+	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/filebrowser"
@@ -35,10 +36,28 @@ import (
 
 type RunConfig struct {
 	App fs.FS
+	// Ready is called once the port is listening, with the address a browser
+	// can use.
+	//
+	// It exists because a desktop build has no terminal to print the
+	// address in: the window that would have said "listening on :3033" is
+	// the window that is not there. Whoever started it is told here instead,
+	// at the moment it is true rather than a second before.
+	Ready func(url string)
 }
 
 type serverConfig struct {
-	frontend      fs.FS
+	frontend fs.FS
+	// logger is the log the interface reads. It is the Core's, not a
+	// separate one: a log written to one and read from another is a log
+	// that shows nothing, and the panel was empty because of it.
+	logger *logging.ObservableLogger
+	// quit stops the server when the interface asks it to.
+	//
+	// A windowed build has no console and no window of its own, so without
+	// this the only way to stop it is the task manager — which is not a way
+	// to stop a program that may be writing a file.
+	quit          func()
 	mdb           *kv.Store
 	db            *bolt.DB
 	mq            *queue.MessageQueue
@@ -68,6 +87,13 @@ func Run(ctx context.Context, rc *RunConfig) error {
 	}
 	defer core.Close()
 
+	// A copy of the context that can be cancelled by the interface, so that
+	// "quit" goes through the same shutdown path as a signal. Closing the
+	// window and killing the process are not the same thing: one of them
+	// lets the database be written and the files be finished.
+	runCtx, quit := context.WithCancel(ctx)
+	defer quit()
+
 	mdb := core.MDB
 	mq := core.MQ
 	lm := core.LM
@@ -76,6 +102,8 @@ func Run(ctx context.Context, rc *RunConfig) error {
 
 	scfg := serverConfig{
 		frontend:      rc.App,
+		logger:        core.ObservableLogger(),
+		quit:          quit,
 		mdb:           mdb,
 		sourceIndex:   sourceIndex,
 		db:            boltdb,
@@ -88,7 +116,7 @@ func Run(ctx context.Context, rc *RunConfig) error {
 
 	srv := newServer(scfg)
 
-	go gracefulShutdown(ctx, srv, &scfg)
+	go gracefulShutdown(runCtx, srv, &scfg)
 
 	var (
 		network = "tcp"
@@ -107,7 +135,20 @@ func Run(ctx context.Context, rc *RunConfig) error {
 		return err
 	}
 
+	// An address of "0.0.0.0" is not something a browser can open, so the
+	// loopback address is what gets reported: it is the one that works from
+	// the machine the program is running on, which is where the person who
+	// just started it is.
+	reported := address
+	if network == "tcp" {
+		reported = fmt.Sprintf("http://127.0.0.1:%d/", conf.Server.Port)
+	}
+
 	slog.Info("happy-downloader started", slog.String("address", address))
+
+	if rc.Ready != nil {
+		rc.Ready(reported)
+	}
 
 	if err := srv.Serve(listener); err != nil {
 		slog.Warn("http server stopped", slog.String("err", err.Error()))
@@ -143,6 +184,31 @@ func newServer(c serverConfig) *http.Server {
 	// browser on another machine, and "download started" without knowing which
 	// machine is half an answer.
 	r.Use(middlewares.AccessLog)
+
+	// Stopping the application from the interface.
+	//
+	// The Windows build has no console window and no tray icon, so this is
+	// the only way to stop it that is not the task manager. It answers
+	// before it stops, because a request whose connection dies mid-reply is
+	// indistinguishable from a crash.
+	r.Post("/api/v1/quit", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"stopping"}`))
+
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+
+		slog.Info("quit requested from the interface")
+
+		if c.quit != nil {
+			// A moment later, so the reply is on the wire first.
+			go func() {
+				time.Sleep(200 * time.Millisecond)
+				c.quit()
+			}()
+		}
+	})
 
 	baseUrl := config.Instance().Server.BaseURL
 	r.Mount(baseUrl+"/", http.StripPrefix(baseUrl, http.FileServerFS(c.frontend)))
@@ -184,7 +250,7 @@ func newServer(c serverConfig) *http.Server {
 	}))
 
 	// Logging
-	r.Route("/log", logging.ApplyRouter(observableLogger))
+	r.Route("/log", logging.ApplyRouter(c.logger))
 
 	// Status
 	r.Route("/status", status.ApplyRouter(c.mdb))

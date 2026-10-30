@@ -33,6 +33,8 @@ import { useToast } from '../hooks/toast'
 type NetworkConfig = {
   potBaseUrl: string
   proxy: string
+  downloadPath: string
+  defaultDownloadPath: string
 }
 
 const NetworkSettings: React.FC = () => {
@@ -42,6 +44,8 @@ const NetworkSettings: React.FC = () => {
 
   const [pot, setPot] = useState('')
   const [proxy, setProxy] = useState('')
+  const [downloadPath, setDownloadPath] = useState('')
+  const [defaultDownloadPath, setDefaultDownloadPath] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -53,6 +57,8 @@ const NetworkSettings: React.FC = () => {
       const config = await res.json() as NetworkConfig
       setPot(config.potBaseUrl ?? '')
       setProxy(config.proxy ?? '')
+      setDownloadPath(config.downloadPath ?? '')
+      setDefaultDownloadPath(config.defaultDownloadPath ?? '')
     } catch {
       // The settings not loading is not worth a message: the form is still
       // usable, and saving it would write what is in it.
@@ -69,7 +75,7 @@ const NetworkSettings: React.FC = () => {
       const res = await fetch(`${serverAddr}/api/v1/network`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ potBaseUrl: pot, proxy }),
+        body: JSON.stringify({ potBaseUrl: pot, proxy, downloadPath }),
       })
 
       if (!res.ok) {
@@ -91,6 +97,32 @@ const NetworkSettings: React.FC = () => {
       </Typography>
 
       <Stack spacing={2}>
+        {/* Where the files go. It is the first setting on the page because
+            it is the one people come here to change: the default used to be
+            the folder the program was started from, which on a desktop is
+            the folder it was unpacked into. */}
+        <Box>
+          <TextField
+            size="small"
+            fullWidth
+            label={i18n.t('downloadPathLabel')}
+            placeholder={defaultDownloadPath}
+            helperText={i18n.t('downloadPathHint')}
+            value={downloadPath}
+            onChange={e => setDownloadPath(e.target.value)}
+          />
+          {defaultDownloadPath && (
+            <Button
+              size="small"
+              sx={{ mt: 0.5 }}
+              disabled={busy || downloadPath === defaultDownloadPath}
+              onClick={() => setDownloadPath(defaultDownloadPath)}
+            >
+              {i18n.t('useDefaultDownloadPath')}
+            </Button>
+          )}
+        </Box>
+
         <TextField
           size="small"
           fullWidth

@@ -2,6 +2,7 @@ package downloaders
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -283,12 +284,43 @@ var stagedMu sync.Mutex
 // each report would have removed the import after one attempt rather than
 // two.
 func NewCommand(args []string) *exec.Cmd {
-	cmd := exec.Command(tools.YtDlp(), args...)
+	program := tools.YtDlp()
+
+	if program == "" {
+		// An empty program is not a name: the argument list would start
+		// with the URL, and running that fails with "exec: no command",
+		// which names neither what is missing nor where it was looked for.
+		//
+		// The command is still returned, so that the caller reports the
+		// error rather than crashing on a nil.
+		return exec.Command(missingProgram, args...)
+	}
+
+	cmd := exec.Command(program, args...)
 	prepareProcess(cmd)
 
 	cookies.NewAttempt()
 
 	return cmd
+}
+
+// missingProgram is the name a command is given when the program it should
+// run was not found.
+//
+// It is a name that cannot exist, so that running it fails — but the error it
+// produces says what to do, because the message is the only thing the person
+// sees.
+const missingProgram = "yt-dlp-was-not-found"
+
+// MissingYtDlp is the error a download reports when yt-dlp is not there.
+//
+// It says where it was looked for, because "not found" without that sends
+// people looking through the PATH when the answer is usually "unpack the
+// bundle, or point at it in the settings".
+func MissingYtDlp() error {
+	return fmt.Errorf(
+		"yt-dlp was not found: it is not installed, and it is not beside the application (paths.downloader_path says where to look)",
+	)
 }
 
 // LogCommand emits the resolved yt-dlp command line.

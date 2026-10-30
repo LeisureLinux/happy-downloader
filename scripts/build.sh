@@ -62,11 +62,28 @@ if [ -z "${GOARCH:-}" ] || [ -z "${GOOS:-}" ]; then
 fi
 export GOARCH GOOS
 
-echo "==> building binary ($VERSION, $GOOS/$GOARCH)"
-CGO_ENABLED=0 go build -trimpath \
-  -ldflags "-s -w \
+# A Windows desktop build has no console.
+#
+# "-H windowsgui" makes the program a windowed application, so double-clicking
+# it does not open a black window that has to stay open for the download to
+# keep running. It opens the browser at the address instead, and reports a
+# failure in a message box, because there is no console left to report it in.
+#
+# It can still be run from a command prompt: it attaches to the console it was
+# started from and prints there.
+LDFLAGS="-s -w \
     -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerVersion=${VERSION} \
-    -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerBuiltAt=${BUILT_AT}" \
-  -o "$OUT" main.go
+    -X github.com/LeisureLinux/happy-downloader/v4/server/rest.ServerBuiltAt=${BUILT_AT}"
+
+if [ "$GOOS" = "windows" ]; then
+  LDFLAGS="$LDFLAGS -H windowsgui"
+fi
+
+echo "==> building binary ($VERSION, $GOOS/$GOARCH)"
+# The package, not main.go: the per-platform files beside it are part of the
+# program, and naming one file would leave them out.
+CGO_ENABLED=0 go build -trimpath \
+  -ldflags "$LDFLAGS" \
+  -o "$OUT" .
 
 echo "==> $OUT ($VERSION, built $BUILT_AT)"

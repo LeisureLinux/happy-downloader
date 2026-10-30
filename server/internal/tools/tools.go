@@ -243,43 +243,60 @@ func Describe() map[string]string {
 	return out
 }
 
-// The resolved paths, worked out once.
+// The resolved paths.
 //
-// Looking a program up is a handful of stat calls and, on the first run, a
-// walk of the PATH. A download builds its arguments several times — the
-// metadata fetch, the format probe, the download itself — and each of them
+// Looking a program up is a handful of stat calls and, when it is not found
+// on the PATH, a walk of it. A download builds its arguments several times —
+// the metadata fetch, the format probe, the download itself — and each of them
 // would look it up again.
 //
-// The answer cannot change while the process runs, because the thing it
-// depends on is the layout of the disk beside the binary, and that does not
-// move under a running program. So it is worked out once and kept.
+// A program that was found is remembered, because the answer cannot change
+// while the process runs: what it depends on is the layout of the disk beside
+// the binary, and that does not move under a running program.
+//
+// A program that was *not* found is looked for again next time. It may not
+// have been there yet — a bundle that is being unpacked, or a program that
+// is being installed — and the failure it causes is "exec: no command",
+// which says nothing about what is missing. Caching the absence turned a
+// temporary situation into a permanent one.
 var (
-	resolveOnce sync.Once
-	ytDlpPath   string
-	ffmpegPath  string
-	nodePath    string
+	resolveMu  sync.Mutex
+	ytDlpPath  string
+	ffmpegPath string
+	nodePath   string
 )
 
 // Resolve works out where the external programs are.
 //
-// It is called once at startup. A program that is not there resolves to an
-// empty string, and the caller decides what to say about it: refusing to
-// start is better than starting and failing on every download.
+// It is called at startup and again whenever a program was not found. A
+// program that is there resolves to a path; one that is not resolves to an
+// empty string, and the caller decides what to say about it.
 func Resolve() {
-	resolveOnce.Do(func() {
+	resolveMu.Lock()
+	defer resolveMu.Unlock()
+
+	if ytDlpPath == "" {
 		if found, err := Find("yt-dlp"); err == nil {
 			ytDlpPath = found
 		}
+	}
 
+	if ffmpegPath == "" {
 		if found, err := Find("ffmpeg"); err == nil {
 			ffmpegPath = found
 		}
+	}
 
+	if nodePath == "" {
 		nodePath = resolveNode()
-	})
+	}
 }
 
 // YtDlp is where yt-dlp is, or an empty string when it was not found.
+//
+// An empty string is a failure, not a name: it means the argument list starts
+// with the URL, and running that gives "exec: no command" — an error that
+// names nothing. So it is reported as what it is.
 func YtDlp() string {
 	Resolve()
 	return ytDlpPath

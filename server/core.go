@@ -120,6 +120,20 @@ func NewCore(ctx context.Context, opts CoreOptions) (*Core, error) {
 
 	conf := config.Instance()
 
+	// The download directory is made here, because every download assumes it
+	// is there. It may not be: the setting may have just been changed to a
+	// folder that does not exist yet, and the default is a folder of our own
+	// inside "Downloads" rather than one the system made.
+	//
+	// Failing here is not fatal. A directory that cannot be created is a
+	// real problem, but it is one the person can fix in the settings, and
+	// the interface is how they found out.
+	if err := os.MkdirAll(conf.Paths.DownloadPath, 0o755); err != nil {
+		slog.Error("cannot create the download directory",
+			slog.String("path", conf.Paths.DownloadPath),
+			slog.String("err", err.Error()))
+	}
+
 	observableLogger := logging.NewObservableLogger()
 
 	logWriters := append([]io.Writer{os.Stdout}, opts.LogWriters...)

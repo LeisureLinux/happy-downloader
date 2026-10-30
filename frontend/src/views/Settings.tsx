@@ -47,6 +47,7 @@ import {
 } from '../atoms/settings'
 import DownloadCredentials from '../components/DownloadCredentials'
 import NetworkSettings from '../components/NetworkSettings'
+import QuitButton from '../components/QuitButton'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
 import Translator from '../lib/i18n'
@@ -312,6 +313,17 @@ export function SettingsContent() {
             {i18n.t('networkAnchor')}
           </Typography>
           <NetworkSettings />
+        </Grid>
+
+        {/* 退出程序。
+            桌面版没有控制台也没有自带窗口，浏览器就是它的全部界面 ——
+            没有这个按钮，想关掉它只能去任务管理器，而任务管理器不会
+            等一个正在写的文件写完。 */}
+        <Grid sx={{ mr: 1, mt: 2 }}>
+          <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
+            {i18n.t('quitButton')}
+          </Typography>
+          <QuitButton />
         </Grid>
 
         {/* 反向代理放最后：部署时配置一次，之后基本不动 */}

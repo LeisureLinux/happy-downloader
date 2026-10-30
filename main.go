@@ -23,9 +23,13 @@ import (
 var frontend embed.FS
 
 func main() {
+	// The desktop build has no terminal, so what a terminal would have said
+	// is said by other means.
+	setupDesktop()
+
 	// Parse optional config path from flag
 	var configFile string
-	flag.StringVar(&configFile, "conf", "./config.yml", "Config file path")
+	flag.StringVar(&configFile, "conf", config.DefaultConfigPath(), "Config file path")
 	flag.Parse()
 
 	// The configuration is written back when the interface changes a setting
@@ -40,11 +44,28 @@ func main() {
 	v.SetDefault("server.host", "0.0.0.0")
 	v.SetDefault("server.port", 3033)
 	v.SetDefault("server.queue_size", runtime.NumCPU())
-	v.SetDefault("paths.download_path", ".")
+	// The downloads go somewhere the person can find, not beside the
+	// program: they are the point of the program, and the folder the
+	// program was unpacked into is both hard to find and not theirs.
+	v.SetDefault("paths.download_path", config.DefaultDownloadPath())
 	v.SetDefault("paths.downloader_path", "yt-dlp")
-	v.SetDefault("paths.local_database_path", ".")
-	v.SetDefault("logging.log_path", "happy-downloader.log")
-	v.SetDefault("logging.enable_file_logging", false)
+	// The database is written to, so it goes where the application is
+	// allowed to write rather than beside itself.
+	if dir := config.DefaultDataDir(); dir != "" {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			slog.Error("cannot create the data directory", "path", dir, "err", err)
+		}
+		v.SetDefault("paths.local_database_path", dir)
+		v.SetDefault("logging.log_path", dir+string(os.PathSeparator)+"happy-downloader.log")
+	} else {
+		v.SetDefault("paths.local_database_path", ".")
+		v.SetDefault("logging.log_path", "happy-downloader.log")
+	}
+
+	// File logging is on by default on Windows, because there is no console
+	// to read: a windowed build that keeps its log only in memory has no log
+	// to look at when something goes wrong.
+	v.SetDefault("logging.enable_file_logging", config.DefaultDataDir() != "")
 
 	// Env binding
 	v.SetEnvPrefix("APP")
@@ -89,9 +110,11 @@ func main() {
 	)
 
 	if err := server.Run(ctx, &server.RunConfig{
-		App: appFS,
+		App:   appFS,
+		Ready: whenReady,
 	}); err != nil {
 		slog.Error("server stopped with error", "error", err)
+		whenFatal(err.Error())
 		os.Exit(1)
 	}
 

@@ -51,7 +51,7 @@ func main() {
 	v.SetDefault("server.host", "127.0.0.1")
 	v.SetDefault("server.port", 3033)
 	v.SetDefault("server.queue_size", 4)
-	v.SetDefault("paths.download_path", ".")
+	v.SetDefault("paths.download_path", config.DefaultDownloadPath())
 	v.SetDefault("paths.downloader_path", "yt-dlp")
 	v.SetDefault("paths.local_database_path", ".")
 	v.SetDefault("logging.log_path", "happy-downloader.log")

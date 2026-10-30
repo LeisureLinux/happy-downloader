@@ -52,6 +52,16 @@ type Editable struct {
 	PotBaseURL string `yaml:"pot_base_url"`
 	// Proxy is the proxy for the sites that need one.
 	Proxy string `yaml:"proxy"`
+	// DownloadPath is where the finished files go.
+	//
+	// It is here because the default was wrong on a desktop install: the
+	// application was started from the folder it was unpacked into, so every
+	// download landed beside the executable — in "Program Files" on a
+	// machine where the person has no business writing, and in the place the
+	// uninstaller will one day delete.
+	//
+	// An empty value means the default is kept.
+	DownloadPath string `yaml:"download_path"`
 }
 
 // Update writes the settings that the interface can change.
@@ -92,6 +102,19 @@ func Update(editable Editable) error {
 
 	doc["ytdlp"] = ytdlp
 
+	// The download directory is under "paths", and it is only written when
+	// it was given: an empty value means "keep what is there", so a form
+	// that does not know about the setting cannot empty it by saving.
+	if strings.TrimSpace(editable.DownloadPath) != "" {
+		paths, _ := doc["paths"].(map[string]any)
+		if paths == nil {
+			paths = map[string]any{}
+		}
+
+		paths["download_path"] = strings.TrimSpace(editable.DownloadPath)
+		doc["paths"] = paths
+	}
+
 	out, err := yaml.Marshal(doc)
 	if err != nil {
 		return err
@@ -114,6 +137,16 @@ func Update(editable Editable) error {
 	instance := Instance()
 	instance.YtDlp.PotBaseURL = strings.TrimSpace(editable.PotBaseURL)
 	instance.YtDlp.Proxy = strings.TrimSpace(editable.Proxy)
+
+	// The download directory takes effect at once: a change that needs a
+	// restart is a change nobody makes.
+	if dir := strings.TrimSpace(editable.DownloadPath); dir != "" {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return err
+		}
+
+		instance.Paths.DownloadPath = dir
+	}
 
 	return nil
 }

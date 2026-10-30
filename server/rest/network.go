@@ -23,6 +23,15 @@ type NetworkConfig struct {
 	// Proxy is the proxy for the sites that need one. Which sites those
 	// are is worked out when a download is built.
 	Proxy string `json:"proxy"`
+	// DownloadPath is where the finished files go.
+	//
+	// It belongs here rather than in the profile table because it is a
+	// property of the installation: a file is downloaded once, wherever the
+	// window happened to be open.
+	DownloadPath string `json:"downloadPath"`
+	// DefaultDownloadPath is what the application would use if the setting
+	// were blank, so that the form can offer to go back to it.
+	DefaultDownloadPath string `json:"defaultDownloadPath"`
 }
 
 // GetNetworkConfig reports the settings.
@@ -33,8 +42,10 @@ func (h *Handler) GetNetworkConfig() http.HandlerFunc {
 		conf := config.Instance()
 
 		if err := json.NewEncoder(w).Encode(NetworkConfig{
-			PotBaseURL: conf.YtDlp.PotBaseURL,
-			Proxy:      conf.YtDlp.Proxy,
+			PotBaseURL:          conf.YtDlp.PotBaseURL,
+			Proxy:               conf.YtDlp.Proxy,
+			DownloadPath:        conf.Paths.DownloadPath,
+			DefaultDownloadPath: config.DefaultDownloadPath(),
 		}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -54,8 +65,9 @@ func (h *Handler) SetNetworkConfig() http.HandlerFunc {
 		}
 
 		if err := config.Update(config.Editable{
-			PotBaseURL: req.PotBaseURL,
-			Proxy:      req.Proxy,
+			PotBaseURL:   req.PotBaseURL,
+			Proxy:        req.Proxy,
+			DownloadPath: req.DownloadPath,
 		}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

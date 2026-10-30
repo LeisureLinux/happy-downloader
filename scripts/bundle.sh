@@ -126,6 +126,28 @@ Everything the downloader needs is in this folder:
 Put the folder wherever you like and run it. It finds the other two beside
 itself, so there is nothing to configure and nothing to install.
 
+Windows
+-------
+
+Double-click happy-downloader. There is no window and no command prompt to
+keep open: it starts, it opens your browser at
+
+  http://localhost:3033/
+
+and that page is the application. Closing the browser does not stop it —
+bookmarking the address is the usual thing to do — and if you want it gone,
+the menu in the page has a quit entry.
+
+Downloads go to "Downloads\happy-downloader" under your user folder, which
+you can change on the settings page. Nothing needs administrator rights: the
+database, the settings and the log live in
+
+  %APPDATA%\happy-downloader
+
+If you would rather see the log in a terminal, run it from one:
+  happy-downloader_windows-amd64.exe -conf config.yml
+It attaches to the console it was started from and prints there.
+
 First run
 ---------
 
