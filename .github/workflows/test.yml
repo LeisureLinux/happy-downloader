@@ -394,6 +394,12 @@ jobs:
             Start-Sleep -Milliseconds 500
           }
           if (-not $second.HasExited) {
+            $logFile = "$env:APPDATA\happy-downloader\happy-downloader.log"
+            "--- the application log ---"
+            if (Test-Path $logFile) { Get-Content $logFile -Tail 40 } else { "no log at $logFile" }
+            "--- listening sockets on 3033 ---"
+            Get-NetTCPConnection -LocalPort 3033 -ErrorAction SilentlyContinue |
+              Select-Object LocalAddress, State, OwningProcess
             Stop-Process -Id $second.Id -Force
             throw "a second copy kept running beside the first"
           }
