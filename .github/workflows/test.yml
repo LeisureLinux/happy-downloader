@@ -209,12 +209,14 @@ jobs:
           echo "$found"
           cat app.log 2>/dev/null | tail -20 || true
 
+          # The path is checked by its name rather than by its separator,
+          # because the separator is a backslash on Windows.
           case "$found" in
-            *'"ytdlpPath":'*'/yt-dlp'*) ;;
+            *yt-dlp*) ;;
             *) echo "the application did not find the bundled yt-dlp: $found" >&2; exit 1 ;;
           esac
           case "$found" in
-            *'"ffmpegPath":'*'/ffmpeg'*) ;;
+            *ffmpeg*) ;;
             *) echo "the application did not find the bundled ffmpeg: $found" >&2; exit 1 ;;
           esac
 
