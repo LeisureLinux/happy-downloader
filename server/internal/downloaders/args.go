@@ -15,6 +15,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/profiles"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 // SanitizeRuntime qualifies a bare runtime path with a "node:" prefix.
@@ -75,7 +76,7 @@ func BuildArgs(url string, extra ...string) []string {
 	// that covers a replaced export when the inotify watch is unavailable.
 	SyncCookies()
 
-	runtime := SanitizeRuntime(config.Instance().Paths.JSRuntimePath)
+	runtime := tools.Node()
 
 	profile, _ := profiles.ForURL(url)
 
@@ -283,7 +284,7 @@ var stagedMu sync.Mutex
 // each report would have removed the import after one attempt rather than
 // two.
 func NewCommand(args []string) *exec.Cmd {
-	cmd := exec.Command(config.Instance().Paths.DownloaderPath, args...)
+	cmd := exec.Command(tools.YtDlp(), args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	cookies.NewAttempt()
@@ -297,7 +298,7 @@ func NewCommand(args []string) *exec.Cmd {
 // Without the argv there is no way to tell which stage ran, what runtime was
 // in effect, or whether cookies and the proxy were passed at all.
 func LogCommand(stage, url string, args []string) {
-	argv := append([]string{config.Instance().Paths.DownloaderPath}, args...)
+	argv := append([]string{tools.YtDlp()}, args...)
 
 	quoted := make([]string, len(argv))
 	for i, a := range argv {

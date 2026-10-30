@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -231,6 +231,17 @@ func (h *Handler) GetVersion() http.HandlerFunc {
 		// the first question when a download behaves differently than it did
 		// yesterday.
 		YtdlpPath string `json:"ytdlpPath"`
+
+		// FFmpegPath is where ffmpeg was found. It is reported for the
+		// same reason as the yt-dlp path: a recording that will not be put
+		// into a container, and a merge that does not happen, are both
+		// explained by which ffmpeg is in use.
+		FFmpegPath string `json:"ffmpegPath,omitempty"`
+
+		// NodePath is the JavaScript runtime. It is reported because
+		// YouTube's challenge solving fails without one, and the failure
+		// says nothing about what is missing.
+		NodePath string `json:"nodePath,omitempty"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -248,7 +259,9 @@ func (h *Handler) GetVersion() http.HandlerFunc {
 			RPCVersion:   rpcVersion,
 			RPCBuiltAt:   builtAt,
 			YtdlpVersion: ytdlpVersion,
-			YtdlpPath:    config.Instance().Paths.DownloaderPath,
+			YtdlpPath:    tools.YtDlp(),
+			FFmpegPath:   tools.FFmpeg(),
+			NodePath:     tools.Node(),
 		}
 
 		if err := json.NewEncoder(w).Encode(res); err != nil {

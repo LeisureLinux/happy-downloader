@@ -3,12 +3,12 @@ package updater
 import (
 	"os/exec"
 
-	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 // Update using the builtin function of yt-dlp
 func UpdateExecutable() error {
-	cmd := exec.Command(config.Instance().Paths.DownloaderPath, "-U")
+	cmd := exec.Command(tools.YtDlp(), "-U")
 
 	err := cmd.Start()
 	if err != nil {

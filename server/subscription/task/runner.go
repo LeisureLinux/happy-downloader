@@ -14,6 +14,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 	"github.com/LeisureLinux/happy-downloader/v4/server/subscription/domain"
 	"github.com/robfig/cron/v3"
 )
@@ -129,7 +130,7 @@ func (t *CronTaskRunner) fetcher(ctx context.Context, req *monitorTask) time.Dur
 
 	cmd := exec.CommandContext(
 		ctx,
-		config.Instance().Paths.DownloaderPath,
+		tools.YtDlp(),
 		"-I1",
 		"--flat-playlist",
 		"--print", "webpage_url",

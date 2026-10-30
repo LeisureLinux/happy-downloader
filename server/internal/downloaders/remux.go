@@ -2,6 +2,7 @@ package downloaders
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 )
@@ -34,9 +37,9 @@ func remuxRecording(from, to string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	ffmpeg, err := exec.LookPath("ffmpeg")
-	if err != nil {
-		return err
+	ffmpeg := tools.FFmpeg()
+	if ffmpeg == "" {
+		return errors.New("ffmpeg was not found")
 	}
 
 	cmd := exec.CommandContext(ctx, ffmpeg,

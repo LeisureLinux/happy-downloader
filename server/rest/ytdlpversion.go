@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 // The yt-dlp version, and how long it is worth remembering.
@@ -48,7 +48,7 @@ func ytDlpVersion(ctx context.Context) string {
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, config.Instance().Paths.DownloaderPath, "--version")
+	cmd := exec.CommandContext(ctx, tools.YtDlp(), "--version")
 
 	out, err := cmd.Output()
 	if err != nil {

@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
-	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/pipes"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 	"github.com/google/uuid"
 )
 
@@ -96,7 +96,7 @@ func (l *LiveStreamDownloader) Start() error {
 
 	LogCommand("livestream", l.URL, params)
 
-	cmd := exec.Command(config.Instance().Paths.DownloaderPath, params...)
+	cmd := exec.Command(tools.YtDlp(), params...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	// stdout = media stream

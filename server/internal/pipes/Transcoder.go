@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"os/exec"
 	"strings"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 type Transcoder struct {
@@ -16,7 +18,16 @@ type Transcoder struct {
 func (t *Transcoder) Name() string { return "ffmpeg-transcoder" }
 
 func (t *Transcoder) Connect(r io.Reader) (io.Reader, error) {
-	cmd := exec.Command("ffmpeg",
+	// ffmpeg is looked up rather than named, so that a failure says "ffmpeg
+	// is not installed" instead of the process failing to start with no
+	// explanation. The same lookup is used when a recording is put into its
+	// container, and the two should not differ on where ffmpeg comes from.
+	ffmpeg := tools.FFmpeg()
+	if ffmpeg == "" {
+		return nil, errors.New("ffmpeg was not found")
+	}
+
+	cmd := exec.Command(ffmpeg,
 		append([]string{"-i", "pipe:0"}, append(t.Args, "-f", "webm", "pipe:1")...)...,
 	)
 

@@ -15,6 +15,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/probeinfo"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 	"github.com/google/uuid"
 )
 
@@ -171,7 +172,7 @@ func (g *GenericDownloader) Start() error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cmd := exec.CommandContext(ctx, config.Instance().Paths.DownloaderPath, params...)
+	cmd := exec.CommandContext(ctx, tools.YtDlp(), params...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	stdout, err := cmd.StdoutPipe()

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 // Checking whether yt-dlp has a newer version, and installing it.
@@ -71,7 +71,7 @@ func Check(ctx context.Context) (*Status, error) {
 
 // CurrentVersion returns the version of the installed yt-dlp.
 func CurrentVersion() string {
-	out, err := exec.Command(config.Instance().Paths.DownloaderPath, "--version").Output()
+	out, err := exec.Command(tools.YtDlp(), "--version").Output()
 	if err != nil {
 		return ""
 	}
@@ -227,7 +227,7 @@ func isDateForm(version string) bool {
 // old one and renamed over it, so a download starting at that moment finds
 // either the old binary or the new one, never a half-written file.
 func Update(ctx context.Context) error {
-	current := config.Instance().Paths.DownloaderPath
+	current := tools.YtDlp()
 
 	if current == "" {
 		return fmt.Errorf("no yt-dlp path is configured")

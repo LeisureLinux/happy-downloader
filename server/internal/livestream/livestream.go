@@ -17,6 +17,7 @@ import (
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/pipes"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/queue"
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 const (
@@ -130,7 +131,7 @@ func (l *LiveStream) Start() error {
 		"--paths", config.Instance().Paths.DownloadPath,
 	)
 
-	cmd := exec.Command(config.Instance().Paths.DownloaderPath, params...)
+	cmd := exec.Command(tools.YtDlp(), params...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

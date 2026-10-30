@@ -42,8 +42,12 @@ type LoggingConfig struct {
 }
 
 type PathsConfig struct {
-	DownloadPath      string `mapstructure:"download_path"`
-	DownloaderPath    string `mapstructure:"downloader_path"`
+	DownloadPath   string `mapstructure:"download_path"`
+	DownloaderPath string `mapstructure:"downloader_path"`
+	// FFmpegPath is where ffmpeg is. Empty means it is looked for beside
+	// the application and then on the PATH, which is what a bundled
+	// distribution needs.
+	FFmpegPath        string `mapstructure:"ffmpeg_path"`
 	LocalDatabasePath string `mapstructure:"local_database_path"`
 	JSRuntimePath     string `mapstructure:"js_runtime_path"`
 	// CookiePath points at a cookie export to convert and pass to yt-dlp.
