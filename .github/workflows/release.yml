@@ -168,16 +168,22 @@ jobs:
           set -eu
           dir="bundle_${{ matrix.suffix }}"
           case "$dir" in
-            *windows*) zip -qr "${dir}.zip" "$dir" ;;
-            *)          tar -czf "${dir}.tar.gz" "$dir" ;;
+            *windows*) (cd "$dir" && zip -qr "../${dir}.zip" .) ;;
+            *)          (cd "$dir" && tar -czf "../${dir}.tar.gz" .) ;;
           esac
           rm -rf "$dir"
           ls -l
 
+      # The archive is uploaded from inside its own directory, so that the
+      # artifact holds the file rather than a folder with the file in it. An
+      # artifact that holds a folder puts everything that downloads it one
+      # level deeper than it was.
       - uses: actions/upload-artifact@v4
         with:
           name: bundle_${{ matrix.suffix }}
-          path: bundle_${{ matrix.suffix }}.*
+          path: |
+            bundle_${{ matrix.suffix }}.tar.gz
+            bundle_${{ matrix.suffix }}.zip
           if-no-files-found: error
           retention-days: 7
 
