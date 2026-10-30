@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 // The small file operations the updater needs, in one place.
@@ -38,7 +40,10 @@ func replaceFile(from, to string) error {
 // binary on an arm64 host cannot start, and that is exactly the mistake this
 // catches before it replaces a working downloader.
 func verifyBinary(path string) error {
-	out, err := exec.Command(path, "--version").Output()
+	cmd := exec.Command(path, "--version")
+	tools.Quiet(cmd)
+
+	out, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("the downloaded yt-dlp does not run on this machine: %w", err)
 	}

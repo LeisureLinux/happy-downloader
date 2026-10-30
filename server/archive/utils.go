@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 // Perform a search on the archive.txt file an determines if a download
@@ -21,6 +23,8 @@ func DownloadExists(ctx context.Context, url string) (bool, error) {
 		"%(extractor)s %(id)s",
 		url,
 	)
+	tools.Quiet(cmd)
+
 	stdout, err := cmd.Output()
 	if err != nil {
 		return false, err

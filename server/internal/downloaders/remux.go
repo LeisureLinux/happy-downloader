@@ -49,6 +49,7 @@ func remuxRecording(from, to string) error {
 		"-movflags", "+faststart",
 		to,
 	)
+	prepareProcess(cmd)
 
 	if err := cmd.Run(); err != nil {
 		return err

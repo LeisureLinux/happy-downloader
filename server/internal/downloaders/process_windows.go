@@ -5,6 +5,8 @@ package downloaders
 import (
 	"os/exec"
 	"syscall"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 // prepareProcess puts the command in its own process group.
@@ -29,6 +31,11 @@ func prepareProcess(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 	}
+
+	// And no console window. This is a windowed application, and every
+	// program it runs — yt-dlp, ffmpeg, ffprobe, node — is a console program
+	// that would otherwise get a console and a window of its own.
+	tools.Quiet(cmd)
 }
 
 // killProcessGroup stops a command and everything it started.

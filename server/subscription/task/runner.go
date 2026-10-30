@@ -136,6 +136,7 @@ func (t *CronTaskRunner) fetcher(ctx context.Context, req *monitorTask) time.Dur
 		"--print", "webpage_url",
 		req.Subscription.URL,
 	)
+	tools.Quiet(cmd)
 
 	stdout, err := cmd.Output()
 	if err != nil {

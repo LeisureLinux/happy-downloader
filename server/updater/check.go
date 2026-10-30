@@ -71,7 +71,10 @@ func Check(ctx context.Context) (*Status, error) {
 
 // CurrentVersion returns the version of the installed yt-dlp.
 func CurrentVersion() string {
-	out, err := exec.Command(tools.YtDlp(), "--version").Output()
+	cmd := exec.Command(tools.YtDlp(), "--version")
+	tools.Quiet(cmd)
+
+	out, err := cmd.Output()
 	if err != nil {
 		return ""
 	}

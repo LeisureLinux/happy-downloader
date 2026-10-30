@@ -49,6 +49,7 @@ func ytDlpVersion(ctx context.Context) string {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, tools.YtDlp(), "--version")
+	tools.Quiet(cmd)
 
 	out, err := cmd.Output()
 	if err != nil {

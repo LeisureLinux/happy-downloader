@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/internal/tools"
 )
 
 // How yt-dlp was installed, and how it should be updated.
@@ -163,6 +165,8 @@ func updateWithPackageManager(ctx context.Context, manager, ytdlpPath, version s
 	fmt.Printf("updating yt-dlp with %s\n", filepath.Base(manager))
 
 	cmd := exec.CommandContext(ctx, manager, args...)
+	tools.Quiet(cmd)
+
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {

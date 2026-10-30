@@ -132,6 +132,7 @@ func (l *LiveStream) Start() error {
 	)
 
 	cmd := exec.Command(tools.YtDlp(), params...)
+	tools.Quiet(cmd)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

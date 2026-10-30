@@ -30,6 +30,7 @@ func (t *Transcoder) Connect(r io.Reader) (io.Reader, error) {
 	cmd := exec.Command(ffmpeg,
 		append([]string{"-i", "pipe:0"}, append(t.Args, "-f", "webm", "pipe:1")...)...,
 	)
+	tools.Quiet(cmd)
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

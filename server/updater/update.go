@@ -9,6 +9,7 @@ import (
 // Update using the builtin function of yt-dlp
 func UpdateExecutable() error {
 	cmd := exec.Command(tools.YtDlp(), "-U")
+	tools.Quiet(cmd)
 
 	err := cmd.Start()
 	if err != nil {
