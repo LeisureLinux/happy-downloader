@@ -370,8 +370,12 @@ jobs:
           $sse = & curl.exe -sN --max-time 3 http://127.0.0.1:3033/log/sse 2>$null
           $replayed = @($sse | Select-String -SimpleMatch 'event: log').Count
           "log lines replayed to a new reader: $replayed"
+
+          # curl is killed by its own timeout, which is the normal way for that
+          # command to stop. Its exit code is not this step's result, and in
+          # PowerShell a native command's exit code becomes exactly that.
+          $global:LASTEXITCODE = 0
+
           if ($replayed -lt 1) { throw "the log panel would open empty" }
 
-          # It opens a browser when started with no console; in a test there is
-          # no console either, so tell it not to. The address is what matters.
-          Stop-Process -Id $app.Id -Force
+          try { Stop-Process -Id $app.Id -Force } catch { }
