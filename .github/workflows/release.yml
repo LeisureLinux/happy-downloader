@@ -174,16 +174,25 @@ jobs:
           rm -rf "$dir"
           ls -l
 
-      # The archive is uploaded from inside its own directory, so that the
-      # artifact holds the file rather than a folder with the file in it. An
-      # artifact that holds a folder puts everything that downloads it one
-      # level deeper than it was.
+      # The archive is uploaded by name. An artifact holds the paths it was
+      # given, so uploading a directory puts everything that downloads it
+      # one level deeper than it was — and the publish job was looking for
+      # the archive at the top of its own directory.
       - uses: actions/upload-artifact@v4
         with:
           name: bundle_${{ matrix.suffix }}
-          path: |
-            bundle_${{ matrix.suffix }}.tar.gz
-            bundle_${{ matrix.suffix }}.zip
+          path: bundle_${{ matrix.suffix }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+      # A Windows bundle is a zip, because that is what Windows can open
+      # without anything else being installed. It is a separate artifact
+      # because a Linux build has no zip to upload.
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'windows'
+        with:
+          name: bundle_zip_${{ matrix.suffix }}
+          path: bundle_${{ matrix.suffix }}.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -204,8 +213,9 @@ jobs:
       # binaries would put each bundle inside another copy of itself.
       - uses: actions/download-artifact@v4
         with:
-          pattern: bundle_*
+          pattern: bundle*
           path: bundles
+          merge-multiple: true
 
       - uses: actions/download-artifact@v4
         with:
