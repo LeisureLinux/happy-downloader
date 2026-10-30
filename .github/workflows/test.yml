@@ -44,6 +44,55 @@ jobs:
       - name: Browser support
         run: node frontend/scripts/check-browser-support.mjs
 
+      # The bundle is what most people install, so it is checked here rather
+      # than only when a release is cut.
+      #
+      # What is checked is that it holds what it should and that the
+      # application finds it: a bundle that is missing a program looks
+      # complete and fails on the first download, and one whose programs are
+      # found by name rather than by path runs whatever the machine happens
+      # to have.
+      - name: The bundle
+        run: |
+          set -eu
+          mv happy-downloader happy-downloader_linux-amd64
+          ./scripts/bundle.sh /tmp/bundle linux amd64
+
+          for program in yt-dlp ffmpeg; do
+            found=$(find /tmp/bundle -maxdepth 1 -name "$program" | head -1)
+            if [ -z "$found" ]; then
+              echo "the bundle has no $program in it" >&2
+              exit 1
+            fi
+            if [ ! -x "$found" ]; then
+              echo "$found is not executable" >&2
+              exit 1
+            fi
+          done
+
+          # The application has to find them beside itself, and report where
+          # it found them — a name rather than a path means the working
+          # directory decided which copy ran.
+          /tmp/bundle/happy-downloader_linux-amd64 -conf /dev/null &
+          pid=$!
+          trap "kill $pid 2>/dev/null || true" EXIT
+          sleep 10
+
+          found=$(curl -s --max-time 5 http://127.0.0.1:3033/api/v1/version || true)
+          echo "$found"
+
+          case "$found" in
+            *'"ytdlpPath":"/tmp/bundle/yt-dlp"'*) ;;
+            *) echo "the application did not find the bundled yt-dlp: $found" >&2; exit 1 ;;
+          esac
+          case "$found" in
+            *'"ffmpegPath":"/tmp/bundle/ffmpeg"'*) ;;
+            *) echo "the application did not find the bundled ffmpeg: $found" >&2; exit 1 ;;
+          esac
+
+          kill $pid 2>/dev/null || true
+          trap - EXIT
+
       - name: gofmt
         run: |
           set -eu
