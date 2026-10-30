@@ -385,13 +385,20 @@ jobs:
           # A second copy must not start beside the first: it cannot have the
           # port, and the browser would end up showing the version that is
           # already running rather than the one just installed.
+          # Polled rather than waited for a fixed time: startup opens the
+          # database and converts the cookie file before it reaches the port,
+          # so "not exited yet" says nothing four seconds in.
           $second = Start-Process -FilePath "$dir\happy-downloader.exe" -PassThru
-          Start-Sleep -Seconds 4
+          $deadline = (Get-Date).AddSeconds(30)
+          while (-not $second.HasExited -and (Get-Date) -lt $deadline) {
+            Start-Sleep -Milliseconds 500
+          }
           if (-not $second.HasExited) {
             Stop-Process -Id $second.Id -Force
             throw "a second copy kept running beside the first"
           }
-          "the second copy exited instead of competing for the port"
+          "the second copy exited with code $($second.ExitCode) instead of competing for the port"
+          if ($second.ExitCode -ne 0) { throw "the second copy failed instead of stepping aside" }
 
           try { Stop-Process -Id $app.Id -Force } catch { }
 
