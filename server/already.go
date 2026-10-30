@@ -43,3 +43,30 @@ func RunningElsewhere(port int) (version string, running bool) {
 
 	return body.RPCVersion, true
 }
+
+// WaitForRunningElsewhere waits for another copy to go away, then reports
+// whether one is still there.
+//
+// A copy that is being replaced — by a service restart, by an installer — lets
+// go of its port shortly after it is asked to stop. Concluding immediately
+// would leave the replacement believing the old one is the one to use, and a
+// service that exits successfully while nothing is running is worse than one
+// that reports a failure.
+func WaitForRunningElsewhere(port int, wait time.Duration) (version string, running bool) {
+	deadline := time.Now().Add(wait)
+
+	for {
+		if version, running := RunningElsewhere(port); running {
+			if time.Now().After(deadline) {
+				return version, true
+			}
+
+			time.Sleep(250 * time.Millisecond)
+			continue
+		}
+
+		// Nothing answers now. If something did answer at the start, it has
+		// finished going away.
+		return "", false
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"flag"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -11,9 +12,11 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
+	"github.com/LeisureLinux/happy-downloader/v4/server/rest"
 
 	"github.com/spf13/viper"
 )
@@ -21,6 +24,15 @@ import (
 //go:embed frontend/dist/index.html
 //go:embed frontend/dist/assets/*
 var frontend embed.FS
+
+// buildVersion is what this build reports, from the tag it was built at.
+func buildVersion() string {
+	if rest.ServerVersion == "" {
+		return "dev"
+	}
+
+	return rest.ServerVersion
+}
 
 func main() {
 	// The desktop build has no terminal, so what a terminal would have said
@@ -108,6 +120,32 @@ func main() {
 		"downloader", cfg.Paths.DownloaderPath,
 		"download_dir", cfg.Paths.DownloadPath,
 	)
+
+	// A copy that is already running is not a failure and must not be treated
+	// as one: its database is locked, and waiting for that lock is
+	// indistinguishable from the program doing nothing at all.
+	//
+	// The check is here, before anything is opened, so that the outcome does
+	// not depend on which of the two resources — the database or the port —
+	// the second copy happens to reach first.
+	// A copy that is going away — a service being restarted, a program being
+	// upgraded — releases the port a moment after it is asked to stop. Only
+	// one that is still there after the wait is treated as the copy in use.
+	if version, running := server.WaitForRunningElsewhere(cfg.Server.Port, 2*time.Second); running {
+		url := fmt.Sprintf("http://127.0.0.1:%d/", cfg.Server.Port)
+
+		slog.Warn("already running; opening the copy that has the port",
+			"url", url, "running_version", version)
+
+		if version != buildVersion() {
+			slog.Warn("the running copy is not this build",
+				"running", version, "this_build", buildVersion())
+		}
+
+		whenReady(url)
+
+		return
+	}
 
 	if err := server.Run(ctx, &server.RunConfig{
 		App:   appFS,

@@ -97,7 +97,14 @@ type CoreOptions struct {
 func NewCore(ctx context.Context, opts CoreOptions) (*Core, error) {
 	dbPath := filepath.Join(config.Instance().Paths.LocalDatabasePath, "bolt.db")
 
-	boltdb, err := bolt.Open(dbPath, 0600, nil)
+	// A timeout, because bbolt waits forever by default for the file lock, and
+	// the lock is held by any other copy of this program that is running.
+	//
+	// Waiting forever is invisible: the process sits there with no window and
+	// no output, so starting it from a shortcut while another copy runs looks
+	// exactly like nothing happening. Three seconds is long enough for the
+	// previous copy to be finishing its shutdown and short enough to notice.
+	boltdb, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 3 * time.Second})
 	if err != nil {
 		return nil, err
 	}
