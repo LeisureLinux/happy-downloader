@@ -12,11 +12,11 @@ import (
 // A port held by this application is reported as such, with its version.
 func TestRunningElsewhereFindsTheApplication(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/version" {
+		if r.URL.Path != "/api/v1/health" {
 			http.NotFound(w, r)
 			return
 		}
-		_, _ = w.Write([]byte(`{"rpcVersion":"4.10.0","ytdlpPath":"/usr/bin/yt-dlp"}`))
+		_, _ = w.Write([]byte(`{"app":"happy-downloader","version":"4.10.2"}`))
 	}))
 	defer srv.Close()
 
@@ -26,8 +26,8 @@ func TestRunningElsewhereFindsTheApplication(t *testing.T) {
 		t.Fatal("the application was not recognised")
 	}
 
-	if version != "4.10.0" {
-		t.Fatalf("version = %q, want 4.10.0", version)
+	if version != "4.10.2" {
+		t.Fatalf("version = %q, want 4.10.2", version)
 	}
 }
 

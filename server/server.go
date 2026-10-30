@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -114,6 +115,11 @@ func Run(ctx context.Context, rc *RunConfig) error {
 		profileStore:  core.Profiles,
 	}
 
+	// yt-dlp takes a while to report its version on a small machine, and the
+	// footer shows it on every page. Asking once here means the first page
+	// load does not wait for it.
+	rest.WarmYtdlpVersion()
+
 	srv := newServer(scfg)
 
 	go gracefulShutdown(runCtx, srv, &scfg)
@@ -212,6 +218,25 @@ func newServer(c serverConfig) *http.Server {
 	// browser on another machine, and "download started" without knowing which
 	// machine is half an answer.
 	r.Use(middlewares.AccessLog)
+
+	// What this program is, without asking any other program.
+	//
+	// The version endpoint shells out to yt-dlp to report which build of it is
+	// in use, which is the right answer to "what is this running" and the
+	// wrong answer to "is this port already mine": on a loaded machine that
+	// call can take twenty seconds, and anything waiting on it concludes that
+	// nothing is there.
+	r.Get("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		_ = json.NewEncoder(w).Encode(struct {
+			App     string `json:"app"`
+			Version string `json:"version"`
+		}{
+			App:     "happy-downloader",
+			Version: rest.ServerVersion,
+		})
+	})
 
 	// Stopping the application from the interface.
 	//

@@ -11,10 +11,14 @@ import (
 // which version it says it is.
 //
 // The check is deliberate rather than a probe of the port: any program can
-// hold a port, and telling the user "already running" about somebody else's
-// server would be both wrong and confusing. The version endpoint is this
-// application's own, and the shape of its answer is not one another program
-// produces.
+// hold a port, and saying "already running" about somebody else's server would
+// be both wrong and confusing.
+//
+// It asks /api/v1/health rather than /api/v1/version. Both answer only for this
+// application, but the version endpoint shells out to yt-dlp to report which
+// build of it is in use, and on a loaded machine that takes twenty seconds —
+// long enough that a caller waiting for it decides nothing is running and
+// starts a second copy.
 //
 // A port held by something that does not answer is not called ours: it may
 // still be starting, or it may not speak HTTP at all, and neither is a reason
@@ -22,7 +26,7 @@ import (
 func RunningElsewhere(port int) (version string, running bool) {
 	client := &http.Client{Timeout: 2 * time.Second}
 
-	resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:%d/api/v1/version", port))
+	resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:%d/api/v1/health", port))
 	if err != nil {
 		return "", false
 	}
@@ -34,14 +38,15 @@ func RunningElsewhere(port int) (version string, running bool) {
 	}
 
 	var body struct {
-		RPCVersion string `json:"rpcVersion"`
+		App     string `json:"app"`
+		Version string `json:"version"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil || body.RPCVersion == "" {
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil || body.App != "happy-downloader" {
 		return "", false
 	}
 
-	return body.RPCVersion, true
+	return body.Version, true
 }
 
 // WaitForRunningElsewhere waits for another copy to go away, then reports
