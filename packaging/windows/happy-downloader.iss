@@ -130,7 +130,10 @@ var
   ConfigDir: String;
 begin
   AppDir := ExpandConstant('{app}');
-  DownloadDir := ExpandConstant('{userprofile}\Downloads\happy-downloader');
+  { {%USERPROFILE} is the environment variable, which is where the profile
+    is; there is no {userprofile} constant, and asking for one raises inside
+    CurStepChanged, where /SUPPRESSMSGBOXES turns it into silence. }
+  DownloadDir := ExpandConstant('{%USERPROFILE}\Downloads\happy-downloader');
   ConfigDir := ExpandConstant('{userappdata}\' + ConfigSubDir);
 
   ForceDirectories(ConfigDir);
