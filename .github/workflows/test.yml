@@ -321,9 +321,14 @@ jobs:
           "built $($setup.Name), $([math]::Round($setup.Length/1MB,1)) MB"
 
           $dir = "$env:RUNNER_TEMP\hd-test"
+          $log = "$env:RUNNER_TEMP\install.log"
           $proc = Start-Process -FilePath $setup.FullName -Wait -PassThru `
-            -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$dir"
-          if ($proc.ExitCode -ne 0) { throw "the installer exited $($proc.ExitCode)" }
+            -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$dir","/LOG=$log"
+          if ($proc.ExitCode -ne 0) {
+            Get-Content $log -Tail 40
+            throw "the installer exited $($proc.ExitCode)"
+          }
+          Get-Content $log -Tail 25
 
           # The three files, under the names the configuration uses.
           foreach ($f in 'happy-downloader.exe','yt-dlp.exe','ffmpeg.exe') {
@@ -332,7 +337,14 @@ jobs:
 
           # The configuration it wrote, naming those files.
           $cfg = "$env:APPDATA\happy-downloader\config.yml"
-          if (-not (Test-Path $cfg)) { throw "the installer wrote no configuration" }
+          if (-not (Test-Path $cfg)) {
+            "APPDATA is $env:APPDATA"
+            "anything named config.yml:"
+            Get-ChildItem -Path $env:APPDATA, $env:USERPROFILE -Filter config.yml -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -First 10 -ExpandProperty FullName
+            Get-Content $log -Tail 40
+            throw "the installer wrote no configuration"
+          }
           Get-Content $cfg
 
           $text = Get-Content $cfg -Raw
