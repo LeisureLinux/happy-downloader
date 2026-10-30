@@ -112,61 +112,59 @@ if ! curl -sL -f -o "$OUT/ffmpeg${exe_suffix}" "$FFMPEG_URL"; then
 fi
 chmod +x "$OUT/ffmpeg${exe_suffix}"
 
+# Two program files, the two programs they need, and the thing that puts them
+# in place. On Linux the bundle is run; on Windows it is unpacked by an
+# installer instead, so the scripts are not copied there.
+if [ "$PLATFORM" = "linux" ]; then
+  cp "$ROOT/packaging/linux/install.sh" "$OUT/install.sh"
+  cp "$ROOT/packaging/linux/uninstall.sh" "$OUT/uninstall.sh"
+  chmod +x "$OUT/install.sh" "$OUT/uninstall.sh"
+fi
+
+# What is in here, and what to do with it, is different enough between the two
+# platforms to be two files rather than one with a paragraph of exceptions.
+if [ "$PLATFORM" = "linux" ]; then
+
 cat > "$OUT/README.txt" <<'EOF'
 Happy Downloader — the bundle
 =============================
 
 Everything the downloader needs is in this folder:
 
-  happy-downloader    the application
-  yt-dlp              the downloader
-  ffmpeg              for merging streams and for putting a recording into
-                      a container that plays
+  happy-downloader_linux-*  the application
+  yt-dlp                    the downloader
+  ffmpeg                    for merging streams and for putting a recording
+                            into a container that plays
+  install.sh                puts them where they belong
+  uninstall.sh              takes them away again, and leaves the downloads
 
-Put the folder wherever you like and run it. It finds the other two beside
-itself, so there is nothing to configure and nothing to install.
-
-Windows
+Install
 -------
 
-Double-click happy-downloader. There is no window and no command prompt to
-keep open: it starts, it opens your browser at
+    ./install.sh
 
-  http://localhost:3033/
+It needs no root and no dependencies. It copies the program into
+~/.local/share/happy-downloader, writes a configuration naming the two
+programs it just installed, and starts it as a user service so that it keeps
+running without a terminal attached.
 
-and that page is the application. Closing the browser does not stop it —
-bookmarking the address is the usual thing to do — and if you want it gone,
-the menu in the page has a quit entry.
+Open http://localhost:3033/ in a browser afterwards — that page is the
+application. Nothing else to do.
 
-Downloads go to "Downloads\happy-downloader" under your user folder, which
-you can change on the settings page. Nothing needs administrator rights: the
-database, the settings and the log live in
+  --prefix DIR      install somewhere else
+  --downloads DIR   download somewhere else
+  --port N          listen on another port
+  --no-service      install the files, do not run it
 
-  %APPDATA%\happy-downloader
+Without a service
+-----------------
 
-Windows asks once whether to let it accept connections from the network. It
-does not need that to work on this machine — allow it if you want to open the
-page from your phone, and cancel it if you do not. Nothing here needs
-administrator rights either way.
-
-If you would rather see the log in a terminal, run it from one:
-  happy-downloader_windows-amd64.exe -conf config.yml
-It attaches to the console it was started from and prints there.
-
-First run
----------
-
-It wants to know two things, which it asks for on the first run and remembers:
-
-  where the downloads go
-  which cookies to use
-
-A cookie export is a browser extension's export file. It is what makes the
-sites that need a signed-in session work; without one, those sites answer as
-a guest and refuse.
+    ./install.sh --no-service
+    ~/.local/share/happy-downloader/bin/happy-downloader \
+        -conf ~/.config/happy-downloader/config.yml
 
 The PO Token provider is not here
---------------------------------
+---------------------------------
 
 YouTube asks some downloads for a token that proves the request came from a
 real browser. The provider that produces it is a separate program that needs
@@ -176,6 +174,60 @@ serves to a guest are refused.
 To add it, see https://github.com/Brainicism/bgutil-ytdlp-pot-provider
 and point ytdlp.pot_base_url at it.
 EOF
+
+else
+
+cat > "$OUT/README.txt" <<'EOF'
+Happy Downloader — the files, for testing
+=========================================
+
+This zip is the application with the two programs it runs, and nothing else.
+It is what the release builds to check that the three of them work together.
+
+If you are installing this for real, use
+happy-downloader_windows-amd64-setup.exe instead: it asks where to put the
+program, writes the configuration, and makes a shortcut.
+
+Running this one anyway
+-----------------------
+
+Double-click happy-downloader_windows-amd64.exe. There is no console window:
+it starts, it opens your browser at
+
+  http://localhost:3033/
+
+and that page is the application.
+
+It looks for yt-dlp.exe and ffmpeg.exe beside itself, which is how the two
+files in this folder are found. Keep them together.
+
+Downloads go to "Downloads\happy-downloader" under your user folder; the
+settings page can change that. The database, the settings and the log live in
+
+  %APPDATA%\happy-downloader
+
+To see the log in a terminal, run it from one — it attaches to the console it
+was started from and prints there instead of opening a browser:
+
+  happy-downloader_windows-amd64.exe
+
+Windows asks once whether to let it accept connections from the network. It
+does not need that to work on this machine; allow it if you want to open the
+page from your phone.
+
+The PO Token provider is not here
+---------------------------------
+
+YouTube asks some downloads for a token that proves the request came from a
+real browser. The provider that produces it is a separate program that needs
+Node beside it, and it is optional: without it, only the videos YouTube
+serves to a guest are refused.
+
+To add it, see https://github.com/Brainicism/bgutil-ytdlp-pot-provider
+and point ytdlp.pot_base_url at it.
+EOF
+
+fi
 
 echo
 echo "the bundle:"

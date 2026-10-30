@@ -222,3 +222,144 @@ jobs:
 
           kill $pid 2>/dev/null || true
           trap - EXIT
+
+      # Installing it, which is what a person does, rather than running the
+      # binary out of the folder it was built in.
+      - name: The installer runs (Linux)
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          set -eu
+
+          rm -rf /tmp/hd-test
+          ./bundle/install.sh \
+            --prefix /tmp/hd-test/app \
+            --config-dir /tmp/hd-test/config \
+            --downloads /tmp/hd-test/downloads \
+            --no-service
+
+          # The files it claims to install.
+          for f in app/bin/happy-downloader app/bin/yt-dlp app/bin/ffmpeg \
+                   config/config.yml app/uninstall.sh; do
+            if [ ! -e "/tmp/hd-test/$f" ]; then
+              echo "the installer did not produce /tmp/hd-test/$f" >&2
+              exit 1
+            fi
+          done
+
+          # The configuration it wrote has to name paths that exist. A
+          # configuration that names a program the installer did not put
+          # there is the "exec: no command" failure with a longer message.
+          grep -q 'downloader_path: /tmp/hd-test/app/bin/yt-dlp' /tmp/hd-test/config/config.yml
+          grep -q 'ffmpeg_path: /tmp/hd-test/app/bin/ffmpeg' /tmp/hd-test/config/config.yml
+          grep -q 'download_path: /tmp/hd-test/downloads' /tmp/hd-test/config/config.yml
+
+          # And it has to start, from where it was installed.
+          /tmp/hd-test/app/bin/happy-downloader -conf /tmp/hd-test/config/config.yml > /tmp/hd-test/app.log 2>&1 &
+          pid=$!
+          trap "kill $pid 2>/dev/null || true" EXIT
+          sleep 10
+
+          found=$(curl -s --max-time 5 http://127.0.0.1:3033/api/v1/version || true)
+          echo "$found"
+          tail -20 /tmp/hd-test/app.log || true
+
+          case "$found" in
+            *hd-test/app/bin/yt-dlp*) ;;
+            *) echo "the installed application did not name the installed yt-dlp: $found" >&2; exit 1 ;;
+          esac
+
+          # The log panel is fed from the same writer chain as the file. A
+          # destination that cannot be written to used to silence the rest,
+          # which is what made the panel empty on Windows.
+          lines=$(curl -sN --max-time 3 http://127.0.0.1:3033/log/sse | grep -c '^event: log' || true)
+          echo "log lines replayed to a new reader: $lines"
+          if [ "$lines" -lt 1 ]; then
+            echo "the log panel would open empty" >&2
+            exit 1
+          fi
+
+          kill $pid 2>/dev/null || true
+          trap - EXIT
+
+          # Removing it has to remove what it installed, and nothing else. An
+          # uninstaller that guesses the default location removed a different
+          # installation than the one it belonged to.
+          /tmp/hd-test/app/uninstall.sh
+
+          for gone in app/bin/happy-downloader config/config.yml; do
+            if [ -e "/tmp/hd-test/$gone" ]; then
+              echo "the uninstaller left /tmp/hd-test/$gone behind" >&2
+              exit 1
+            fi
+          done
+          if [ ! -d /tmp/hd-test/downloads ]; then
+            echo "the uninstaller removed the downloads, which it must not" >&2
+            exit 1
+          fi
+
+      - name: The installer runs (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          if (-not (Test-Path $iscc)) {
+            throw "Inno Setup is not available"
+          }
+
+          New-Item -ItemType Directory -Force dist | Out-Null
+          & $iscc "/DBundleDir=$PWD\bundle" "/DAppVersion=0.0.0-test" packaging\windows\happy-downloader.iss
+          if ($LASTEXITCODE -ne 0) { throw "the installer did not build" }
+
+          $setup = Get-ChildItem dist -Filter '*setup.exe' | Select-Object -First 1
+          if (-not $setup) { throw "the installer was not produced" }
+          "built $($setup.Name), $([math]::Round($setup.Length/1MB,1)) MB"
+
+          $dir = "$env:RUNNER_TEMP\hd-test"
+          $proc = Start-Process -FilePath $setup.FullName -Wait -PassThru `
+            -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$dir"
+          if ($proc.ExitCode -ne 0) { throw "the installer exited $($proc.ExitCode)" }
+
+          # The three files, under the names the configuration uses.
+          foreach ($f in 'happy-downloader.exe','yt-dlp.exe','ffmpeg.exe') {
+            if (-not (Test-Path "$dir\$f")) { throw "the installer did not produce $dir\$f" }
+          }
+
+          # The configuration it wrote, naming those files.
+          $cfg = "$env:APPDATA\happy-downloader\config.yml"
+          if (-not (Test-Path $cfg)) { throw "the installer wrote no configuration" }
+          Get-Content $cfg
+
+          $text = Get-Content $cfg -Raw
+          if ($text -notmatch 'yt-dlp\.exe') { throw "the configuration does not name yt-dlp" }
+          if ($text -notmatch 'ffmpeg\.exe') { throw "the configuration does not name ffmpeg" }
+          if ($text -notmatch 'Downloads') { throw "the configuration does not set a download folder" }
+
+          # And it starts, with the configuration the installer wrote.
+          $app = Start-Process -FilePath "$dir\happy-downloader.exe" `
+            -ArgumentList '-conf', $cfg -PassThru
+          Start-Sleep -Seconds 10
+
+          $found = $null
+          try { $found = Invoke-RestMethod -Uri 'http://127.0.0.1:3033/api/v1/version' -TimeoutSec 5 } catch { }
+          $found | ConvertTo-Json -Compress
+
+          if (-not $found) { throw "the installed application did not answer" }
+          if ($found.ytdlpPath -notmatch 'hd-test') { throw "it is not running the bundled yt-dlp: $($found.ytdlpPath)" }
+
+          # The log panel has to have something to show. It was empty on
+          # Windows because the terminal it was written to did not exist and
+          # the writer chain stopped there.
+          $sse = & curl.exe -sN --max-time 3 http://127.0.0.1:3033/log/sse 2>$null
+          $replayed = @($sse | Select-String -SimpleMatch 'event: log').Count
+          "log lines replayed to a new reader: $replayed"
+          if ($replayed -lt 1) { throw "the log panel would open empty" }
+
+          # It opens a browser when started with no console; in a test there is
+          # no console either, so tell it not to. The address is what matters.
+          Stop-Process -Id $app.Id -Force

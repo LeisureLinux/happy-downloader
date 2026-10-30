@@ -167,19 +167,23 @@ jobs:
         run: |
           set -eu
           dir="bundle_${{ matrix.suffix }}"
+
+          # The archive holds one folder called happy-downloader, so that
+          # unpacking it makes a folder instead of scattering four files into
+          # whatever directory the person happened to be in.
+          stage=$(mktemp -d)
+          cp -a "$dir" "$stage/happy-downloader"
+
           case "$dir" in
-            *windows*) (cd "$dir" && zip -qr "../${dir}.zip" .) ;;
-            *)          (cd "$dir" && tar -czf "../${dir}.tar.gz" .) ;;
+            *windows*) (cd "$stage" && zip -qr "$OLDPWD/${dir}.zip" happy-downloader) ;;
+            *)          (cd "$stage" && tar -czf "$OLDPWD/${dir}.tar.gz" happy-downloader) ;;
           esac
-          rm -rf "$dir"
+
+          rm -rf "$stage" "$dir"
           ls -l
 
       # The archive is uploaded by name. An artifact holds the paths it was
       # given, so uploading a directory puts everything that downloads it
-      # one level deeper than it was — and the publish job was looking for
-      # the archive at the top of its own directory.
-      # The archive is uploaded by name. An artifact holds the paths it was
-      # given, so uploading the directory puts everything that downloads it
       # one level deeper than it was — and the publish job was looking for
       # the archive at the top of its own directory.
       #
@@ -201,8 +205,67 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  publish:
+  # The Windows installer.
+  #
+  # A separate job because it needs Windows: the build job cross-compiles from
+  # Linux, and Inno Setup is a Windows program. It takes the bundle that was
+  # just built rather than the source, so the installer cannot contain
+  # anything the zip does not.
+  installer:
     needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: bundle_windows-amd64
+          path: bundle  # this one holds the archive, not a folder
+
+      - name: Unpack the bundle
+        shell: bash
+        run: |
+          set -eu
+          cd bundle
+          unzip -q bundle_windows-amd64.zip
+          mv happy-downloader ../bundle-files
+          cd ..
+          ls -l bundle-files
+
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup is not available" }
+
+          # The version is the tag, without the "v" that git wants for a tag
+          # name and Windows does not want in a product version.
+          $version = '${{ inputs.tag }}'.TrimStart('v')
+
+          & $iscc "/DBundleDir=$PWD\bundle-files" "/DAppVersion=$version" `
+            packaging\windows\happy-downloader.iss
+          if ($LASTEXITCODE -ne 0) { throw "the installer did not build" }
+
+          $setup = Get-ChildItem dist -Filter '*setup.exe' | Select-Object -First 1
+          if (-not $setup) { throw "the installer was not produced" }
+          "built $($setup.Name), $([math]::Round($setup.Length/1MB,1)) MB"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer_windows-amd64
+          path: dist/happy-downloader_windows-amd64-setup.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [build, installer]
     runs-on: ubuntu-latest
     steps:
       # The bundle is packed in the job that built it, before the download.
@@ -228,6 +291,12 @@ jobs:
           path: dist
           merge-multiple: true
 
+      # The installer is downloaded apart as well, for the same reason.
+      - uses: actions/download-artifact@v4
+        with:
+          name: installer_windows-amd64
+          path: installers
+
       # The bundles arrive in their own directory, because a download into a
       # path that already has something in it clears it first.
       - name: Collect the bundles
@@ -235,11 +304,16 @@ jobs:
           set -eu
           mv bundles/* dist/
           rmdir bundles
+          mv installers/happy-downloader_windows-amd64-setup.exe dist/
+          rmdir installers
           ls -l dist
 
       - name: Checksums
         working-directory: dist
-        run: sha256sum happy-downloader_* bundle_*.tar.gz bundle_*.zip > SHA256SUMS
+        run: |
+          set -eu
+          sha256sum happy-downloader_* bundle_*.tar.gz bundle_*.zip \
+            happy-downloader_windows-amd64-setup.exe > SHA256SUMS
 
       - name: Verify checksums
         working-directory: dist
@@ -284,6 +358,7 @@ jobs:
             dist/bundle_linux-amd64.tar.gz
             dist/bundle_linux-arm64.tar.gz
             dist/bundle_windows-amd64.zip
+            dist/happy-downloader_windows-amd64-setup.exe
             dist/SHA256SUMS
           generate_release_notes: true
           fail_on_unmatched_files: true

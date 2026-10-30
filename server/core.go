@@ -156,8 +156,12 @@ func NewCore(ctx context.Context, opts CoreOptions) (*Core, error) {
 		logWriters = append(logWriters, logger)
 	}
 
+	// Fanout, not io.MultiWriter. MultiWriter stops at the first destination
+	// that returns an error, so a machine with no console — the Windows build
+	// is one — logged to the terminal it did not have and nothing else, and
+	// the log panel in the interface stayed empty.
 	slog.SetDefault(slog.New(slog.NewTextHandler(
-		io.MultiWriter(logWriters...),
+		logging.FanoutWriter(logWriters...),
 		&slog.HandlerOptions{Level: slog.LevelInfo},
 	)))
 

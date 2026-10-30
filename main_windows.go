@@ -95,7 +95,17 @@ func attachConsole() {
 
 	if _, _, err := procAttach.Call(attachParent); err != nil {
 		// No parent console — started from Explorer, or from a shortcut.
-		// That is the normal case for the desktop build.
+		// That is the normal case for the desktop build, and its standard
+		// output is an invalid handle rather than a stream.
+		//
+		// It is pointed at the null device so that writes to it succeed
+		// instead of failing on every line. The log has other destinations,
+		// and every one of them used to depend on this one being writable.
+		if devnull, err := os.OpenFile("NUL", os.O_WRONLY, 0); err == nil {
+			os.Stdout = devnull
+			os.Stderr = devnull
+		}
+
 		return
 	}
 
