@@ -128,3 +128,49 @@ func indexOf(haystack, needle string) int {
 	}
 	return -1
 }
+
+// TestFindTreatsABareNameAsAName is the bug the bundle exposed.
+//
+// The default for yt-dlp is the name itself, and it was being treated as a
+// path — which meant "in the working directory". It was found there by
+// accident when the application happened to be started from the folder it
+// lives in, and reported as "yt-dlp" rather than as the place it was found.
+// A download would then have run a program whose path depended on where
+// the process had been started.
+func TestFindTreatsABareNameAsAName(t *testing.T) {
+	withConfig(t, func(c *config.Config) {
+		c.Paths.DownloaderPath = "yt-dlp"
+		c.Paths.FFmpegPath = ""
+	})
+
+	// There is a yt-dlp on the PATH of a machine that has one, so this
+	// finds that. What matters is that the answer is a place, not a name.
+	got, err := Find("yt-dlp")
+	if err != nil {
+		t.Skipf("there is no yt-dlp to find: %v", err)
+	}
+
+	if got == "yt-dlp" {
+		t.Error("a bare name must not be returned as the path")
+	}
+
+	if !isPath(got) {
+		t.Errorf("want a path, got %q", got)
+	}
+}
+
+func TestIsPath(t *testing.T) {
+	paths := []string{"/usr/bin/yt-dlp", "./yt-dlp", "C:\\yt-dlp.exe", "C:/yt-dlp.exe"}
+	for _, p := range paths {
+		if !isPath(p) {
+			t.Errorf("%q should be a path", p)
+		}
+	}
+
+	names := []string{"yt-dlp", "ffmpeg", "node"}
+	for _, n := range names {
+		if isPath(n) {
+			t.Errorf("%q should be a name", n)
+		}
+	}
+}

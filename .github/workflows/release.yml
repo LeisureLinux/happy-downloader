@@ -102,6 +102,34 @@ jobs:
             exit 1
           fi
 
+      # The bundle: the application and the programs it needs, in one folder.
+      #
+      # A release that ships only the binary asks the person installing it to
+      # install Python and a media toolkit as well, and to write down where
+      # they ended up. The bundle is the answer to that, and it is built here
+      # so that it is the same on every platform and is never assembled by
+      # hand.
+      - name: Build the bundle
+        run: |
+          set -eu
+          ./scripts/bundle.sh "bundle_${{ matrix.suffix }}" linux "${{ matrix.goarch }}"
+
+          # A bundle that is missing a program is worse than no bundle: it
+          # looks complete and fails on the first download. So it is checked
+          # rather than trusted.
+          for program in yt-dlp ffmpeg; do
+            found=$(find "bundle_${{ matrix.suffix }}" -maxdepth 1 -name "$program*" | head -1)
+            if [ -z "$found" ]; then
+              echo "the bundle has no $program in it" >&2
+              exit 1
+            fi
+            if [ ! -x "$found" ]; then
+              echo "$found is not executable" >&2
+              exit 1
+            fi
+          done
+          test -x "bundle_${{ matrix.suffix }}/happy-downloader_linux-${{ matrix.goarch }}"
+
       # A release is what people run, so the browser check runs here too: the
       # binary must not need a Chrome newer than Windows 7 has.
       - name: Browser support
@@ -117,6 +145,13 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle_${{ matrix.suffix }}
+          path: bundle_${{ matrix.suffix }}
+          if-no-files-found: error
+          retention-days: 7
+
   publish:
     needs: build
     runs-on: ubuntu-latest
@@ -126,9 +161,23 @@ jobs:
           path: dist
           merge-multiple: true
 
+      # The bundle is published as an archive, because it is a folder: the
+      # application finds yt-dlp and ffmpeg beside itself, and that only
+      # works if they arrive together.
+      - name: Pack the bundles
+        working-directory: dist
+        run: |
+          set -eu
+          for dir in bundle_*; do
+            [ -d "$dir" ] || continue
+            tar -czf "${dir}.tar.gz" -C dist "$dir"
+            rm -rf "$dir"
+          done
+          ls -l
+
       - name: Checksums
         working-directory: dist
-        run: sha256sum happy-downloader_* > SHA256SUMS
+        run: sha256sum happy-downloader_* bundle_*.tar.gz > SHA256SUMS
 
       - name: Verify checksums
         working-directory: dist
@@ -169,6 +218,8 @@ jobs:
           files: |
             dist/happy-downloader_linux-amd64
             dist/happy-downloader_linux-arm64
+            dist/bundle_linux-amd64.tar.gz
+            dist/bundle_linux-arm64.tar.gz
             dist/SHA256SUMS
           generate_release_notes: true
           fail_on_unmatched_files: true

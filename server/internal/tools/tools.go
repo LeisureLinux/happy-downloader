@@ -56,7 +56,25 @@ func Find(name string) (string, error) {
 	// A configured path is the answer, whatever it points at. It is not
 	// looked up in the PATH, because a path that was configured as one is
 	// exactly that.
+	//
+	// A bare name is not a path, though. The default for yt-dlp is the name
+	// itself, and treating it as a path made it mean "in the working
+	// directory" — so it was found beside the application by accident, and
+	// reported as "yt-dlp" rather than as the place it was found.
 	if configured := configuredPath(name); configured != "" {
+		if !isPath(configured) {
+			// It is a name, so it is looked for like one: beside the
+			// application, and then on the PATH.
+			if found := findByName(name); found != "" {
+				return found, nil
+			}
+
+			return "", &NotFoundError{
+				Name:   name,
+				Reason: "it is not installed, and it is not beside the application",
+			}
+		}
+
 		if executable(configured) {
 			return configured, nil
 		}
@@ -68,14 +86,7 @@ func Find(name string) (string, error) {
 		}
 	}
 
-	// Beside this binary. A bundled distribution puts everything there, and
-	// this is the copy the person shipped with.
-	if beside := besideExecutable(name); beside != "" {
-		return beside, nil
-	}
-
-	// And the PATH, which is where a package manager puts them.
-	if found, err := exec.LookPath(name); err == nil {
+	if found := findByName(name); found != "" {
 		return found, nil
 	}
 
@@ -83,6 +94,35 @@ func Find(name string) (string, error) {
 		Name:   name,
 		Reason: "it is not installed, and it is not beside the application",
 	}
+}
+
+// findByName looks for a program by its name.
+//
+// Beside this binary first, and then on the PATH. The binary's own
+// directory comes first because that is where a bundled distribution puts
+// everything, and that is the copy the person shipped with — the one they
+// expect to be used, rather than whatever else the machine happens to have.
+func findByName(name string) string {
+	// The path is absolute, because the working directory of a download is
+	// not the directory the application was started in: a service starts
+	// from /, and a desktop application from wherever it was double-clicked.
+	if beside := besideExecutable(name); beside != "" {
+		return beside
+	}
+
+	if found, err := exec.LookPath(name); err == nil {
+		return found
+	}
+
+	return ""
+}
+
+// isPath reports whether a configured value is a path rather than a name.
+//
+// "yt-dlp" is a name: it is looked for. "/usr/bin/yt-dlp" is a path: it is
+// used as it is, and a wrong one is an error rather than a fallback.
+func isPath(value string) bool {
+	return strings.ContainsAny(value, "/\\")
 }
 
 // NotFoundError says a program is not there.
@@ -131,6 +171,13 @@ func besideExecutable(name string) string {
 	self, err := os.Executable()
 	if err != nil {
 		return ""
+	}
+
+	// The executable's path is made absolute, because it is reported as
+	// "./happy-downloader" when it was started as "./happy-downloader", and
+	// "./yt-dlp" means nothing once the working directory has changed.
+	if abs, err := filepath.Abs(self); err == nil {
+		self = abs
 	}
 
 	dir := filepath.Dir(self)

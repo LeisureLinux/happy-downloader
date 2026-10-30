@@ -33,14 +33,18 @@ ARCH=${3:-amd64}
 mkdir -p "$OUT"
 
 # The application.
-cp "$ROOT/happy-downloader_$(uname -m 2>/dev/null || echo amd64)" "$OUT/" 2>/dev/null ||
-  cp "$ROOT/happy-downloader_linux-$ARCH" "$OUT/" 2>/dev/null ||
-  {
-    echo "the application binary was not found; build it first" >&2
-    exit 1
-  }
+#
+# The name is the one the release publishes, so that the binary in the
+# bundle and the binary published beside it are the same file.
+APP="happy-downloader_linux-$ARCH"
 
-APP=$(ls "$OUT"/happy-downloader* | grep -v '\.txt$' | head -1)
+if [ ! -f "$ROOT/$APP" ]; then
+  echo "the application binary was not found: $ROOT/$APP" >&2
+  echo "build it first: GOOS=linux GOARCH=$ARCH ./scripts/build.sh $APP" >&2
+  exit 1
+fi
+
+cp "$ROOT/$APP" "$OUT/"
 
 # yt-dlp, as a standalone binary. The one that needs no Python.
 case "$PLATFORM" in
@@ -63,8 +67,14 @@ case "$PLATFORM" in
 esac
 
 echo "==> fetching yt-dlp ($YTDLP)"
-curl -sL -o "$OUT/$YTDLP" "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP"
+curl -sL -f -o "$OUT/$YTDLP" "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP"
 chmod +x "$OUT/$YTDLP"
+
+# It is stored under the plain name, because that is the name the
+# application looks for beside itself. The release names it with the
+# platform in it so that the downloads do not collide; the bundle has one
+# platform in it and does not need the distinction.
+mv "$OUT/$YTDLP" "$OUT/yt-dlp"
 
 # ffmpeg. The build that is one file and needs nothing beside it.
 # The names are the ones the release uses, which are not the same as the
@@ -89,15 +99,11 @@ esac
 
 echo "==> fetching ffmpeg ($FFMPEG)"
 FFMPEG_URL="https://github.com/eugeneware/ffmpeg-static/releases/latest/download/$FFMPEG"
-if curl -sL -f -o "$OUT/$FFMPEG" "$FFMPEG_URL"; then
-  chmod +x "$OUT/$FFMPEG"
-else
-  # The release that is one file per platform, rather than the one that is
-  # split into pieces.
-  echo "    the single-file build was not there; trying the archive"
-  rm -f "$OUT/$FFMPEG"
+if ! curl -sL -f -o "$OUT/ffmpeg" "$FFMPEG_URL"; then
+  echo "    ffmpeg could not be fetched from $FFMPEG_URL" >&2
   exit 1
 fi
+chmod +x "$OUT/ffmpeg"
 
 cat > "$OUT/README.txt" <<'EOF'
 Happy Downloader — the bundle
@@ -139,4 +145,6 @@ EOF
 
 echo
 echo "the bundle:"
-ls -lh "$OUT" | awk 'NR>1 {printf "  %-34s %s\n", $9, $5}'
+for file in "$OUT"/*; do
+  printf "  %-34s %s\n" "$(basename "$file")" "$(du -h "$file" | cut -f1)"
+done
