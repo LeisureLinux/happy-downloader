@@ -246,3 +246,59 @@ func TestWatchConvertsOnChange(t *testing.T) {
 	t.Fatalf("watch did not convert the replacement; target has %d cookies",
 		cookies.Summarize(string(content)).Total)
 }
+
+// A replaced export has to be converted even when its timestamp does not move.
+//
+// Sync compares the modification time with the last conversion, which is a
+// reasonable check for the pre-download safety net — it costs one stat and it
+// is called for every download. It is the wrong check after a watch event,
+// because the event has already established that the file changed. Some
+// filesystems only record whole seconds, and some editors write a file back
+// with the timestamp it had, so the second opinion can disagree with the
+// event and the conversion silently does not happen.
+func TestWatchConvertsEvenWhenTheTimestampDoesNotMove(t *testing.T) {
+	w, src, dst := setup(t)
+
+	if err := w.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer w.Stop()
+
+	before, err := os.Stat(src)
+	if err != nil {
+		t.Fatalf("stat source: %v", err)
+	}
+
+	// One cookie instead of four, written in place and then given the
+	// timestamp the file had before: this is what a coarse filesystem or a
+	// careful editor produces.
+	updated := `[{"domain":".youtube.com","expires":1823905798,"httpOnly":true,
+	  "name":"SID","path":"/","secure":false,"value":"g.a000zzz"}]`
+
+	if err := os.WriteFile(src, []byte(updated), 0o600); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	if err := os.Chtimes(src, before.ModTime(), before.ModTime()); err != nil {
+		t.Fatalf("chtimes: %v", err)
+	}
+
+	// Sync, the safety net, is expected to decline: nothing looks newer.
+	// The watch must not.
+	if err := w.Sync(); err != nil {
+		t.Fatalf("Sync: %v", err)
+	}
+
+	if err := w.Force(); err != nil {
+		t.Fatalf("Force: %v", err)
+	}
+
+	content, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatalf("read target: %v", err)
+	}
+
+	if got := cookies.Summarize(string(content)).Total; got != 1 {
+		t.Fatalf("the target still has %d cookies; the replacement was not converted", got)
+	}
+}

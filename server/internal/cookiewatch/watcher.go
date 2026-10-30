@@ -153,7 +153,14 @@ func (w *Watcher) loop() {
 				return
 			default:
 			}
-			if err := w.Sync(); err != nil {
+			// Force, not Sync. The event is already the evidence that the
+			// file changed, and Sync would then check the modification time
+			// against the last conversion — a second opinion that disagrees
+			// on filesystems with a coarse clock, and on any editor that
+			// writes the file back with the timestamp it had. The conversion
+			// then silently does not happen, and the downloads keep using
+			// the cookies from before.
+			if err := w.Force(); err != nil {
 				slog.Warn("cookie conversion failed",
 					slog.String("source", w.SourcePath),
 					slog.String("err", err.Error()))
@@ -248,6 +255,12 @@ func (w *Watcher) Force() error {
 
 	info, err := os.Stat(w.SourcePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			// A file that was replaced may be gone for a moment between the
+			// two halves of the replacement. The next event, or the next
+			// download's Sync, will find it.
+			return nil
+		}
 		return err
 	}
 
