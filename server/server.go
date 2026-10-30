@@ -4,21 +4,15 @@ package server
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
 	"net/rpc"
-	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/filebrowser"
-	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookies"
-	"github.com/LeisureLinux/happy-downloader/v4/server/internal/cookiewatch"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/downloaders"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/kv"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal/livestream"
@@ -59,190 +53,26 @@ type serverConfig struct {
 var observableLogger = logging.NewObservableLogger()
 
 func Run(ctx context.Context, rc *RunConfig) error {
-	dbPath := filepath.Join(config.Instance().Paths.LocalDatabasePath, "bolt.db")
-
-	boltdb, err := bolt.Open(dbPath, 0600, nil)
-	if err != nil {
-		return err
-	}
-
-	mdb, err := kv.NewStore(boltdb, time.Second*15)
-	if err != nil {
-		slog.Error("could not open the download store", slog.Any("err", err))
-		os.Exit(1)
-	}
-
-	// The index of where downloaded files came from. It outlives the download
-	// records, which are transient: a finished download leaves the queue and
-	// its record goes with it, but the file stays and keeps needing to be
-	// connected to its source.
-	sourceIndex, err := kv.NewSourceIndex(boltdb)
-	if err != nil {
-		slog.Error("could not open the source index", slog.Any("err", err))
-		os.Exit(1)
-	}
-	if err != nil {
-		return err
-	}
-
-	logWriters := []io.Writer{
-		os.Stdout,
-		observableLogger, // for web-ui
-	}
-
 	conf := config.Instance()
 
-	// file based logging
-	if conf.Logging.EnableFileLogging {
-		logger, err := logging.NewRotableLogger(conf.Logging.LogPath)
-		if err != nil {
-			return err
-		}
-
-		defer logger.Rotate()
-
-		go func() {
-			for {
-				time.Sleep(time.Hour * 24)
-				logger.Rotate()
-			}
-		}()
-
-		logWriters = append(logWriters, logger)
-	}
-
-	logger := slog.New(slog.NewTextHandler(io.MultiWriter(logWriters...), &slog.HandlerOptions{
-		Level: slog.LevelInfo, // TODO: detect when launched in debug mode -> slog.LevelDebug
-	}))
-
-	// make the new logger the default one with all the new writers
-	slog.SetDefault(logger)
-
-	mq, err := queue.NewMessageQueue()
+	// The wiring lives in the Core, so that a desktop application can have
+	// the same application without a web interface in front of it. There is
+	// one way the parts are connected, and it is not the one that happens to
+	// serve HTTP.
+	core, err := NewCore(ctx, CoreOptions{
+		FileLogging: true,
+	})
 	if err != nil {
+		slog.Error("could not start the application", slog.Any("err", err))
 		return err
 	}
-	mq.SetupConsumers()
-	// The source index is filled from the postprocessing events, so the
-	// recorder has to be installed before any download starts.
-	recorder := &kv.SourceRecorder{Index: sourceIndex}
-	downloaders.SetSourceRecorder(recorder.Record)
-	filebrowser.SetSourceForgetter(sourceIndex.Forget)
+	defer core.Close()
 
-	// The media probe cache is written to disk, so that the first visit to
-	// the file browser after a restart is as fast as the one after it.
-	// A recording left in the partial directory is one that was interrupted:
-	// the process stopped between writing it and putting it into its
-	// container. It is finished here rather than swept up with the rest of
-	// the temporary files — nothing is using the directory yet, so anything
-	// in it is somebody's recording.
-	go downloaders.RecoverPartialRecordings()
-
-	filebrowser.StartProbeCacheWriter()
-	filebrowser.SetSourceLookup(func(path string) (string, string, bool) {
-		rec, ok := sourceIndex.Lookup(path)
-		if !ok {
-			// The file was moved before the index learned to move, so its
-			// record names a path that is no longer there. The name is the
-			// same, so it is looked for by name.
-			rec, ok = sourceIndex.LookupByName(path)
-		}
-		if !ok {
-			return "", "", false
-		}
-		return rec.URL, rec.Site, true
-	})
-	filebrowser.SetSourceMover(sourceIndex.Move)
-
-	go mdb.Restore(mq)
-	go mdb.EventListener()
-
-	// The cookie export the user imported through the interface.
-	//
-	// It takes precedence over the automatic export below: it is the
-	// credential the person using the interface chose. When it has been
-	// refused twice it is removed, and the automatic export takes over
-	// again.
-	importedCookies := cookies.NewStore(rest.ImportedCookieDir(config.Instance().Paths.LocalDatabasePath))
-	importedCookies.Restore()
-	cookies.SetGlobal(importedCookies)
-
-	// A refusal of the imported export is what eventually replaces it.
-	cookies.SetFailureHook(func() {
-		if importedCookies.Failed() == nil {
-			// The export was removed, so the automatic one is the only one
-			// left; which export is in use is worked out per download.
-			slog.Info("the imported cookie export was refused twice and has been removed")
-		}
-	})
-
-	// Convert paths.cookie_path into the Netscape file yt-dlp reads, and keep
-	// it in sync as the export is replaced. On a headless host this replaces
-	// the browser re-export that is not available there.
-	cookieSource := config.ResolvedCookieSource()
-	cookieWatcher := cookiewatch.New(
-		cookieSource,
-		config.CookiesPath(cookieSource),
-	)
-	if cookieWatcher.Enabled() {
-		if err := cookieWatcher.Start(); err != nil {
-			slog.Warn("cookie watch failed to start", slog.String("err", err.Error()))
-		}
-		defer cookieWatcher.Stop()
-
-		// Pre-download safety net: re-check the source mtime before each
-		// argv build, which also covers hosts where inotify delivers nothing.
-		downloaders.SetCookieSyncHook(func() {
-			if err := cookieWatcher.Sync(); err != nil {
-				slog.Debug("cookie sync skipped", slog.String("err", err.Error()))
-			}
-		})
-		cookiewatch.SetGlobal(cookieWatcher)
-	}
-
-	// Site profiles decide which arguments a URL needs: cookie, POT
-	// provider, proxy and extras. Stored in bolt and editable from the UI,
-	// because adding a site must not mean rebuilding the binary.
-	// The seed is empty: the cookie, the PO Token provider and the proxy
-	// are read from the configuration when a download is built, because they
-	// are properties of the installation rather than of a site.
-	profileStore, err := profiles.NewStore(boltdb, profiles.Profile{})
-	if err != nil {
-		return err
-	}
-
-	lm := livestream.NewMonitor(mq, mdb, boltdb)
-	go lm.Schedule()
-	go lm.Restore()
-
-	// A finished recording is done as far as the monitor is concerned: it
-	// cannot be stopped any more, and the stream it came from is over.
-	//
-	// The entry stays in the queue, the way a finished download does. It
-	// used to be deleted, which meant the last thing a person saw was the
-	// row disappearing — with the file not yet in the browser, because the
-	// remux was still running. Nothing anywhere said the recording had
-	// worked.
-	downloaders.SetFinishedRecorder(func(d downloaders.Downloader) {
-		lm.Forget(d.GetUrl())
-	})
-
-	tm := twitch.NewMonitor(
-		twitch.NewAuthenticationManager(
-			config.Instance().Twitch.ClientId,
-			config.Instance().Twitch.ClientSecret,
-		),
-		boltdb,
-	)
-	go tm.Monitor(
-		ctx,
-		config.Instance().Twitch.CheckInterval,
-		twitch.DEFAULT_DOWNLOAD_HANDLER(mdb, mq),
-	)
-	go tm.Restore()
-
-	cronTaskRunner := task.NewCronTaskRunner(mq, mdb)
-	go cronTaskRunner.Spawner(ctx)
+	mdb := core.MDB
+	mq := core.MQ
+	lm := core.LM
+	sourceIndex := core.SourceIndex
+	boltdb := core.DB
 
 	scfg := serverConfig{
 		frontend:      rc.App,
@@ -251,9 +81,9 @@ func Run(ctx context.Context, rc *RunConfig) error {
 		db:            boltdb,
 		mq:            mq,
 		lm:            lm,
-		twitchMonitor: tm,
-		taskRunner:    cronTaskRunner,
-		profileStore:  profileStore,
+		twitchMonitor: core.TwitchMonitor,
+		taskRunner:    core.TaskRunner,
+		profileStore:  core.Profiles,
 	}
 
 	srv := newServer(scfg)
