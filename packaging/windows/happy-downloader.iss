@@ -130,9 +130,10 @@ var
   ConfigDir: String;
 begin
   AppDir := ExpandConstant('{app}');
-  { {%USERPROFILE} is the environment variable, which is where the profile
-    is; there is no {userprofile} constant, and asking for one raises inside
-    CurStepChanged, where /SUPPRESSMSGBOXES turns it into silence. }
+  { The profile folder is reached through the USERPROFILE environment
+    variable. There is no userprofile constant, and asking for one raises
+    inside CurStepChanged, where a silent install suppresses the message box
+    and carries on as if it had worked. }
   DownloadDir := ExpandConstant('{%USERPROFILE}\Downloads\happy-downloader');
   ConfigDir := ExpandConstant('{userappdata}\' + ConfigSubDir);
 
