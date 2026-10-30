@@ -67,12 +67,7 @@ case "$PLATFORM" in
     esac
     ;;
   windows)
-    # yt-dlp publishes an arm64 executable of its own; the x64 one does not
-    # run on Windows on ARM without emulation.
-    case "$ARCH" in
-      arm64) YTDLP=yt-dlp_arm64.exe ;;
-      *)     YTDLP=yt-dlp.exe ;;
-    esac
+    YTDLP=yt-dlp.exe
     ;;
   *)
     echo "unknown platform: $PLATFORM" >&2
@@ -99,50 +94,21 @@ case "$PLATFORM" in
     esac
     ;;
   windows)
-    # ffmpeg-static publishes an x64 executable and nothing for arm64, so the
-    # two architectures come from different places. BtbN's builds are the ones
-    # Windows on ARM users are pointed at; the archive holds bin/ffmpeg.exe.
-    case "$ARCH" in
-      arm64) FFMPEG=FFMPEG_BUILDS_ARM64 ;;
-      *)     FFMPEG=ffmpeg-win32-x64 ;;
-    esac
+    # x64 only: there is no ffmpeg-static build for Windows on ARM.
+    FFMPEG=ffmpeg-win32-x64
     ;;
 esac
 
 echo "==> fetching ffmpeg ($FFMPEG)"
 
-if [ "$FFMPEG" = "FFMPEG_BUILDS_ARM64" ]; then
-  FFMPEG_URL="https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-winarm64-gpl.zip"
-  TMPZIP=$(mktemp)
-
-  if ! curl -sL -f -o "$TMPZIP" "$FFMPEG_URL"; then
-    rm -f "$TMPZIP"
-    echo "    ffmpeg could not be fetched from $FFMPEG_URL" >&2
-    exit 1
-  fi
-
-  # Only ffmpeg.exe is wanted: the archive also holds ffplay, ffprobe and a
-  # copy of the licence, none of which the application runs.
-  if ! unzip -j -o "$TMPZIP" '*/bin/ffmpeg.exe' -d "$OUT" >/dev/null; then
-    rm -f "$TMPZIP"
-    echo "    the archive from $FFMPEG_URL held no bin/ffmpeg.exe" >&2
-    exit 1
-  fi
-
-  rm -f "$TMPZIP"
-else
-  FFMPEG_URL="https://github.com/eugeneware/ffmpeg-static/releases/latest/download/$FFMPEG"
-  if ! curl -sL -f -o "$OUT/ffmpeg${exe_suffix}" "$FFMPEG_URL"; then
-    echo "    ffmpeg could not be fetched from $FFMPEG_URL" >&2
-    exit 1
-  fi
+FFMPEG_URL="https://github.com/eugeneware/ffmpeg-static/releases/latest/download/$FFMPEG"
+if ! curl -sL -f -o "$OUT/ffmpeg${exe_suffix}" "$FFMPEG_URL"; then
+  echo "    ffmpeg could not be fetched from $FFMPEG_URL" >&2
+  exit 1
 fi
 
 chmod +x "$OUT/ffmpeg${exe_suffix}"
 
-# Two program files, the two programs they need, and the thing that puts them
-# in place. On Linux the bundle is run; on Windows it is unpacked by an
-# installer instead, so the scripts are not copied there.
 # The Windows installer needs the icon as a file: it is embedded in the
 # executable at build time, and the wizard and the shortcuts read it from here.
 if [ "$PLATFORM" = "windows" ]; then

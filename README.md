@@ -85,23 +85,25 @@ its settings under `%APPDATA%`.
 
 ### Linux
 
-Nothing is published for Linux. The program is built from source:
+Download the static binary for the architecture from the same
+[Releases](https://github.com/LeisureLinux/happy-downloader/releases) page:
 
 ```sh
-git clone https://github.com/LeisureLinux/happy-downloader
-cd happy-downloader
-GOOS=linux GOARCH=arm64 ./scripts/build.sh happy-downloader
-sudo install -m 755 happy-downloader /usr/local/bin/happy-downloader
+mkdir -p ~/.local/share/happy-downloader/bin
+curl -L -o ~/.local/share/happy-downloader/bin/happy-downloader \
+  https://github.com/LeisureLinux/happy-downloader/releases/latest/download/happy-downloader_linux-arm64
+chmod +x ~/.local/share/happy-downloader/bin/happy-downloader
 ```
 
-yt-dlp and ffmpeg are not bundled: put them beside the binary, or name them in
+yt-dlp and ffmpeg are not included: put them beside the binary, or name them in
 the configuration (`paths.downloader_path`, `paths.ffmpeg_path`), or install
 them on the `PATH` — in that order of preference.
 
 Write a config file and start it:
 
 ```sh
-happy-downloader -conf ~/.config/happy-downloader/config.yml
+~/.local/share/happy-downloader/bin/happy-downloader \
+  -conf ~/.config/happy-downloader/config.yml
 ```
 
 The server listens on `0.0.0.0:3033` by default and serves the frontend from
@@ -122,7 +124,7 @@ After=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=%h
-ExecStart=/usr/local/bin/happy-downloader -conf %h/.config/happy-downloader/config.yml
+ExecStart=%h/.local/share/happy-downloader/bin/happy-downloader -conf %h/.config/happy-downloader/config.yml
 Restart=on-failure
 RestartSec=5
 

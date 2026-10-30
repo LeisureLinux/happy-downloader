@@ -33,14 +33,19 @@ on:
 permissions:
   contents: write
 
-# Windows only.
+# Three files, one per platform and architecture:
 #
-# A Linux release is a directory of files that has to be unpacked, pointed at a
-# configuration and started by hand — the binary on its own downloads nothing
-# until somebody finds yt-dlp for it. That is not a form anybody should be
-# handed, and the installed form needs an installer the project does not ship
-# for Linux, so nothing is published for it. The Linux build is still compiled
-# and tested on every push; it is just not an artefact here.
+#   happy-downloader_<version>_windows-amd64_setup.exe   the installer
+#   happy-downloader_linux-amd64                         the static binary
+#   happy-downloader_linux-arm64                         the static binary
+#
+# Linux is published as the program itself, because that is what a server
+# installs and what the deployment on the other end of this project runs.
+# Windows is published as an installer, because a Windows user double-clicks
+# something and expects it to be installed.
+#
+# Windows on ARM is not built: there is no ffmpeg-static build for it, and an
+# installer that cannot merge a video is not worth publishing.
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,8 +55,13 @@ jobs:
         include:
           - goarch: amd64
             suffix: windows-amd64
+            platform: windows
+          - goarch: amd64
+            suffix: linux-amd64
+            platform: linux
           - goarch: arm64
-            suffix: windows-arm64
+            suffix: linux-arm64
+            platform: linux
 
     steps:
       - uses: actions/checkout@v4
@@ -92,11 +102,14 @@ jobs:
       - name: Build
         env:
           GOARCH: ${{ matrix.goarch }}
-          GOOS: windows
+          GOOS: ${{ matrix.platform }}
           CGO_ENABLED: '0'
         run: |
           set -eu
-          name="happy-downloader_${{ matrix.suffix }}.exe"
+          name="happy-downloader_${{ matrix.suffix }}"
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            name="${name}.exe"
+          fi
 
           # The version comes from the checked-out tag, so the binary cannot
           # report anything but what is being released.
@@ -115,16 +128,24 @@ jobs:
       # A release is what people run, so the browser check runs here too: the
       # interface must not need a Chrome newer than Windows 7 has.
       - name: Browser support
+        if: matrix.suffix == 'linux-amd64'
         run: node frontend/scripts/check-browser-support.mjs
 
       # The tests are the same for both architectures, so they run once.
       - name: Test
-        if: matrix.goarch == 'amd64'
+        if: matrix.suffix == 'linux-amd64'
         run: go test ./...
 
+      - uses: actions/upload-artifact@v4
+        if: matrix.platform == 'linux'
+        with:
+          name: happy-downloader_${{ matrix.suffix }}
+          path: happy-downloader_${{ matrix.suffix }}
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Stage the files the installer needs
-        env:
-          http_proxy: ${{ env.http_proxy }}
+        if: matrix.platform == 'windows'
         run: |
           set -eu
           ./scripts/stage.sh "stage_${{ matrix.suffix }}" windows "${{ matrix.goarch }}"
@@ -140,15 +161,21 @@ jobs:
             fi
           done
 
-          # And it has to be for the right machine: an arm64 installer holding
-          # an x64 program installs a program that does not start.
+          # And it has to be the machine the installer is for: an installer
+          # holding a program built for something else installs a program that
+          # does not start.
           for file in "stage_${{ matrix.suffix }}/yt-dlp.exe" \
                       "stage_${{ matrix.suffix }}/ffmpeg.exe" \
                       "stage_${{ matrix.suffix }}/happy-downloader_${{ matrix.suffix }}.exe"; do
-            echo "$file: $(file -b "$file" | cut -c1-40)"
+            echo "$file: $(file -b "$file" | cut -c1-30)"
+            case "$(file -b "$file")" in
+              *x86-64*|*PE32+*) ;;
+              *) echo "$file is not a Windows executable" >&2; exit 1 ;;
+            esac
           done
 
       - uses: actions/upload-artifact@v4
+        if: matrix.platform == 'windows'
         with:
           name: stage_${{ matrix.suffix }}
           path: stage_${{ matrix.suffix }}
@@ -160,15 +187,6 @@ jobs:
   installer:
     needs: build
     runs-on: windows-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - goarch: amd64
-            suffix: windows-amd64
-          - goarch: arm64
-            suffix: windows-arm64
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -176,7 +194,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: stage_${{ matrix.suffix }}
+          name: stage_windows-amd64
           path: stage
 
       - name: What was staged
@@ -199,19 +217,16 @@ jobs:
           $version = '${{ inputs.tag }}'.TrimStart('v')
 
           & $iscc "/DBundleDir=$PWD\stage" "/DAppVersion=$version" `
-            "/DAppArch=${{ matrix.goarch }}" packaging\windows\happy-downloader.iss
+            packaging\windows\happy-downloader.iss
           if ($LASTEXITCODE -ne 0) { throw "the installer did not build" }
 
           $setup = Get-ChildItem dist -Filter '*setup.exe' | Select-Object -First 1
           if (-not $setup) { throw "the installer was not produced" }
-          if ($setup.Name -notmatch '${{ matrix.goarch }}') {
-            throw "the installer is named $($setup.Name), which does not say it is for ${{ matrix.goarch }}"
-          }
           "built $($setup.Name), $([math]::Round($setup.Length/1MB,1)) MB"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: installer_${{ matrix.suffix }}
+          name: installer_windows-amd64
           path: dist/*setup.exe
           if-no-files-found: error
           retention-days: 7
@@ -235,12 +250,18 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: happy-downloader_linux-*
+          path: dist
+          merge-multiple: true
+
       - name: Checksums
         working-directory: dist
         run: |
           set -eu
           ls -l
-          sha256sum happy-downloader_*.exe > SHA256SUMS
+          sha256sum happy-downloader_* > SHA256SUMS
 
       - name: Verify checksums
         working-directory: dist
@@ -279,7 +300,8 @@ jobs:
             --title "$tag" \
             --generate-notes \
             dist/happy-downloader_*_windows-amd64_setup.exe \
-            dist/happy-downloader_*_windows-arm64_setup.exe \
+            dist/happy-downloader_linux-amd64 \
+            dist/happy-downloader_linux-arm64 \
             dist/SHA256SUMS
 
   # A publish that half-worked — the tag exists, the release does not — is the
