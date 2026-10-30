@@ -80,12 +80,20 @@ done
 echo "==> installing into $PREFIX"
 mkdir -p "$BIN_DIR" "$DATA_DIR" "$CONFIG_DIR" "$DOWNLOAD_DIR"
 
-# Installing while it is running would replace the binary of a running process.
-# On Linux that works, but the running copy keeps the old code until it is
+# Installing over a running copy replaces the binary of a running process. On
+# Linux that works, but the running copy keeps the old code until it is
 # restarted, which looks like the install did nothing.
-if systemctl --user is-active --quiet happy-downloader.service 2>/dev/null; then
-  echo "    stopping the running copy"
-  systemctl --user stop happy-downloader.service || true
+#
+# Only the service that runs *this* prefix is stopped. A second installation
+# somewhere else — a test copy, a staging one — used to stop the service of the
+# installation actually in use, leaving nothing running at all.
+UNIT_PATH=${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/happy-downloader.service
+
+if [ -f "$UNIT_PATH" ] && grep -qF "ExecStart=$BIN_DIR/happy-downloader" "$UNIT_PATH"; then
+  if systemctl --user is-active --quiet happy-downloader.service 2>/dev/null; then
+    echo "    stopping the running copy"
+    systemctl --user stop happy-downloader.service || true
+  fi
 fi
 
 # The binary keeps the plain name, because that is what the service runs and
