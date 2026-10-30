@@ -178,20 +178,25 @@ jobs:
       # given, so uploading a directory puts everything that downloads it
       # one level deeper than it was — and the publish job was looking for
       # the archive at the top of its own directory.
+      # The archive is uploaded by name. An artifact holds the paths it was
+      # given, so uploading the directory puts everything that downloads it
+      # one level deeper than it was — and the publish job was looking for
+      # the archive at the top of its own directory.
+      #
+      # A Windows bundle is a zip, because that is what Windows can open
+      # without anything else being installed, and a Linux one is a tarball.
       - uses: actions/upload-artifact@v4
+        if: matrix.os != 'windows'
         with:
           name: bundle_${{ matrix.suffix }}
           path: bundle_${{ matrix.suffix }}.tar.gz
           if-no-files-found: error
           retention-days: 7
 
-      # A Windows bundle is a zip, because that is what Windows can open
-      # without anything else being installed. It is a separate artifact
-      # because a Linux build has no zip to upload.
       - uses: actions/upload-artifact@v4
         if: matrix.os == 'windows'
         with:
-          name: bundle_zip_${{ matrix.suffix }}
+          name: bundle_${{ matrix.suffix }}
           path: bundle_${{ matrix.suffix }}.zip
           if-no-files-found: error
           retention-days: 7
