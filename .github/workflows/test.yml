@@ -189,19 +189,25 @@ jobs:
           # The application has to find them beside itself, and report where
           # it found them. A name rather than a path in that answer means the
           # working directory decided which copy ran.
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            app=$(find bundle -maxdepth 1 -name 'happy-downloader*.exe' | head -1)
-          else
-            app=$(find bundle -maxdepth 1 -name 'happy-downloader*' -type f | head -1)
+          # The application is found by name rather than by the name the
+          # build gave it, because the build names it differently on
+          # Windows.
+          app=$(find bundle -maxdepth 1 -name 'happy-downloader*' -type f | head -1)
+          if [ -z "$app" ]; then
+            echo "the bundle has no application in it" >&2
+            exit 1
           fi
 
-          "$app" -conf /dev/null &
+          # The configuration is not read, so the application uses its
+          # defaults, which put the state in the working directory.
+          "$app" -conf ./no-such-config.yml > app.log 2>&1 &
           pid=$!
           trap "kill $pid 2>/dev/null || true" EXIT
           sleep 10
 
           found=$(curl -s --max-time 5 http://127.0.0.1:3033/api/v1/version || true)
           echo "$found"
+          cat app.log 2>/dev/null | tail -20 || true
 
           case "$found" in
             *'"ytdlpPath":'*'/yt-dlp'*) ;;

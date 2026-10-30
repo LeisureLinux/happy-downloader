@@ -75,15 +75,13 @@ case "$PLATFORM" in
     ;;
 esac
 
+# The release names it with the platform in it, so that the downloads do not
+# collide with each other. The bundle has one platform in it, and the
+# application looks for the plain name beside itself, so it is stored under
+# that.
 echo "==> fetching yt-dlp ($YTDLP)"
-curl -sL -f -o "$OUT/$YTDLP" "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP"
-chmod +x "$OUT/$YTDLP"
-
-# It is stored under the plain name, because that is the name the
-# application looks for beside itself. The release names it with the
-# platform in it so that the downloads do not collide; the bundle has one
-# platform in it and does not need the distinction.
-mv "$OUT/$YTDLP" "$OUT/yt-dlp${exe_suffix}"
+curl -sL -f -o "$OUT/yt-dlp${exe_suffix}" "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP"
+chmod +x "$OUT/yt-dlp${exe_suffix}"
 
 # ffmpeg. The build that is one file and needs nothing beside it.
 # The names are the ones the release uses, which are not the same as the
