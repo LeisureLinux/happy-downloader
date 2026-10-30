@@ -199,13 +199,22 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: bundle_*
-          path: dist
+          path: bundles
 
       - uses: actions/download-artifact@v4
         with:
           pattern: happy-downloader_*
           path: dist
           merge-multiple: true
+
+      # The bundles arrive in their own directory, because a download into a
+      # path that already has something in it clears it first.
+      - name: Collect the bundles
+        run: |
+          set -eu
+          mv bundles/* dist/
+          rmdir bundles
+          ls -l dist
 
       - name: Checksums
         working-directory: dist
