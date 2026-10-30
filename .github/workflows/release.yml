@@ -312,8 +312,9 @@ jobs:
         working-directory: dist
         run: |
           set -eu
-          sha256sum happy-downloader_* bundle_*.tar.gz bundle_*.zip \
-            happy-downloader_windows-amd64-setup.exe > SHA256SUMS
+          # happy-downloader_* already covers the setup.exe that is published
+          # beside the binaries; naming it twice lists it twice.
+          sha256sum happy-downloader_* bundle_*.tar.gz bundle_*.zip > SHA256SUMS
 
       - name: Verify checksums
         working-directory: dist
