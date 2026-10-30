@@ -220,6 +220,13 @@ jobs:
     needs: [build, installer]
     runs-on: ubuntu-latest
     steps:
+      # The release notes are generated from the commits between the previous
+      # tag and this one, which gh reads from the repository it is standing in.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
       # Every installer is downloaded, because this job has no matrix of its
       # own: it does not know which architectures were built.
       - uses: actions/download-artifact@v4
