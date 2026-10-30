@@ -153,10 +153,31 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      # The bundle is published as an archive, because it is a folder: the
+      # application finds yt-dlp and ffmpeg beside itself, and that only
+      # works if they arrive together.
+      #
+      # A Windows bundle is a zip, because that is what Windows can open
+      # without anything else being installed.
+      #
+      # It is packed here, where it is built, because the download of an
+      # artifact puts the folder inside another copy of itself, and a bundle
+      # with the wrong shape is one nobody notices until it is unpacked.
+      - name: Pack the bundle
+        run: |
+          set -eu
+          dir="bundle_${{ matrix.suffix }}"
+          case "$dir" in
+            *windows*) zip -qr "${dir}.zip" "$dir" ;;
+            *)          tar -czf "${dir}.tar.gz" "$dir" ;;
+          esac
+          rm -rf "$dir"
+          ls -l
+
       - uses: actions/upload-artifact@v4
         with:
           name: bundle_${{ matrix.suffix }}
-          path: bundle_${{ matrix.suffix }}
+          path: bundle_${{ matrix.suffix }}.*
           if-no-files-found: error
           retention-days: 7
 
@@ -164,34 +185,21 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # The bundle is packed in the job that built it, before the download.
+      #
+      # Merging the artifacts afterwards would put the folder inside another
+      # copy of itself, because the artifact holds the folder rather than its
+      # contents.
       - uses: actions/download-artifact@v4
         with:
+          name: bundle_${{ matrix.suffix }}
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: happy-downloader_${{ matrix.suffix }}
           path: dist
           merge-multiple: true
-
-      # The bundle is published as an archive, because it is a folder: the
-      # application finds yt-dlp and ffmpeg beside itself, and that only
-      # works if they arrive together.
-      #
-      # A Windows bundle is a zip, because that is what Windows can open
-      # without anything else being installed.
-      - name: Pack the bundles
-        working-directory: dist
-        run: |
-          set -eu
-          for dir in bundle_*; do
-            [ -d "$dir" ] || continue
-            case "$dir" in
-              *windows*)
-                (cd dist && zip -qr "${dir}.zip" "$dir")
-                ;;
-              *)
-                tar -czf "${dir}.tar.gz" -C dist "$dir"
-                ;;
-            esac
-            rm -rf "$dir"
-          done
-          ls -l
 
       - name: Checksums
         working-directory: dist
