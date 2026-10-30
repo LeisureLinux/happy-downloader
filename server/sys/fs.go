@@ -6,17 +6,9 @@ import (
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 	"github.com/LeisureLinux/happy-downloader/v4/server/internal"
-	"golang.org/x/sys/unix"
 )
 
-// package containing fs related operation (unix only)
-
-// FreeSpace gets the available Bytes writable to download directory
-func FreeSpace() (uint64, error) {
-	var stat unix.Statfs_t
-	unix.Statfs(config.Instance().Paths.DownloadPath, &stat)
-	return (stat.Bavail * uint64(stat.Bsize)), nil
-}
+// package containing fs related operation
 
 // Build a directory tree started from the specified path using DFS.
 // Then return the flattened tree represented as a list.

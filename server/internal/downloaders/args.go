@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
@@ -285,7 +284,7 @@ var stagedMu sync.Mutex
 // two.
 func NewCommand(args []string) *exec.Cmd {
 	cmd := exec.Command(tools.YtDlp(), args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	prepareProcess(cmd)
 
 	cookies.NewAttempt()
 

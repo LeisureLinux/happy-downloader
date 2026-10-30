@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"syscall"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
@@ -173,7 +172,7 @@ func (g *GenericDownloader) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cmd := exec.CommandContext(ctx, tools.YtDlp(), params...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	prepareProcess(cmd)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -293,15 +292,7 @@ func (g *GenericDownloader) Stop() error {
 		return nil
 	}
 
-	pgid, err := syscall.Getpgid(g.proc.Pid)
-	if err != nil {
-		return err
-	}
-	if err := syscall.Kill(-pgid, syscall.SIGTERM); err != nil {
-		return err
-	}
-
-	return nil
+	return killProcessGroup(&exec.Cmd{Process: g.proc})
 }
 
 func (g *GenericDownloader) Status() internal.ProcessSnapshot {

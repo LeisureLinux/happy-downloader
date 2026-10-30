@@ -41,9 +41,14 @@ jobs:
       matrix:
         include:
           - goarch: amd64
+            os: linux
             suffix: linux-amd64
           - goarch: arm64
+            os: linux
             suffix: linux-arm64
+          - goarch: amd64
+            os: windows
+            suffix: windows-amd64
 
     steps:
       - uses: actions/checkout@v4
@@ -84,19 +89,27 @@ jobs:
       - name: Build
         env:
           GOARCH: ${{ matrix.goarch }}
-          GOOS: linux
+          GOOS: ${{ matrix.os }}
           CGO_ENABLED: '0'
         run: |
           set -eu
+          # An executable on Windows carries the suffix; everywhere else it
+          # does not. The name is decided here rather than in the workflow,
+          # because a shell variable does not cross a step.
+          name="happy-downloader_${{ matrix.suffix }}"
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            name="${name}.exe"
+          fi
+
           # The version comes from the checked-out tag, so the binary cannot
           # report anything but what is being released.
-          ./scripts/build.sh "happy-downloader_${{ matrix.suffix }}"
+          ./scripts/build.sh "$name"
 
           # A binary that embedded no frontend still compiles, so check the
           # artefact is plausible rather than trusting the exit code.
-          test -x "happy-downloader_${{ matrix.suffix }}"
-          size=$(stat -c %s "happy-downloader_${{ matrix.suffix }}")
-          echo "built ${{ matrix.suffix }}, ${size} bytes"
+          test -f "$name"
+          size=$(stat -c %s "$name")
+          echo "built $name, ${size} bytes"
           if [ "$size" -lt 8000000 ]; then
             echo "binary is too small — the frontend was probably not embedded" >&2
             exit 1
@@ -112,7 +125,7 @@ jobs:
       - name: Build the bundle
         run: |
           set -eu
-          ./scripts/bundle.sh "bundle_${{ matrix.suffix }}" linux "${{ matrix.goarch }}"
+          ./scripts/bundle.sh "bundle_${{ matrix.suffix }}" "${{ matrix.os }}" "${{ matrix.goarch }}"
 
           # A bundle that is missing a program is worse than no bundle: it
           # looks complete and fails on the first download. So it is checked
@@ -123,12 +136,7 @@ jobs:
               echo "the bundle has no $program in it" >&2
               exit 1
             fi
-            if [ ! -x "$found" ]; then
-              echo "$found is not executable" >&2
-              exit 1
-            fi
           done
-          test -x "bundle_${{ matrix.suffix }}/happy-downloader_linux-${{ matrix.goarch }}"
 
       # A release is what people run, so the browser check runs here too: the
       # binary must not need a Chrome newer than Windows 7 has.
@@ -141,7 +149,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: happy-downloader_${{ matrix.suffix }}
-          path: happy-downloader_${{ matrix.suffix }}
+          path: happy-downloader_${{ matrix.suffix }}*
           if-no-files-found: error
           retention-days: 7
 
@@ -164,20 +172,30 @@ jobs:
       # The bundle is published as an archive, because it is a folder: the
       # application finds yt-dlp and ffmpeg beside itself, and that only
       # works if they arrive together.
+      #
+      # A Windows bundle is a zip, because that is what Windows can open
+      # without anything else being installed.
       - name: Pack the bundles
         working-directory: dist
         run: |
           set -eu
           for dir in bundle_*; do
             [ -d "$dir" ] || continue
-            tar -czf "${dir}.tar.gz" -C dist "$dir"
+            case "$dir" in
+              *windows*)
+                (cd dist && zip -qr "${dir}.zip" "$dir")
+                ;;
+              *)
+                tar -czf "${dir}.tar.gz" -C dist "$dir"
+                ;;
+            esac
             rm -rf "$dir"
           done
           ls -l
 
       - name: Checksums
         working-directory: dist
-        run: sha256sum happy-downloader_* bundle_*.tar.gz > SHA256SUMS
+        run: sha256sum happy-downloader_* bundle_*.tar.gz bundle_*.zip > SHA256SUMS
 
       - name: Verify checksums
         working-directory: dist
@@ -218,8 +236,10 @@ jobs:
           files: |
             dist/happy-downloader_linux-amd64
             dist/happy-downloader_linux-arm64
+            dist/happy-downloader_windows-amd64.exe
             dist/bundle_linux-amd64.tar.gz
             dist/bundle_linux-arm64.tar.gz
+            dist/bundle_windows-amd64.zip
             dist/SHA256SUMS
           generate_release_notes: true
           fail_on_unmatched_files: true

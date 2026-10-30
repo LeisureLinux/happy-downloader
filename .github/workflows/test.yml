@@ -44,54 +44,7 @@ jobs:
       - name: Browser support
         run: node frontend/scripts/check-browser-support.mjs
 
-      # The bundle is what most people install, so it is checked here rather
-      # than only when a release is cut.
-      #
-      # What is checked is that it holds what it should and that the
-      # application finds it: a bundle that is missing a program looks
-      # complete and fails on the first download, and one whose programs are
-      # found by name rather than by path runs whatever the machine happens
-      # to have.
-      - name: The bundle
-        run: |
-          set -eu
-          mv happy-downloader happy-downloader_linux-amd64
-          ./scripts/bundle.sh /tmp/bundle linux amd64
 
-          for program in yt-dlp ffmpeg; do
-            found=$(find /tmp/bundle -maxdepth 1 -name "$program" | head -1)
-            if [ -z "$found" ]; then
-              echo "the bundle has no $program in it" >&2
-              exit 1
-            fi
-            if [ ! -x "$found" ]; then
-              echo "$found is not executable" >&2
-              exit 1
-            fi
-          done
-
-          # The application has to find them beside itself, and report where
-          # it found them — a name rather than a path means the working
-          # directory decided which copy ran.
-          /tmp/bundle/happy-downloader_linux-amd64 -conf /dev/null &
-          pid=$!
-          trap "kill $pid 2>/dev/null || true" EXIT
-          sleep 10
-
-          found=$(curl -s --max-time 5 http://127.0.0.1:3033/api/v1/version || true)
-          echo "$found"
-
-          case "$found" in
-            *'"ytdlpPath":"/tmp/bundle/yt-dlp"'*) ;;
-            *) echo "the application did not find the bundled yt-dlp: $found" >&2; exit 1 ;;
-          esac
-          case "$found" in
-            *'"ffmpegPath":"/tmp/bundle/ffmpeg"'*) ;;
-            *) echo "the application did not find the bundled ffmpeg: $found" >&2; exit 1 ;;
-          esac
-
-          kill $pid 2>/dev/null || true
-          trap - EXIT
 
       - name: gofmt
         run: |
@@ -155,3 +108,109 @@ jobs:
       - name: Unit tests
         working-directory: frontend
         run: pnpm exec vitest run
+
+  # The bundle: the application and the programs it needs, in one folder.
+  #
+  # It is what most people install, so it is checked on every push rather
+  # than only when a release is cut. A bundle that is missing a program looks
+  # complete and fails on the first download, and one whose programs are found
+  # by name rather than by path runs whatever the machine happens to have.
+  #
+  # It runs on Windows as well as on Linux, because the Windows bundle is the
+  # one that was never built before and the one that is most likely to have
+  # something wrong in it.
+  bundle:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goarch: amd64
+            platform: linux
+            suffix: linux-amd64
+          - os: windows-latest
+            goarch: amd64
+            platform: windows
+            suffix: windows-amd64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The frontend is embedded with go:embed, so the package cannot even be
+      # type-checked until dist/ exists.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        shell: bash
+        env:
+          GOARCH: ${{ matrix.goarch }}
+          GOOS: ${{ matrix.platform }}
+          CGO_ENABLED: '0'
+        run: |
+          set -eu
+          name="happy-downloader_${{ matrix.suffix }}"
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            name="${name}.exe"
+          fi
+          ./scripts/build.sh "$name"
+
+      - name: The bundle
+        shell: bash
+        run: |
+          set -eu
+          ./scripts/bundle.sh bundle "${{ matrix.platform }}" "${{ matrix.goarch }}"
+
+          for program in yt-dlp ffmpeg; do
+            found=$(find bundle -maxdepth 1 -name "$program*" | head -1)
+            if [ -z "$found" ]; then
+              echo "the bundle has no $program in it" >&2
+              exit 1
+            fi
+          done
+
+          # The application has to find them beside itself, and report where
+          # it found them. A name rather than a path in that answer means the
+          # working directory decided which copy ran.
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            app=$(find bundle -maxdepth 1 -name 'happy-downloader*.exe' | head -1)
+          else
+            app=$(find bundle -maxdepth 1 -name 'happy-downloader*' -type f | head -1)
+          fi
+
+          "$app" -conf /dev/null &
+          pid=$!
+          trap "kill $pid 2>/dev/null || true" EXIT
+          sleep 10
+
+          found=$(curl -s --max-time 5 http://127.0.0.1:3033/api/v1/version || true)
+          echo "$found"
+
+          case "$found" in
+            *'"ytdlpPath":'*'/yt-dlp'*) ;;
+            *) echo "the application did not find the bundled yt-dlp: $found" >&2; exit 1 ;;
+          esac
+          case "$found" in
+            *'"ffmpegPath":'*'/ffmpeg'*) ;;
+            *) echo "the application did not find the bundled ffmpeg: $found" >&2; exit 1 ;;
+          esac
+
+          kill $pid 2>/dev/null || true
+          trap - EXIT

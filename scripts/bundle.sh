@@ -32,15 +32,24 @@ ARCH=${3:-amd64}
 
 mkdir -p "$OUT"
 
+# An executable on Windows carries the suffix.
+exe_suffix=""
+case "$PLATFORM" in
+  windows) exe_suffix=".exe" ;;
+esac
+
 # The application.
 #
 # The name is the one the release publishes, so that the binary in the
 # bundle and the binary published beside it are the same file.
-APP="happy-downloader_linux-$ARCH"
+case "$PLATFORM" in
+  windows) APP="happy-downloader_windows-$ARCH.exe" ;;
+  *)      APP="happy-downloader_linux-$ARCH" ;;
+esac
 
 if [ ! -f "$ROOT/$APP" ]; then
   echo "the application binary was not found: $ROOT/$APP" >&2
-  echo "build it first: GOOS=linux GOARCH=$ARCH ./scripts/build.sh $APP" >&2
+  echo "build it first: GOOS=$PLATFORM GOARCH=$ARCH ./scripts/build.sh $APP" >&2
   exit 1
 fi
 
@@ -74,7 +83,7 @@ chmod +x "$OUT/$YTDLP"
 # application looks for beside itself. The release names it with the
 # platform in it so that the downloads do not collide; the bundle has one
 # platform in it and does not need the distinction.
-mv "$OUT/$YTDLP" "$OUT/yt-dlp"
+mv "$OUT/$YTDLP" "$OUT/yt-dlp${exe_suffix}"
 
 # ffmpeg. The build that is one file and needs nothing beside it.
 # The names are the ones the release uses, which are not the same as the
@@ -87,23 +96,23 @@ case "$PLATFORM" in
     esac
     ;;
   windows)
-    case "$ARCH" in
-      arm64)
-        echo "there is no Windows arm64 build of ffmpeg to fetch" >&2
-        exit 1
-        ;;
-      *)     FFMPEG=ffmpeg-win32-x64 ;;
-    esac
+    # Only amd64. There is no Windows arm64 build of ffmpeg to put beside
+    # the application, and a bundle without ffmpeg is not a bundle.
+    if [ "$ARCH" != "amd64" ]; then
+      echo "there is no Windows $ARCH bundle: ffmpeg is not built for it" >&2
+      exit 1
+    fi
+    FFMPEG=ffmpeg-win32-x64
     ;;
 esac
 
 echo "==> fetching ffmpeg ($FFMPEG)"
 FFMPEG_URL="https://github.com/eugeneware/ffmpeg-static/releases/latest/download/$FFMPEG"
-if ! curl -sL -f -o "$OUT/ffmpeg" "$FFMPEG_URL"; then
+if ! curl -sL -f -o "$OUT/ffmpeg${exe_suffix}" "$FFMPEG_URL"; then
   echo "    ffmpeg could not be fetched from $FFMPEG_URL" >&2
   exit 1
 fi
-chmod +x "$OUT/ffmpeg"
+chmod +x "$OUT/ffmpeg${exe_suffix}"
 
 cat > "$OUT/README.txt" <<'EOF'
 Happy Downloader — the bundle

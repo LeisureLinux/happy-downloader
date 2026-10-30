@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
@@ -97,7 +96,7 @@ func (l *LiveStreamDownloader) Start() error {
 	LogCommand("livestream", l.URL, params)
 
 	cmd := exec.Command(tools.YtDlp(), params...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	prepareProcess(cmd)
 
 	// stdout = media stream
 	//
@@ -495,15 +494,7 @@ func (l *LiveStreamDownloader) Stop() error {
 		return errors.New("*os.Process not set")
 	}
 
-	pgid, err := syscall.Getpgid(l.proc.Pid)
-	if err != nil {
-		return err
-	}
-	if err := syscall.Kill(-pgid, syscall.SIGTERM); err != nil {
-		return err
-	}
-
-	return nil
+	return killProcessGroup(&exec.Cmd{Process: l.proc})
 }
 
 func (l *LiveStreamDownloader) Status() internal.ProcessSnapshot {
