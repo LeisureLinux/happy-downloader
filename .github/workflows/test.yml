@@ -187,7 +187,14 @@ jobs:
         shell: bash
         run: |
           set -eu
-          app=$(find stage -maxdepth 1 -name 'happy-downloader*' -type f | head -1)
+          # Named exactly: the staging directory also holds the icon, and
+          # "happy-downloader*" matches it.
+          name="happy-downloader_${{ matrix.suffix }}"
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            name="${name}.exe"
+          fi
+
+          app="stage/$name"
           if [ -z "$app" ]; then
             echo "nothing was staged: no application in stage/" >&2
             exit 1
