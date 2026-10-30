@@ -131,6 +131,34 @@ func Run(ctx context.Context, rc *RunConfig) error {
 
 	listener, err := net.Listen(network, address)
 	if err != nil {
+		// A port that is already taken is usually this program, started
+		// earlier: a previous version, a copy left running, something the
+		// installer started and never stopped.
+		//
+		// It is not a failure the user can act on — "listen tcp :3033: bind:
+		// Only one usage of each socket address is normally permitted" is
+		// the same message for every cause. So it is checked, and when the
+		// port is ours the browser is pointed at the copy that already has
+		// it, which is running and working.
+		if network != "tcp" {
+			slog.Error("failed to listen", slog.String("err", err.Error()))
+			return err
+		}
+
+		if running, ok := RunningElsewhere(conf.Server.Port); ok {
+			url := fmt.Sprintf("http://127.0.0.1:%d/", conf.Server.Port)
+
+			slog.Warn("already running; not starting a second copy",
+				slog.String("url", url),
+				slog.String("running_version", running))
+
+			if rc.Ready != nil {
+				rc.Ready(url)
+			}
+
+			return nil
+		}
+
 		slog.Error("failed to listen", slog.String("err", err.Error()))
 		return err
 	}

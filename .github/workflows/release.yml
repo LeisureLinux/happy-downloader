@@ -115,25 +115,25 @@ jobs:
             exit 1
           fi
 
-      # The bundle: the application and the programs it needs, in one folder.
+      # The files the installer puts on the machine, gathered in one directory.
       #
       # A release that ships only the binary asks the person installing it to
       # install Python and a media toolkit as well, and to write down where
-      # they ended up. The bundle is the answer to that, and it is built here
-      # so that it is the same on every platform and is never assembled by
-      # hand.
-      - name: Build the bundle
+      # they ended up. This is the answer to that: the installer carries them.
+      # Assembling it here, from the same files on every platform, is what
+      # keeps the installer from containing something untested.
+      - name: Stage the files the installer needs
         run: |
           set -eu
-          ./scripts/bundle.sh "bundle_${{ matrix.suffix }}" "${{ matrix.os }}" "${{ matrix.goarch }}"
+          ./scripts/stage.sh "stage_${{ matrix.suffix }}" "${{ matrix.os }}" "${{ matrix.goarch }}"
 
-          # A bundle that is missing a program is worse than no bundle: it
-          # looks complete and fails on the first download. So it is checked
-          # rather than trusted.
+          # A staging directory that is missing a program is worse than none:
+          # the installer built from it looks complete and fails on the first
+          # download. So it is checked rather than trusted.
           for program in yt-dlp ffmpeg; do
-            found=$(find "bundle_${{ matrix.suffix }}" -maxdepth 1 -name "$program*" | head -1)
+            found=$(find "stage_${{ matrix.suffix }}" -maxdepth 1 -name "$program*" | head -1)
             if [ -z "$found" ]; then
-              echo "the bundle has no $program in it" >&2
+              echo "nothing was staged for $program" >&2
               exit 1
             fi
           done
@@ -146,71 +146,54 @@ jobs:
       - name: Test
         run: go test ./...
 
+      # A Linux installer is one file that installs and starts the program:
+      # there is no archive to unpack and no configuration to write by hand.
+      - name: Build the installer (Linux)
+        if: matrix.os == 'linux'
+        run: |
+          set -eu
+          version="${{ inputs.tag }}"
+          version="${version#v}"
+          ./scripts/make-run.sh "stage_${{ matrix.suffix }}" \
+            "happy-downloader_${version}_${{ matrix.suffix }}.run" "$version"
+
       - uses: actions/upload-artifact@v4
+        if: matrix.os == 'linux'
+        with:
+          name: installer_${{ matrix.suffix }}
+          path: happy-downloader_*_${{ matrix.suffix }}.run
+          if-no-files-found: error
+          retention-days: 7
+
+      # Windows is packed by Inno Setup, which needs Windows, so the staged
+      # files travel to the job that can do it.
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'windows'
+        with:
+          name: stage_${{ matrix.suffix }}
+          path: stage_${{ matrix.suffix }}
+          if-no-files-found: error
+          retention-days: 7
+
+      # The bare binary is published for Linux only, because that is what a
+      # server deploys. A bare Windows executable is a program that cannot
+      # download anything until somebody finds yt-dlp for it, and publishing
+      # one invites exactly that mistake; the installer is the form it ships
+      # in.
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'linux'
         with:
           name: happy-downloader_${{ matrix.suffix }}
           path: happy-downloader_${{ matrix.suffix }}*
           if-no-files-found: error
           retention-days: 7
 
-      # The bundle is published as an archive, because it is a folder: the
-      # application finds yt-dlp and ffmpeg beside itself, and that only
-      # works if they arrive together.
-      #
-      # A Windows bundle is a zip, because that is what Windows can open
-      # without anything else being installed.
-      #
-      # It is packed here, where it is built, because the download of an
-      # artifact puts the folder inside another copy of itself, and a bundle
-      # with the wrong shape is one nobody notices until it is unpacked.
-      - name: Pack the bundle
-        run: |
-          set -eu
-          dir="bundle_${{ matrix.suffix }}"
-
-          # The archive holds one folder called happy-downloader, so that
-          # unpacking it makes a folder instead of scattering four files into
-          # whatever directory the person happened to be in.
-          stage=$(mktemp -d)
-          cp -a "$dir" "$stage/happy-downloader"
-
-          case "$dir" in
-            *windows*) (cd "$stage" && zip -qr "$OLDPWD/${dir}.zip" happy-downloader) ;;
-            *)          (cd "$stage" && tar -czf "$OLDPWD/${dir}.tar.gz" happy-downloader) ;;
-          esac
-
-          rm -rf "$stage" "$dir"
-          ls -l
-
-      # The archive is uploaded by name. An artifact holds the paths it was
-      # given, so uploading a directory puts everything that downloads it
-      # one level deeper than it was — and the publish job was looking for
-      # the archive at the top of its own directory.
-      #
-      # A Windows bundle is a zip, because that is what Windows can open
-      # without anything else being installed, and a Linux one is a tarball.
-      - uses: actions/upload-artifact@v4
-        if: matrix.os != 'windows'
-        with:
-          name: bundle_${{ matrix.suffix }}
-          path: bundle_${{ matrix.suffix }}.tar.gz
-          if-no-files-found: error
-          retention-days: 7
-
-      - uses: actions/upload-artifact@v4
-        if: matrix.os == 'windows'
-        with:
-          name: bundle_${{ matrix.suffix }}
-          path: bundle_${{ matrix.suffix }}.zip
-          if-no-files-found: error
-          retention-days: 7
-
   # The Windows installer.
   #
   # A separate job because it needs Windows: the build job cross-compiles from
-  # Linux, and Inno Setup is a Windows program. It takes the bundle that was
-  # just built rather than the source, so the installer cannot contain
-  # anything the zip does not.
+  # Linux, and Inno Setup is a Windows program. It takes the files the build
+  # job staged rather than the source, so the installer cannot contain
+  # anything that was not built by this run.
   installer:
     needs: build
     runs-on: windows-latest
@@ -221,18 +204,12 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: bundle_windows-amd64
-          path: bundle  # this one holds the archive, not a folder
+          name: stage_windows-amd64
+          path: stage
 
-      - name: Unpack the bundle
+      - name: What was staged
         shell: bash
-        run: |
-          set -eu
-          cd bundle
-          unzip -q bundle_windows-amd64.zip
-          mv happy-downloader ../bundle-files
-          cd ..
-          ls -l bundle-files
+        run: ls -l stage
 
       - name: Build the installer
         shell: pwsh
@@ -249,7 +226,7 @@ jobs:
           # name and Windows does not want in a product version.
           $version = '${{ inputs.tag }}'.TrimStart('v')
 
-          & $iscc "/DBundleDir=$PWD\bundle-files" "/DAppVersion=$version" `
+          & $iscc "/DBundleDir=$PWD\stage" "/DAppVersion=$version" `
             packaging\windows\happy-downloader.iss
           if ($LASTEXITCODE -ne 0) { throw "the installer did not build" }
 
@@ -260,7 +237,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: installer_windows-amd64
-          path: dist/happy-downloader_windows-amd64-setup.exe
+          path: dist/*setup.exe
           if-no-files-found: error
           retention-days: 7
 
@@ -268,21 +245,15 @@ jobs:
     needs: [build, installer]
     runs-on: ubuntu-latest
     steps:
-      # The bundle is packed in the job that built it, before the download.
+      # Every artifact is downloaded, because the publish job has no matrix of
+      # its own: it does not know which platforms were built.
       #
-      # Merging the artifacts afterwards would put the folder inside another
-      # copy of itself, because the artifact holds the folder rather than its
-      # contents.
-      # Every artifact is downloaded, because the publish job has no matrix
-      # of its own — it does not know which platforms were built.
-      #
-      # The bundles are downloaded on their own, because an artifact holds
-      # the folder rather than its contents, and merging them with the
-      # binaries would put each bundle inside another copy of itself.
+      # The installers are downloaded apart from the binaries because a
+      # download into a path that already holds something clears it first.
       - uses: actions/download-artifact@v4
         with:
-          pattern: bundle*
-          path: bundles
+          pattern: installer_*
+          path: installers
           merge-multiple: true
 
       - uses: actions/download-artifact@v4
@@ -291,20 +262,12 @@ jobs:
           path: dist
           merge-multiple: true
 
-      # The installer is downloaded apart as well, for the same reason.
-      - uses: actions/download-artifact@v4
-        with:
-          name: installer_windows-amd64
-          path: installers
-
-      # The bundles arrive in their own directory, because a download into a
+      # The installers arrive in their own directory, because a download into a
       # path that already has something in it clears it first.
-      - name: Collect the bundles
+      - name: Collect the installers
         run: |
           set -eu
-          mv bundles/* dist/
-          rmdir bundles
-          mv installers/happy-downloader_windows-amd64-setup.exe dist/
+          mv installers/* dist/
           rmdir installers
           ls -l dist
 
@@ -312,9 +275,10 @@ jobs:
         working-directory: dist
         run: |
           set -eu
-          # happy-downloader_* already covers the setup.exe that is published
-          # beside the binaries; naming it twice lists it twice.
-          sha256sum happy-downloader_* bundle_*.tar.gz bundle_*.zip > SHA256SUMS
+          # The binaries are matched as happy-downloader_<suffix>, the
+          # installers as happy-downloader_<version>_<suffix>, and both are
+          # covered by the one pattern.
+          sha256sum happy-downloader_* > SHA256SUMS
 
       - name: Verify checksums
         working-directory: dist
@@ -352,14 +316,15 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag }}
+          # The installed form is the installer, one file per platform; the
+          # bare binaries are published beside them because they are what the
+          # tests run and what a server deployment installs.
           files: |
+            dist/happy-downloader_*_windows-amd64_setup.exe
+            dist/happy-downloader_*_linux-amd64.run
+            dist/happy-downloader_*_linux-arm64.run
             dist/happy-downloader_linux-amd64
             dist/happy-downloader_linux-arm64
-            dist/happy-downloader_windows-amd64.exe
-            dist/bundle_linux-amd64.tar.gz
-            dist/bundle_linux-arm64.tar.gz
-            dist/bundle_windows-amd64.zip
-            dist/happy-downloader_windows-amd64-setup.exe
             dist/SHA256SUMS
           generate_release_notes: true
           fail_on_unmatched_files: true

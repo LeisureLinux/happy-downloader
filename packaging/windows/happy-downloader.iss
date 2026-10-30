@@ -1,24 +1,27 @@
-﻿; The Windows installer.
+; The Windows installer.
 ;
-; Three things make this a better answer than the zip:
+; Three things make this a better answer than an archive:
 ;
 ;   it asks where to put the program, and remembers it;
 ;   it writes a configuration naming the two programs it needs, so that
 ;   "which yt-dlp is this" has an answer that can be read;
 ;   and it starts the application when it is done, which opens a browser.
 ;
-; Nothing here needs administrator rights. A per-user install goes under
-; %LOCALAPPDATA%\Programs, which the person can write to, and the settings go
-; under %APPDATA% beside it. An administrator may choose to install for
-; everyone instead; the wizard offers that, and it is not the default.
+; No administrator rights are needed. A per-user install goes under
+; %LOCALAPPDATA%\Programs, which the user can write to, and the settings go
+; under %APPDATA% beside it. An administrator may choose a machine-wide
+; install instead; the wizard offers that, and it is not the default.
+;
+; Built by CI:
+;   ISCC /DBundleDir=... /DAppVersion=4.10.0 packaging\windows\happy-downloader.iss
+; BundleDir must contain the application, yt-dlp.exe, ffmpeg.exe, README.txt
+; and happy-downloader.ico.
 
 #define AppName "Happy Downloader"
 #define AppExeName "happy-downloader.exe"
 #define AppPublisher "LeisureLinux"
 #define AppURL "https://github.com/LeisureLinux/happy-downloader"
 
-; BundleDir and AppVersion are passed by the CI build:
-;   ISCC /DBundleDir=... /DAppVersion=4.9.26 packaging\windows\happy-downloader.iss
 #ifndef BundleDir
   #error BundleDir was not defined
 #endif
@@ -43,24 +46,32 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 DisableDirPage=no
 
-; Per-user by default: this application needs nothing a machine-wide install
-; would give it, and asking for elevation to install a downloader is a good
-; way to not get installed.
+; Per-user by default: the application needs nothing a machine-wide install
+; would give it, and requiring elevation to install a downloader is a good way
+; to not get installed.
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
 OutputDir={#BundleDir}\..\dist
-OutputBaseFilename=happy-downloader_windows-amd64-setup
+; The version is in the file name: an installer called only
+; "happy-downloader" cannot be told apart from the one released before it.
+OutputBaseFilename=happy-downloader_{#AppVersion}_windows-amd64_setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+
+; The product icon, in the wizard, in the executable, and beside every
+; shortcut. Without SetupIconFile the installer wears the generic Inno Setup
+; icon, and without an icon in the executable every shortcut wears the generic
+; application icon.
+SetupIconFile={#BundleDir}\happy-downloader.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 
-; The wizard is in English because Inno Setup does not ship a Chinese
-; translation — it is a separate file that has to be vendored, and a missing
-; one stops the build. The instructions that matter are written in both
-; languages below, and the application itself is in Chinese.
 [Languages]
+; The wizard is in English because Inno Setup ships no Chinese translation —
+; it is a separate file that has to be vendored, and a missing one stops the
+; build. The instructions that matter are written in both languages on the
+; ready page, and the application itself is in Chinese.
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
@@ -68,34 +79,34 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 ; The application is renamed on the way in: the release's name carries the
-; platform because the release holds three of them, and inside this folder
-; there is only one.
+; platform because the release holds the binaries for three of them, and
+; inside this directory there is only one.
 Source: "{#BundleDir}\happy-downloader_windows-amd64.exe"; DestDir: "{app}"; DestName: "{#AppExeName}"; Flags: ignoreversion
 Source: "{#BundleDir}\yt-dlp.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BundleDir}\ffmpeg.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BundleDir}\README.txt"; DestDir: "{app}"; DestName: "README.txt"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"; IconIndex: 0
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"; IconIndex: 0; Tasks: desktopicon
 
 [Run]
-; It is started at the end, and it opens the browser itself: the application
-; has no console, so the address it is listening on is not printed anywhere
-; that a person would see.
+; Started at the end, and it opens the browser itself: the application has no
+; console and no window, so the address it listens on is not printed anywhere
+; that a user would see.
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-; A running copy would keep the port and the files open, and the uninstaller
-; would fail to delete them with "access denied".
-Filename: "{cmd}"; Parameters: "/C taskkill /IM {#AppExeName} /F >NUL 2>&1"; Flags: runhidden; RunOnceId: "StopApp"
+; A running copy would hold the port and the files open, and the uninstaller
+; would fail to delete them.
+Filename: "{cmd}"; Parameters: "/C taskkill /IM {#AppExeName} /F /T >NUL 2>&1"; Flags: runhidden; RunOnceId: "StopApp"
 
 [Code]
 const
-  { The settings live beside the application's other files, not in the folder
-    it was installed into: %APPDATA% belongs to the user and survives moving
-    or reinstalling the program. }
+  { The settings live beside the application's other files, not in the
+    directory it was installed into: %APPDATA% belongs to the user and
+    survives moving or reinstalling the program. }
   ConfigSubDir = 'happy-downloader';
 
 var
@@ -122,6 +133,29 @@ begin
   Result := '''' + Escaped + '''';
 end;
 
+{ A running copy is stopped before anything is replaced.
+
+  Two things go wrong when it is not. Its files cannot be overwritten, which
+  surfaces as a sharing violation part way through the install; and if they
+  could, the new process would find the port already taken by the old one, so
+  the browser would be opened on the version that was just replaced. }
+procedure StopRunningCopy();
+var
+  ResultCode: Integer;
+begin
+  Exec(ExpandConstant('{cmd}'), '/C taskkill /IM {#AppExeName} /F /T >NUL 2>&1',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+  { The port is released a moment after the process ends. }
+  Sleep(700);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  StopRunningCopy();
+  Result := '';
+end;
+
 procedure WriteConfig();
 var
   Content: String;
@@ -130,18 +164,18 @@ var
   ConfigDir: String;
 begin
   AppDir := ExpandConstant('{app}');
-  { The profile folder is reached through the USERPROFILE environment
+  { The profile directory is reached through the USERPROFILE environment
     variable. There is no userprofile constant, and asking for one raises
     inside CurStepChanged, where a silent install suppresses the message box
-    and carries on as if it had worked. }
+    and carries on as though it had worked. }
   DownloadDir := ExpandConstant('{%USERPROFILE}\Downloads\happy-downloader');
   ConfigDir := ExpandConstant('{userappdata}\' + ConfigSubDir);
 
   ForceDirectories(ConfigDir);
   ForceDirectories(DownloadDir);
 
-  { An existing file is left alone. It is the person's settings, and an upgrade
-    should not move their downloads back to the default. }
+  { An existing file is left alone. It holds the user's settings, and an
+    upgrade should not move their downloads back to the default. }
   if FileExists(ConfigPath()) then
   begin
     ConfigWritten := False;
@@ -177,8 +211,8 @@ begin
     WriteConfig();
 end;
 
-{ The last page says what to do next, because the program it just started has
-  no window of its own to say it in. }
+{ The ready page says what happens next, because the program it starts has no
+  window of its own to say it in. }
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
   MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
 var
@@ -191,11 +225,11 @@ begin
 
   S := S + '安装完成后浏览器会自动打开。如果没有打开，请手动访问：' + NewLine + NewLine;
   S := S + Space + 'http://localhost:3033/' + NewLine + NewLine;
-  S := S + '程序没有黑窗，关闭浏览器不会停止下载；要退出程序，请到设置页最下方的'
+  S := S + '程序没有窗口，关闭浏览器不会停止下载。要退出程序，请到设置页最下方的'
     + '「退出程序」。' + NewLine + NewLine;
   S := S + '下载的文件保存在用户目录下的 Downloads\happy-downloader。' + NewLine;
   S := S + 'Happy Downloader runs in the background with no window: closing the'
-    + ' browser does not stop it, and the settings page has a quit button.';
+    + ' browser does not stop it, and the settings page has a quit action.';
 
   Result := S;
 end;

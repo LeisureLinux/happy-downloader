@@ -44,3 +44,6 @@ cookies-*.txt.ytdlp-jar
 happy-downloader_linux-amd64
 happy-downloader_linux-arm64
 SHA256SUMS
+
+# Generated at build time: the Windows icon, version resource and manifest.
+rsrc_*.syso

@@ -109,17 +109,17 @@ jobs:
         working-directory: frontend
         run: pnpm exec vitest run
 
-  # The bundle: the application and the programs it needs, in one folder.
+  # The installer, on both platforms.
   #
-  # It is what most people install, so it is checked on every push rather
-  # than only when a release is cut. A bundle that is missing a program looks
-  # complete and fails on the first download, and one whose programs are found
-  # by name rather than by path runs whatever the machine happens to have.
+  # This is what a release publishes, so it is checked on every push rather
+  # than only when a release is cut. An installer that is missing a program
+  # looks complete and fails on the first download; one that names its programs
+  # rather than pointing at them runs whatever the machine happens to have.
   #
-  # It runs on Windows as well as on Linux, because the Windows bundle is the
-  # one that was never built before and the one that is most likely to have
-  # something wrong in it.
-  bundle:
+  # The check is an installation, not a build: the installer is run, the
+  # configuration it wrote is read back, the installed application is started,
+  # and it is asked which yt-dlp it is using.
+  installer:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -136,6 +136,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-go@v5
         with:
@@ -172,34 +174,25 @@ jobs:
           fi
           ./scripts/build.sh "$name"
 
-      - name: The bundle
+      - name: Stage the files the installer needs
         shell: bash
         run: |
           set -eu
-          ./scripts/bundle.sh bundle "${{ matrix.platform }}" "${{ matrix.goarch }}"
+          ./scripts/stage.sh stage "${{ matrix.platform }}" "${{ matrix.goarch }}"
 
-          for program in yt-dlp ffmpeg; do
-            found=$(find bundle -maxdepth 1 -name "$program*" | head -1)
-            if [ -z "$found" ]; then
-              echo "the bundle has no $program in it" >&2
-              exit 1
-            fi
-          done
-
-          # The application has to find them beside itself, and report where
-          # it found them. A name rather than a path in that answer means the
-          # working directory decided which copy ran.
-          # The application is found by name rather than by the name the
-          # build gave it, because the build names it differently on
-          # Windows.
-          app=$(find bundle -maxdepth 1 -name 'happy-downloader*' -type f | head -1)
+      # The programs have to be found beside the application, and the paths
+      # reported have to be those files rather than whatever the machine has
+      # installed. A bare name in that answer means the search order decided.
+      - name: The application finds its programs
+        shell: bash
+        run: |
+          set -eu
+          app=$(find stage -maxdepth 1 -name 'happy-downloader*' -type f | head -1)
           if [ -z "$app" ]; then
-            echo "the bundle has no application in it" >&2
+            echo "nothing was staged: no application in stage/" >&2
             exit 1
           fi
 
-          # The configuration is not read, so the application uses its
-          # defaults, which put the state in the working directory.
           "$app" -conf ./no-such-config.yml > app.log 2>&1 &
           pid=$!
           trap "kill $pid 2>/dev/null || true" EXIT
@@ -207,24 +200,30 @@ jobs:
 
           found=$(curl -s --max-time 5 http://127.0.0.1:3033/api/v1/version || true)
           echo "$found"
-          cat app.log 2>/dev/null | tail -20 || true
+          tail -20 app.log || true
 
-          # The path is checked by its name rather than by its separator,
-          # because the separator is a backslash on Windows.
           case "$found" in
-            *yt-dlp*) ;;
-            *) echo "the application did not find the bundled yt-dlp: $found" >&2; exit 1 ;;
+            *yt-dlp*|*yt-dlp.exe*) ;;
+            *) echo "the staged application did not find yt-dlp: $found" >&2; exit 1 ;;
           esac
           case "$found" in
-            *ffmpeg*) ;;
-            *) echo "the application did not find the bundled ffmpeg: $found" >&2; exit 1 ;;
+            *ffmpeg*|*ffmpeg.exe*) ;;
+            *) echo "the staged application did not find ffmpeg: $found" >&2; exit 1 ;;
           esac
 
           kill $pid 2>/dev/null || true
           trap - EXIT
 
-      # Installing it, which is what a person does, rather than running the
-      # binary out of the folder it was built in.
+      - name: Build the installer (Linux)
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          set -eu
+          version=$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)
+          version=${version#v}
+          ./scripts/make-run.sh stage "happy-downloader_${version}_${{ matrix.suffix }}.run" "$version"
+          ./happy-downloader_*.run --help | head -5
+
       - name: The installer runs (Linux)
         if: matrix.platform == 'linux'
         shell: bash
@@ -232,13 +231,12 @@ jobs:
           set -eu
 
           rm -rf /tmp/hd-test
-          ./bundle/install.sh \
+          ./happy-downloader_*.run \
             --prefix /tmp/hd-test/app \
             --config-dir /tmp/hd-test/config \
             --downloads /tmp/hd-test/downloads \
             --no-service
 
-          # The files it claims to install.
           for f in app/bin/happy-downloader app/bin/yt-dlp app/bin/ffmpeg \
                    config/config.yml app/uninstall.sh; do
             if [ ! -e "/tmp/hd-test/$f" ]; then
@@ -247,14 +245,13 @@ jobs:
             fi
           done
 
-          # The configuration it wrote has to name paths that exist. A
-          # configuration that names a program the installer did not put
-          # there is the "exec: no command" failure with a longer message.
+          # The configuration has to name paths that exist. One that names a
+          # program the installer did not put there is the "exec: no command"
+          # failure with a longer message.
           grep -q 'downloader_path: /tmp/hd-test/app/bin/yt-dlp' /tmp/hd-test/config/config.yml
           grep -q 'ffmpeg_path: /tmp/hd-test/app/bin/ffmpeg' /tmp/hd-test/config/config.yml
           grep -q 'download_path: /tmp/hd-test/downloads' /tmp/hd-test/config/config.yml
 
-          # And it has to start, from where it was installed.
           /tmp/hd-test/app/bin/happy-downloader -conf /tmp/hd-test/config/config.yml > /tmp/hd-test/app.log 2>&1 &
           pid=$!
           trap "kill $pid 2>/dev/null || true" EXIT
@@ -298,34 +295,6 @@ jobs:
             exit 1
           fi
 
-      # Packed the way a release packs it, so that what is tried here is what
-      # will be published. Each platform packs with what it has: a Windows
-      # runner has no zip in its shell.
-      - name: Keep the bundle (Linux)
-        if: matrix.platform == 'linux'
-        shell: bash
-        run: |
-          set -eu
-          stage=$(mktemp -d)
-          cp -a bundle "$stage/happy-downloader"
-          (cd "$stage" && tar -czf "$OLDPWD/hd-${{ matrix.suffix }}-bundle.tar.gz" happy-downloader)
-          rm -rf "$stage"
-          tar -tzf hd-${{ matrix.suffix }}-bundle.tar.gz | head -8
-
-      - name: Keep the bundle (Windows)
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        run: |
-          $stage = Join-Path $env:RUNNER_TEMP 'pack'
-          Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force $stage | Out-Null
-          Copy-Item -Recurse bundle (Join-Path $stage 'happy-downloader')
-
-          Compress-Archive -Path (Join-Path $stage 'happy-downloader') `
-            -DestinationPath 'hd-${{ matrix.suffix }}-bundle.zip' -Force
-
-          Get-Item 'hd-${{ matrix.suffix }}-bundle.zip' | Select-Object Name, Length
-
       - name: The installer runs (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -336,51 +305,54 @@ jobs:
           if (-not (Test-Path $iscc)) {
             choco install innosetup -y --no-progress
           }
-          if (-not (Test-Path $iscc)) {
-            throw "Inno Setup is not available"
-          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup is not available" }
+
+          # The version the installer carries is the one the binary reports,
+          # which is the tag. A different one here produced an installer whose
+          # name said one thing and whose program said another.
+          $version = (git describe --tags --abbrev=0 2>$null)
+          if (-not $version) { $version = 'v0.0.0' }
+          $version = $version.TrimStart('v')
 
           New-Item -ItemType Directory -Force dist | Out-Null
-          & $iscc "/DBundleDir=$PWD\bundle" "/DAppVersion=0.0.0-test" packaging\windows\happy-downloader.iss
+          & $iscc "/DBundleDir=$PWD\stage" "/DAppVersion=$version" packaging\windows\happy-downloader.iss
           if ($LASTEXITCODE -ne 0) { throw "the installer did not build" }
 
           $setup = Get-ChildItem dist -Filter '*setup.exe' | Select-Object -First 1
           if (-not $setup) { throw "the installer was not produced" }
           "built $($setup.Name), $([math]::Round($setup.Length/1MB,1)) MB"
 
-          $dir = "$env:RUNNER_TEMP\hd-test"
           $log = "$env:RUNNER_TEMP\install.log"
+          $dir = "$env:RUNNER_TEMP\hd-test"
           $proc = Start-Process -FilePath $setup.FullName -Wait -PassThru `
             -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$dir","/LOG=$log"
           if ($proc.ExitCode -ne 0) {
             Get-Content $log -Tail 40
             throw "the installer exited $($proc.ExitCode)"
           }
-          Get-Content $log -Tail 25
 
-          # The three files, under the names the configuration uses.
           foreach ($f in 'happy-downloader.exe','yt-dlp.exe','ffmpeg.exe') {
             if (-not (Test-Path "$dir\$f")) { throw "the installer did not produce $dir\$f" }
           }
 
-          # The configuration it wrote, naming those files.
+          # The shortcut icon comes from the executable, so an executable with
+          # no icon resource is a shortcut with a blank one.
+          $bytes = [System.IO.File]::ReadAllBytes("$dir\happy-downloader.exe")
+          $text = [System.Text.Encoding]::ASCII.GetString($bytes)
+          if ($text -notmatch '\.rsrc') { throw "the executable carries no resource section, so it has no icon" }
+
           $cfg = "$env:APPDATA\happy-downloader\config.yml"
           if (-not (Test-Path $cfg)) {
-            "APPDATA is $env:APPDATA"
-            "anything named config.yml:"
-            Get-ChildItem -Path $env:APPDATA, $env:USERPROFILE -Filter config.yml -Recurse -ErrorAction SilentlyContinue |
-              Select-Object -First 10 -ExpandProperty FullName
             Get-Content $log -Tail 40
             throw "the installer wrote no configuration"
           }
           Get-Content $cfg
 
-          $text = Get-Content $cfg -Raw
-          if ($text -notmatch 'yt-dlp\.exe') { throw "the configuration does not name yt-dlp" }
-          if ($text -notmatch 'ffmpeg\.exe') { throw "the configuration does not name ffmpeg" }
-          if ($text -notmatch 'Downloads') { throw "the configuration does not set a download folder" }
+          $cfgText = Get-Content $cfg -Raw
+          if ($cfgText -notmatch 'yt-dlp\.exe') { throw "the configuration does not name yt-dlp" }
+          if ($cfgText -notmatch 'ffmpeg\.exe') { throw "the configuration does not name ffmpeg" }
+          if ($cfgText -notmatch 'Downloads') { throw "the configuration does not set a download folder" }
 
-          # And it starts, with the configuration the installer wrote.
           $app = Start-Process -FilePath "$dir\happy-downloader.exe" `
             -ArgumentList '-conf', $cfg -PassThru
           Start-Sleep -Seconds 10
@@ -390,11 +362,8 @@ jobs:
           $found | ConvertTo-Json -Compress
 
           if (-not $found) { throw "the installed application did not answer" }
-          if ($found.ytdlpPath -notmatch 'hd-test') { throw "it is not running the bundled yt-dlp: $($found.ytdlpPath)" }
+          if ($found.ytdlpPath -notmatch 'hd-test') { throw "it is not running the installed yt-dlp: $($found.ytdlpPath)" }
 
-          # The log panel has to have something to show. It was empty on
-          # Windows because the terminal it was written to did not exist and
-          # the writer chain stopped there.
           $sse = & curl.exe -sN --max-time 3 http://127.0.0.1:3033/log/sse 2>$null
           $replayed = @($sse | Select-String -SimpleMatch 'event: log').Count
           "log lines replayed to a new reader: $replayed"
@@ -406,22 +375,29 @@ jobs:
 
           if ($replayed -lt 1) { throw "the log panel would open empty" }
 
+          # A second copy must not start beside the first: it cannot have the
+          # port, and the browser would end up showing the version that is
+          # already running rather than the one just installed.
+          $second = Start-Process -FilePath "$dir\happy-downloader.exe" -PassThru
+          Start-Sleep -Seconds 4
+          if (-not $second.HasExited) {
+            Stop-Process -Id $second.Id -Force
+            throw "a second copy kept running beside the first"
+          }
+          "the second copy exited instead of competing for the port"
+
           try { Stop-Process -Id $app.Id -Force } catch { }
 
-      # Downloadable from the run's page, so that the installer can be tried
-      # before there is a release to download it from.
       - uses: actions/upload-artifact@v4
         if: matrix.platform == 'windows'
         with:
-          name: try-the-installer_windows-amd64
-          path: |
-            dist/happy-downloader_windows-amd64-setup.exe
-            hd-${{ matrix.suffix }}-bundle.zip
+          name: installer_windows-amd64
+          path: dist/*setup.exe
           retention-days: 14
 
       - uses: actions/upload-artifact@v4
         if: matrix.platform == 'linux'
         with:
-          name: try-the-installer_linux-amd64
-          path: hd-${{ matrix.suffix }}-bundle.tar.gz
+          name: installer_linux-amd64
+          path: happy-downloader_*.run
           retention-days: 14

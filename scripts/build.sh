@@ -77,6 +77,36 @@ LDFLAGS="-s -w \
 
 if [ "$GOOS" = "windows" ]; then
   LDFLAGS="$LDFLAGS -H windowsgui"
+
+  # The icon, the version resource and the application manifest.
+  #
+  # Without these the executable carries the generic icon, and every shortcut
+  # to it inherits one: the icon is read from the file the shortcut points at,
+  # so there is nowhere else it can come from. The manifest says the program is
+  # a windowed one, which is what stops Windows from offering it a console.
+  #
+  # A .syso beside the package is linked by go build when its name names this
+  # GOOS and GOARCH, and ignored for every other target, so the Linux build
+  # never sees it.
+  echo "==> embedding the Windows resources"
+  # The tool runs on the build host, not on the target: GOOS is set for the
+  # program being built, and inheriting it here would try to execute a Windows
+  # binary on Linux.
+  GOOS=$(go env GOHOSTOS) GOARCH=$(go env GOHOSTARCH) GOFLAGS=-mod=mod \
+  go run github.com/tc-hib/go-winres@v0.3.3 simply \
+    --arch "$GOARCH" \
+    --icon packaging/windows/happy-downloader.ico \
+    --manifest gui \
+    --product-name "Happy Downloader" \
+    --file-description "Happy Downloader" \
+    --product-version "$VERSION" \
+    --file-version "$VERSION" \
+    --copyright "LeisureLinux" >/dev/null
+
+  if [ ! -f "rsrc_windows_${GOARCH}.syso" ]; then
+    echo "the Windows resources were not produced" >&2
+    exit 1
+  fi
 fi
 
 echo "==> building binary ($VERSION, $GOOS/$GOARCH)"
