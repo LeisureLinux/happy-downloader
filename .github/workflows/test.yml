@@ -298,6 +298,19 @@ jobs:
             exit 1
           fi
 
+      - name: Keep the bundle, packed as a release would pack it
+        shell: bash
+        run: |
+          set -eu
+          stage=$(mktemp -d)
+          cp -a bundle "$stage/happy-downloader"
+          case "${{ matrix.platform }}" in
+            windows) (cd "$stage" && zip -qr "$OLDPWD/hd-${{ matrix.suffix }}-bundle.zip" happy-downloader) ;;
+            *)       (cd "$stage" && tar -czf "$OLDPWD/hd-${{ matrix.suffix }}-bundle.tar.gz" happy-downloader) ;;
+          esac
+          rm -rf "$stage"
+          ls -l hd-${{ matrix.suffix }}-bundle.*
+
       - name: The installer runs (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -379,3 +392,21 @@ jobs:
           if ($replayed -lt 1) { throw "the log panel would open empty" }
 
           try { Stop-Process -Id $app.Id -Force } catch { }
+
+      # Downloadable from the run's page, so that the installer can be tried
+      # before there is a release to download it from.
+      - uses: actions/upload-artifact@v4
+        if: matrix.platform == 'windows'
+        with:
+          name: try-the-installer_windows-amd64
+          path: |
+            dist/happy-downloader_windows-amd64-setup.exe
+            hd-${{ matrix.suffix }}-bundle.zip
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.platform == 'linux'
+        with:
+          name: try-the-installer_linux-amd64
+          path: hd-${{ matrix.suffix }}-bundle.tar.gz
+          retention-days: 14
