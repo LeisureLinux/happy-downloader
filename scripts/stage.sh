@@ -2,18 +2,18 @@
 # Stage what an installer needs: the application and the programs it runs.
 #
 # This is not a distribution artefact and is not published. It is the input to
-# one: on Linux it is packed into a self-extracting installer by make-run.sh,
-# and on Windows it is packed by Inno Setup. Both of them put the same files in
-# the same place, so a release cannot ship an installer built from something
-# other than what was tested.
+# one: the Windows installer is packed from exactly these files, so a release
+# cannot ship an installer built from something other than what was tested.
+#
+# On Linux it is only used by the tests, which start the application from a
+# directory like this one to check that it finds the programs beside itself.
+# Nothing is published for Linux.
 #
 # What goes in it:
 #
 #   happy-downloader     the application
 #   yt-dlp               the downloader, as a standalone binary
 #   ffmpeg               the media toolkit, for merging and for remuxing
-#   install.sh           how to install it, for the Linux installer
-#   uninstall.sh         how to remove it again
 #   README.txt           what it is, and where the programs came from
 #   happy-downloader.ico the icon the Windows installer and shortcuts wear
 #
@@ -67,8 +67,10 @@ case "$PLATFORM" in
     esac
     ;;
   windows)
+    # yt-dlp publishes an arm64 executable of its own; the x64 one does not
+    # run on Windows on ARM without emulation.
     case "$ARCH" in
-      arm64) YTDLP=yt-dlp_windows_arm64.exe ;;
+      arm64) YTDLP=yt-dlp_arm64.exe ;;
       *)     YTDLP=yt-dlp.exe ;;
     esac
     ;;
@@ -97,33 +99,50 @@ case "$PLATFORM" in
     esac
     ;;
   windows)
-    # Only amd64. There is no Windows arm64 build of ffmpeg to put beside
-    # the application, and a bundle without ffmpeg is not a bundle.
-    if [ "$ARCH" != "amd64" ]; then
-      echo "there is no Windows $ARCH bundle: ffmpeg is not built for it" >&2
-      exit 1
-    fi
-    FFMPEG=ffmpeg-win32-x64
+    # ffmpeg-static publishes an x64 executable and nothing for arm64, so the
+    # two architectures come from different places. BtbN's builds are the ones
+    # Windows on ARM users are pointed at; the archive holds bin/ffmpeg.exe.
+    case "$ARCH" in
+      arm64) FFMPEG=FFMPEG_BUILDS_ARM64 ;;
+      *)     FFMPEG=ffmpeg-win32-x64 ;;
+    esac
     ;;
 esac
 
 echo "==> fetching ffmpeg ($FFMPEG)"
-FFMPEG_URL="https://github.com/eugeneware/ffmpeg-static/releases/latest/download/$FFMPEG"
-if ! curl -sL -f -o "$OUT/ffmpeg${exe_suffix}" "$FFMPEG_URL"; then
-  echo "    ffmpeg could not be fetched from $FFMPEG_URL" >&2
-  exit 1
+
+if [ "$FFMPEG" = "FFMPEG_BUILDS_ARM64" ]; then
+  FFMPEG_URL="https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-winarm64-gpl.zip"
+  TMPZIP=$(mktemp)
+
+  if ! curl -sL -f -o "$TMPZIP" "$FFMPEG_URL"; then
+    rm -f "$TMPZIP"
+    echo "    ffmpeg could not be fetched from $FFMPEG_URL" >&2
+    exit 1
+  fi
+
+  # Only ffmpeg.exe is wanted: the archive also holds ffplay, ffprobe and a
+  # copy of the licence, none of which the application runs.
+  if ! unzip -j -o "$TMPZIP" '*/bin/ffmpeg.exe' -d "$OUT" >/dev/null; then
+    rm -f "$TMPZIP"
+    echo "    the archive from $FFMPEG_URL held no bin/ffmpeg.exe" >&2
+    exit 1
+  fi
+
+  rm -f "$TMPZIP"
+else
+  FFMPEG_URL="https://github.com/eugeneware/ffmpeg-static/releases/latest/download/$FFMPEG"
+  if ! curl -sL -f -o "$OUT/ffmpeg${exe_suffix}" "$FFMPEG_URL"; then
+    echo "    ffmpeg could not be fetched from $FFMPEG_URL" >&2
+    exit 1
+  fi
 fi
+
 chmod +x "$OUT/ffmpeg${exe_suffix}"
 
 # Two program files, the two programs they need, and the thing that puts them
 # in place. On Linux the bundle is run; on Windows it is unpacked by an
 # installer instead, so the scripts are not copied there.
-if [ "$PLATFORM" = "linux" ]; then
-  cp "$ROOT/packaging/linux/install.sh" "$OUT/install.sh"
-  cp "$ROOT/packaging/linux/uninstall.sh" "$OUT/uninstall.sh"
-  chmod +x "$OUT/install.sh" "$OUT/uninstall.sh"
-fi
-
 # The Windows installer needs the icon as a file: it is embedded in the
 # executable at build time, and the wizard and the shortcuts read it from here.
 if [ "$PLATFORM" = "windows" ]; then

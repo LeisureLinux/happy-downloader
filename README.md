@@ -72,21 +72,36 @@ each one works before moving on.
 
 ## Install
 
-Download the binary for your architecture from
-[Releases](https://github.com/LeisureLinux/happy-downloader/releases) and put it
-somewhere stable.
+### Windows
+
+Download the installer from
+[Releases](https://github.com/LeisureLinux/happy-downloader/releases) — one for
+x64, one for ARM64 — and run it. It asks where to put the program, writes a
+configuration naming the yt-dlp and ffmpeg it installs beside it, and starts the
+application, which opens a browser at `http://localhost:3033/`.
+
+Nothing needs administrator rights: the program goes under `%LOCALAPPDATA%` and
+its settings under `%APPDATA%`.
+
+### Linux
+
+Nothing is published for Linux. The program is built from source:
 
 ```sh
-mkdir -p ~/.local/share/happy-downloader/bin
-curl -L -o ~/.local/share/happy-downloader/bin/happy-downloader \
-  https://github.com/LeisureLinux/happy-downloader/releases/latest/download/happy-downloader_linux-arm64
-chmod +x ~/.local/share/happy-downloader/bin/happy-downloader
+git clone https://github.com/LeisureLinux/happy-downloader
+cd happy-downloader
+GOOS=linux GOARCH=arm64 ./scripts/build.sh happy-downloader
+sudo install -m 755 happy-downloader /usr/local/bin/happy-downloader
 ```
+
+yt-dlp and ffmpeg are not bundled: put them beside the binary, or name them in
+the configuration (`paths.downloader_path`, `paths.ffmpeg_path`), or install
+them on the `PATH` — in that order of preference.
 
 Write a config file and start it:
 
 ```sh
-~/.local/share/happy-downloader/bin/happy-downloader -conf ~/.config/happy-downloader/config.yml
+happy-downloader -conf ~/.config/happy-downloader/config.yml
 ```
 
 The server listens on `0.0.0.0:3033` by default and serves the frontend from
@@ -107,7 +122,7 @@ After=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=%h
-ExecStart=%h/.local/share/happy-downloader/bin/happy-downloader -conf %h/.config/happy-downloader/config.yml
+ExecStart=/usr/local/bin/happy-downloader -conf %h/.config/happy-downloader/config.yml
 Restart=on-failure
 RestartSec=5
 

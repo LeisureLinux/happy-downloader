@@ -1,4 +1,4 @@
-; The Windows installer.
+﻿; The Windows installer.
 ;
 ; Three things make this a better answer than an archive:
 ;
@@ -12,10 +12,11 @@
 ; under %APPDATA% beside it. An administrator may choose a machine-wide
 ; install instead; the wizard offers that, and it is not the default.
 ;
-; Built by CI:
-;   ISCC /DBundleDir=... /DAppVersion=4.10.0 packaging\windows\happy-downloader.iss
+; Built by CI, once per architecture:
+;   ISCC /DBundleDir=... /DAppVersion=4.10.2 /DAppArch=arm64 packaging\windows\happy-downloader.iss
 ; BundleDir must contain the application, yt-dlp.exe, ffmpeg.exe, README.txt
-; and happy-downloader.ico.
+; and happy-downloader.ico. The programs keep their plain names in the bundle,
+; because the application looks for them beside itself.
 
 #define AppName "Happy Downloader"
 #define AppExeName "happy-downloader.exe"
@@ -27,6 +28,12 @@
 #endif
 #ifndef AppVersion
   #define AppVersion "0.0.0"
+#endif
+
+; Which machine the installer is for. The executables inside are already for
+; that machine; this decides which one the wizard is allowed to install on.
+#ifndef AppArch
+  #define AppArch "amd64"
 #endif
 
 [Setup]
@@ -55,10 +62,20 @@ PrivilegesRequiredOverridesAllowed=dialog
 OutputDir={#BundleDir}\..\dist
 ; The version is in the file name: an installer called only
 ; "happy-downloader" cannot be told apart from the one released before it.
-OutputBaseFilename=happy-downloader_{#AppVersion}_windows-amd64_setup
+OutputBaseFilename=happy-downloader_{#AppVersion}_windows-{#AppArch}_setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+
+; Refuse to install on the wrong machine. An arm64 build on x64 does not run at
+; all, and installing it succeeds far enough to look like a broken program.
+#if AppArch == "arm64"
+ArchitecturesAllowed=arm64
+ArchitecturesInstallIn64BitMode=arm64
+#else
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+#endif
 
 ; The product icon, in the wizard, in the executable, and beside every
 ; shortcut. Without SetupIconFile the installer wears the generic Inno Setup
@@ -81,7 +98,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; The application is renamed on the way in: the release's name carries the
 ; platform because the release holds the binaries for three of them, and
 ; inside this directory there is only one.
-Source: "{#BundleDir}\happy-downloader_windows-amd64.exe"; DestDir: "{app}"; DestName: "{#AppExeName}"; Flags: ignoreversion
+Source: "{#BundleDir}\happy-downloader_windows-{#AppArch}.exe"; DestDir: "{app}"; DestName: "{#AppExeName}"; Flags: ignoreversion
 Source: "{#BundleDir}\yt-dlp.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BundleDir}\ffmpeg.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BundleDir}\README.txt"; DestDir: "{app}"; DestName: "README.txt"; Flags: ignoreversion

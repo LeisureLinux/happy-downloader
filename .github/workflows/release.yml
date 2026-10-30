@@ -33,6 +33,14 @@ on:
 permissions:
   contents: write
 
+# Windows only.
+#
+# A Linux release is a directory of files that has to be unpacked, pointed at a
+# configuration and started by hand — the binary on its own downloads nothing
+# until somebody finds yt-dlp for it. That is not a form anybody should be
+# handed, and the installed form needs an installer the project does not ship
+# for Linux, so nothing is published for it. The Linux build is still compiled
+# and tested on every push; it is just not an artefact here.
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,14 +49,9 @@ jobs:
       matrix:
         include:
           - goarch: amd64
-            os: linux
-            suffix: linux-amd64
-          - goarch: arm64
-            os: linux
-            suffix: linux-arm64
-          - goarch: amd64
-            os: windows
             suffix: windows-amd64
+          - goarch: arm64
+            suffix: windows-arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -89,17 +92,11 @@ jobs:
       - name: Build
         env:
           GOARCH: ${{ matrix.goarch }}
-          GOOS: ${{ matrix.os }}
+          GOOS: windows
           CGO_ENABLED: '0'
         run: |
           set -eu
-          # An executable on Windows carries the suffix; everywhere else it
-          # does not. The name is decided here rather than in the workflow,
-          # because a shell variable does not cross a step.
-          name="happy-downloader_${{ matrix.suffix }}"
-          if [ "${{ matrix.os }}" = "windows" ]; then
-            name="${name}.exe"
-          fi
+          name="happy-downloader_${{ matrix.suffix }}.exe"
 
           # The version comes from the checked-out tag, so the binary cannot
           # report anything but what is being released.
@@ -115,17 +112,22 @@ jobs:
             exit 1
           fi
 
-      # The files the installer puts on the machine, gathered in one directory.
-      #
-      # A release that ships only the binary asks the person installing it to
-      # install Python and a media toolkit as well, and to write down where
-      # they ended up. This is the answer to that: the installer carries them.
-      # Assembling it here, from the same files on every platform, is what
-      # keeps the installer from containing something untested.
+      # A release is what people run, so the browser check runs here too: the
+      # interface must not need a Chrome newer than Windows 7 has.
+      - name: Browser support
+        run: node frontend/scripts/check-browser-support.mjs
+
+      # The tests are the same for both architectures, so they run once.
+      - name: Test
+        if: matrix.goarch == 'amd64'
+        run: go test ./...
+
       - name: Stage the files the installer needs
+        env:
+          http_proxy: ${{ env.http_proxy }}
         run: |
           set -eu
-          ./scripts/stage.sh "stage_${{ matrix.suffix }}" "${{ matrix.os }}" "${{ matrix.goarch }}"
+          ./scripts/stage.sh "stage_${{ matrix.suffix }}" windows "${{ matrix.goarch }}"
 
           # A staging directory that is missing a program is worse than none:
           # the installer built from it looks complete and fails on the first
@@ -138,65 +140,35 @@ jobs:
             fi
           done
 
-      # A release is what people run, so the browser check runs here too: the
-      # binary must not need a Chrome newer than Windows 7 has.
-      - name: Browser support
-        run: node frontend/scripts/check-browser-support.mjs
-
-      - name: Test
-        run: go test ./...
-
-      # A Linux installer is one file that installs and starts the program:
-      # there is no archive to unpack and no configuration to write by hand.
-      - name: Build the installer (Linux)
-        if: matrix.os == 'linux'
-        run: |
-          set -eu
-          version="${{ inputs.tag }}"
-          version="${version#v}"
-          ./scripts/make-run.sh "stage_${{ matrix.suffix }}" \
-            "happy-downloader_${version}_${{ matrix.suffix }}.run" "$version"
+          # And it has to be for the right machine: an arm64 installer holding
+          # an x64 program installs a program that does not start.
+          for file in "stage_${{ matrix.suffix }}/yt-dlp.exe" \
+                      "stage_${{ matrix.suffix }}/ffmpeg.exe" \
+                      "stage_${{ matrix.suffix }}/happy-downloader_${{ matrix.suffix }}.exe"; do
+            echo "$file: $(file -b "$file" | cut -c1-40)"
+          done
 
       - uses: actions/upload-artifact@v4
-        if: matrix.os == 'linux'
-        with:
-          name: installer_${{ matrix.suffix }}
-          path: happy-downloader_*_${{ matrix.suffix }}.run
-          if-no-files-found: error
-          retention-days: 7
-
-      # Windows is packed by Inno Setup, which needs Windows, so the staged
-      # files travel to the job that can do it.
-      - uses: actions/upload-artifact@v4
-        if: matrix.os == 'windows'
         with:
           name: stage_${{ matrix.suffix }}
           path: stage_${{ matrix.suffix }}
           if-no-files-found: error
           retention-days: 7
 
-      # The bare binary is published for Linux only, because that is what a
-      # server deploys. A bare Windows executable is a program that cannot
-      # download anything until somebody finds yt-dlp for it, and publishing
-      # one invites exactly that mistake; the installer is the form it ships
-      # in.
-      - uses: actions/upload-artifact@v4
-        if: matrix.os == 'linux'
-        with:
-          name: happy-downloader_${{ matrix.suffix }}
-          path: happy-downloader_${{ matrix.suffix }}*
-          if-no-files-found: error
-          retention-days: 7
-
-  # The Windows installer.
-  #
-  # A separate job because it needs Windows: the build job cross-compiles from
-  # Linux, and Inno Setup is a Windows program. It takes the files the build
-  # job staged rather than the source, so the installer cannot contain
-  # anything that was not built by this run.
+  # The installer, which needs Windows to build: Inno Setup is a Windows
+  # program and the build job cross-compiles from Linux.
   installer:
     needs: build
     runs-on: windows-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - goarch: amd64
+            suffix: windows-amd64
+          - goarch: arm64
+            suffix: windows-arm64
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -204,7 +176,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: stage_windows-amd64
+          name: stage_${{ matrix.suffix }}
           path: stage
 
       - name: What was staged
@@ -227,16 +199,19 @@ jobs:
           $version = '${{ inputs.tag }}'.TrimStart('v')
 
           & $iscc "/DBundleDir=$PWD\stage" "/DAppVersion=$version" `
-            packaging\windows\happy-downloader.iss
+            "/DAppArch=${{ matrix.goarch }}" packaging\windows\happy-downloader.iss
           if ($LASTEXITCODE -ne 0) { throw "the installer did not build" }
 
           $setup = Get-ChildItem dist -Filter '*setup.exe' | Select-Object -First 1
           if (-not $setup) { throw "the installer was not produced" }
+          if ($setup.Name -notmatch '${{ matrix.goarch }}') {
+            throw "the installer is named $($setup.Name), which does not say it is for ${{ matrix.goarch }}"
+          }
           "built $($setup.Name), $([math]::Round($setup.Length/1MB,1)) MB"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: installer_windows-amd64
+          name: installer_${{ matrix.suffix }}
           path: dist/*setup.exe
           if-no-files-found: error
           retention-days: 7
@@ -245,40 +220,20 @@ jobs:
     needs: [build, installer]
     runs-on: ubuntu-latest
     steps:
-      # Every artifact is downloaded, because the publish job has no matrix of
-      # its own: it does not know which platforms were built.
-      #
-      # The installers are downloaded apart from the binaries because a
-      # download into a path that already holds something clears it first.
+      # Every installer is downloaded, because this job has no matrix of its
+      # own: it does not know which architectures were built.
       - uses: actions/download-artifact@v4
         with:
           pattern: installer_*
-          path: installers
-          merge-multiple: true
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: happy-downloader_*
           path: dist
           merge-multiple: true
-
-      # The installers arrive in their own directory, because a download into a
-      # path that already has something in it clears it first.
-      - name: Collect the installers
-        run: |
-          set -eu
-          mv installers/* dist/
-          rmdir installers
-          ls -l dist
 
       - name: Checksums
         working-directory: dist
         run: |
           set -eu
-          # The binaries are matched as happy-downloader_<suffix>, the
-          # installers as happy-downloader_<version>_<suffix>, and both are
-          # covered by the one pattern.
-          sha256sum happy-downloader_* > SHA256SUMS
+          ls -l
+          sha256sum happy-downloader_*.exe > SHA256SUMS
 
       - name: Verify checksums
         working-directory: dist
@@ -302,32 +257,23 @@ jobs:
             exit 1
           fi
 
-      - name: Report the release being written
+      - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
           tag="${{ inputs.tag }}"
-          echo "publishing $tag"
+
           if gh release view "$tag" >/dev/null 2>&1; then
-            echo "note: $tag already has a release; its assets will be replaced" >&2
+            gh release delete "$tag" --yes
           fi
 
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ inputs.tag }}
-          # The installed form is the installer, one file per platform; the
-          # bare binaries are published beside them because they are what the
-          # tests run and what a server deployment installs.
-          files: |
-            dist/happy-downloader_*_windows-amd64_setup.exe
-            dist/happy-downloader_*_linux-amd64.run
-            dist/happy-downloader_*_linux-arm64.run
-            dist/happy-downloader_linux-amd64
-            dist/happy-downloader_linux-arm64
+          gh release create "$tag" \
+            --title "$tag" \
+            --generate-notes \
+            dist/happy-downloader_*_windows-amd64_setup.exe \
+            dist/happy-downloader_*_windows-arm64_setup.exe \
             dist/SHA256SUMS
-          generate_release_notes: true
-          fail_on_unmatched_files: true
 
   # A publish that half-worked — the tag exists, the release does not — is the
   # drift that put 4.10.0 on a binary whose newest release was 4.6.0. Checking
