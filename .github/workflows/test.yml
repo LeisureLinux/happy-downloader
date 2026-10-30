@@ -298,18 +298,33 @@ jobs:
             exit 1
           fi
 
-      - name: Keep the bundle, packed as a release would pack it
+      # Packed the way a release packs it, so that what is tried here is what
+      # will be published. Each platform packs with what it has: a Windows
+      # runner has no zip in its shell.
+      - name: Keep the bundle (Linux)
+        if: matrix.platform == 'linux'
         shell: bash
         run: |
           set -eu
           stage=$(mktemp -d)
           cp -a bundle "$stage/happy-downloader"
-          case "${{ matrix.platform }}" in
-            windows) (cd "$stage" && zip -qr "$OLDPWD/hd-${{ matrix.suffix }}-bundle.zip" happy-downloader) ;;
-            *)       (cd "$stage" && tar -czf "$OLDPWD/hd-${{ matrix.suffix }}-bundle.tar.gz" happy-downloader) ;;
-          esac
+          (cd "$stage" && tar -czf "$OLDPWD/hd-${{ matrix.suffix }}-bundle.tar.gz" happy-downloader)
           rm -rf "$stage"
-          ls -l hd-${{ matrix.suffix }}-bundle.*
+          tar -tzf hd-${{ matrix.suffix }}-bundle.tar.gz | head -8
+
+      - name: Keep the bundle (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'pack'
+          Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item -Recurse bundle (Join-Path $stage 'happy-downloader')
+
+          Compress-Archive -Path (Join-Path $stage 'happy-downloader') `
+            -DestinationPath 'hd-${{ matrix.suffix }}-bundle.zip' -Force
+
+          Get-Item 'hd-${{ matrix.suffix }}-bundle.zip' | Select-Object Name, Length
 
       - name: The installer runs (Windows)
         if: matrix.platform == 'windows'
