@@ -144,6 +144,11 @@ database, the settings and the log live in
 
   %APPDATA%\happy-downloader
 
+Windows asks once whether to let it accept connections from the network. It
+does not need that to work on this machine — allow it if you want to open the
+page from your phone, and cancel it if you do not. Nothing here needs
+administrator rights either way.
+
 If you would rather see the log in a terminal, run it from one:
   happy-downloader_windows-amd64.exe -conf config.yml
 It attaches to the console it was started from and prints there.
