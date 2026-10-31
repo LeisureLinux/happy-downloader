@@ -10,6 +10,7 @@ import (
 	"time"
 
 	webview "github.com/jchv/go-webview2"
+	"github.com/jchv/go-webview2/webviewloader"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 )
@@ -27,17 +28,18 @@ import (
 //
 // There is no cgo here, so the Windows build still cross-compiles from Linux.
 
-// bundledRuntimeDir is a WebView2 runtime shipped beside the program, used
-// instead of whatever the machine has.
+// The runtime to use, and where it came from.
 //
-// The Evergreen runtime is present on Windows 10 and 11 and updates itself. On
-// Windows 7 it does not exist and cannot be installed any more: the last
-// version that runs there is 109, which is also the last version of Chrome for
-// Windows 7. Shipping that runtime is what makes one installer work on both.
+// The Evergreen runtime on the machine wins whenever it is there. It is the
+// one the operating system keeps up to date, and the one the machine's browser
+// is: the bundled copy is Chromium 109, and a 109 renders like Chrome 109 —
+// which is not how the browser next to it renders. The difference shows up as
+// "this video plays in Chrome and not in the window", and it is not a bug in
+// either of them.
 //
-// The WebView2 loader reads WEBVIEW2_BROWSER_EXECUTABLE_FOLDER when it creates
-// the environment and uses it in place of the folder it would have chosen, so
-// pointing at the bundled copy needs no support from the library.
+// The bundled copy is for the machines that have nothing else. Windows 7 is
+// that machine: the last runtime that runs there is 109, and it can no longer
+// be installed.
 func bundledRuntimeDir() string {
 	exe, err := os.Executable()
 	if err != nil {
@@ -65,9 +67,26 @@ func bundledRuntimeDir() string {
 // that created it, and the message loop that runs it is the one that keeps it
 // alive.
 func openAppWindow(url string) (time.Duration, error) {
-	if dir := bundledRuntimeDir(); dir != "" {
-		slog.Info("using the bundled WebView2 runtime", "path", dir)
-		_ = os.Setenv("WEBVIEW2_BROWSER_EXECUTABLE_FOLDER", dir)
+	// What the machine has, if anything. An empty answer with no error means
+	// WebView2 is not installed at all.
+	installed, err := webviewloader.GetInstalledVersion()
+	if err != nil {
+		slog.Warn("cannot tell which WebView2 runtime is installed", "err", err)
+	}
+
+	switch {
+	case installed != "":
+		// Nothing to set: the loader finds this one by itself, and it is
+		// newer than anything that could be shipped here.
+		slog.Info("using the installed WebView2 runtime", "version", installed)
+
+	default:
+		if dir := bundledRuntimeDir(); dir != "" {
+			slog.Info("no WebView2 runtime installed; using the bundled one", "path", dir)
+			_ = os.Setenv("WEBVIEW2_BROWSER_EXECUTABLE_FOLDER", dir)
+		} else {
+			slog.Warn("no WebView2 runtime installed and none bundled")
+		}
 	}
 
 	opts := webview.WebViewOptions{

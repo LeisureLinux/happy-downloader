@@ -41,6 +41,22 @@ func TestArgvUsesOneCookieSource(t *testing.T) {
 	previous := instance.Cookies.FromBrowser
 	defer func() { instance.Cookies.FromBrowser = previous }()
 
+	// A profile directory, so that the browser counts as installed: without
+	// one the file is used instead, which is the subject of the test below.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("LOCALAPPDATA", home)
+	t.Setenv("APPDATA", home)
+
+	for _, dir := range []string{
+		filepath.Join(home, ".config", "google-chrome"),
+		filepath.Join(home, "Google", "Chrome", "User Data"),
+	} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", dir, err)
+		}
+	}
+
 	var profile Profile
 
 	instance.Cookies.FromBrowser = "chrome"

@@ -82,9 +82,25 @@ const Player: React.FC<Props> = ({
   // server, which read them from the file itself, and the verdict comes from
   // the browser's own canPlayType — the same engine that would do the
   // decoding, so it knows about the hardware as well as the codec.
+  // A decode that fails anyway.
+  //
+  // canPlayType is the browser's opinion, and on Windows it is sometimes an
+  // opinion about the codec rather than about this machine: it says HEVC is
+  // supported, and the decoder the operating system should supply is not
+  // installed. The element then shows a black rectangle and says nothing —
+  // which is the same silent failure the check exists to avoid.
+  //
+  // So the element's own error is treated as the answer, and the message and
+  // the download button appear the same way they do when the check says no.
+  const [decodeFailed, setDecodeFailed] = useState(false)
+
+  useEffect(() => {
+    setDecodeFailed(false)
+  }, [path, open])
+
   const playable = useMemo(
-    () => canPlay(name, videoCodec, audioCodec),
-    [name, videoCodec, audioCodec]
+    () => canPlay(name, videoCodec, audioCodec) && !decodeFailed,
+    [name, videoCodec, audioCodec, decodeFailed]
   )
 
   const problem = useMemo(
@@ -153,6 +169,8 @@ const Player: React.FC<Props> = ({
             src={mediaUrl}
             controls
             autoPlay
+            // A file the browser said it could decode and then could not.
+            onError={() => setDecodeFailed(true)}
             sx={{ width: '100%', maxHeight: '75vh', display: 'block' }}
           >
             {tracks.map(t => (
