@@ -292,8 +292,18 @@ jobs:
           set -eu
           tag="${{ inputs.tag }}"
 
+          # An existing release is updated in place. Deleting it and creating
+          # it again leaves nothing published if the second step fails, and a
+          # version that exists as a tag and not as a release is the drift this
+          # project has already been bitten by once.
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release delete "$tag" --yes
+            gh release upload "$tag" --clobber \
+              dist/happy-downloader_*_windows-amd64_setup.exe \
+              dist/happy-downloader_linux-amd64 \
+              dist/happy-downloader_linux-arm64 \
+              dist/SHA256SUMS
+
+            exit 0
           fi
 
           gh release create "$tag" \
