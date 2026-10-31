@@ -3,6 +3,7 @@ package downloaders
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/url"
@@ -238,13 +239,28 @@ func (l *LiveStreamDownloader) Start() error {
 			// icon in the file browser rather than the site's.
 			RememberSource(l, final)
 
-			slog.Info("the recording was saved", slog.String("path", final))
+			// Only a recording that produced a file was saved. The message
+			// said "saved" with an empty path when yt-dlp had failed before
+			// writing anything, which reads as a success followed by a
+			// contradiction two lines later.
+			if final == "" {
+				slog.Warn("the recording produced no file", slog.String("id", l.Id))
+			} else {
+				slog.Info("the recording was saved", slog.String("path", final))
+			}
 		}()
 
 	}
 
 	logs := make(chan []byte)
-	go produceLogs(stderr, logs)
+	// The last lines of yt-dlp's own complaint, kept so that a failure can say
+	// what went wrong instead of "exit status 1".
+	//
+	// The log stream goes to the interface, where it is read while a recording
+	// runs and gone by the time anybody asks why one did not start. The error
+	// that is shown has to carry its own explanation.
+	tail := newTail(20)
+	go produceLogs(io.TeeReader(stderr, tail), logs)
 	go consumeLogs(ctx, logs, l.logConsumer, l)
 
 	l.progress.Status = internal.StatusLiveStream
@@ -347,6 +363,13 @@ func (l *LiveStreamDownloader) Start() error {
 	}
 
 	if waitErr != nil {
+		// yt-dlp's own words, when it had any. "exit status 1" names nothing:
+		// not the site, not the reason, not what to do.
+		reason := tail.String()
+		if reason != "" {
+			waitErr = fmt.Errorf("%w: %s", waitErr, reason)
+		}
+
 		slog.Error("the recording failed", slog.String("id", l.Id), slog.Any("err", waitErr))
 		l.progress.Status = internal.StatusErrored
 		// A recording that failed is over as well, and it has to leave the

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Box, IconButton, Paper, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
+import { Box, IconButton, MenuItem, Paper, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import PauseIcon from '@mui/icons-material/Pause'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
@@ -7,6 +7,7 @@ import TerminalIcon from '@mui/icons-material/Terminal'
 import { serverURL } from '../atoms/settings'
 import { useI18n } from '../hooks/useI18n'
 import { useAtomValue } from 'jotai'
+import { logCategories, LogCategory, matches, parseLogLine } from '../lib/logFilter'
 
 // The log, as a panel rather than a page.
 //
@@ -25,6 +26,10 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
   // doing right now; the download log says what has finished and whether it
   // worked. They are read at different times, by the same panel.
   const [view, setView] = useState<'app' | 'downloads'>('app')
+  // Which lines of the application log are shown. The server logs one line per
+  // HTTP request and the interface polls, so without this the panel is a wall
+  // of "msg=request status=200" and nothing else is findable.
+  const [category, setCategory] = useState<LogCategory>('requests')
 
   const [lines, setLines] = useState<string[]>([])
   const [downloadLines, setDownloadLines] = useState<string[]>([])
@@ -130,7 +135,11 @@ const LogPanel: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onCl
   // The application log arrives newest first, because that is how the server
   // sends it. The download log is a file written in order, so it is shown as
   // it is: a log of finished things reads forwards.
-  const shown = view === 'app' ? lines : downloadLines
+  // The download log is not filtered: it has one line per download, and every
+  // one of them is the answer to a question somebody asked.
+  const shown = view === 'app'
+    ? lines.filter(line => matches(parseLogLine(line), category))
+    : downloadLines
 
   if (!open) return null
 

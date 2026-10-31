@@ -80,6 +80,15 @@ func openAppWindow(url string) (time.Duration, error) {
 			Width:  1180,
 			Height: 820,
 			Center: true,
+			// The icon in the title bar and the taskbar, taken from this
+			// executable's own resources.
+			//
+			// Without it the window wears the generic icon of a program with no
+			// icon, next to a taskbar entry that has the right one — because the
+			// taskbar reads the executable and the window reads whatever the
+			// window class was given. The build embeds the icon as resource 1
+			// through go-winres, which is where this number comes from.
+			IconId: 1,
 		},
 	}
 
