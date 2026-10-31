@@ -146,9 +146,35 @@ jobs:
 
       - name: Stage the files the installer needs
         if: matrix.platform == 'windows'
+        env:
+          # The WebView2 runtime, so that the installer works on a machine that
+          # has none — which is what Windows 7 is, and it can no longer install
+          # one: the last version that runs there is 109, and Microsoft's
+          # download page keeps only the two most recent.
+          #
+          # The version is pinned, and so is its checksum. The archive is a
+          # third party's copy of a Microsoft package; the bytes are checked
+          # against a value read once, so that a changed file is a failed build
+          # rather than a silent one.
+          HD_WEBVIEW2_URL: https://github.com/westinyang/WebView2RuntimeArchive/releases/download/109.0.1518.78/Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.x64.cab
+          HD_WEBVIEW2_SHA256: 7622281cf83de1a35e3a471f432f7a897d65f0a7d3975df08512b7b253dd45c7
         run: |
           set -eu
+
+          # Unpacking a cabinet needs a tool; the runner usually has one.
+          if ! command -v 7z >/dev/null 2>&1 && ! command -v cabextract >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends p7zip-full
+          fi
+
           ./scripts/stage.sh "stage_${{ matrix.suffix }}" windows "${{ matrix.goarch }}"
+
+          # An installer that was meant to carry the runtime and did not is one
+          # that falls back to a browser on the machine it was built for.
+          if [ ! -f "stage_${{ matrix.suffix }}/webview2/msedgewebview2.exe" ]; then
+            echo "the WebView2 runtime is not in the staging directory" >&2
+            exit 1
+          fi
 
           # A staging directory that is missing a program is worse than none:
           # the installer built from it looks complete and fails on the first
