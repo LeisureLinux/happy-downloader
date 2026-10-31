@@ -128,7 +128,76 @@ if [ "$PLATFORM" = "windows" ]; then
   # packaging/windows/webview2/ (see the README there).
   WEBVIEW2_SRC="$ROOT/packaging/windows/webview2/msedgewebview2.exe"
 
-  if [ -f "$WEBVIEW2_SRC" ]; then
+  if [ -n "${HD_WEBVIEW2_URL:-}" ]; then
+    # Fetched, rather than expected in the working tree.
+    #
+    # The runtime belongs to a build, not to the repository: it is 197 MB
+    # compressed and 445 MB unpacked, it is Microsoft's file, and committing it
+    # would put a quarter of a gigabyte into every clone.
+    #
+    # The checksum is pinned. The archive it comes from is a third party — the
+    # official download page keeps only the two most recent versions, and 109 is
+    # the last one that runs on Windows 7 — so the bytes are checked against a
+    # value that was read once and written down, rather than trusted because of
+    # where they came from.
+    echo "==> fetching the WebView2 runtime"
+    echo "    $HD_WEBVIEW2_URL"
+
+    TMPCAB=$(mktemp)
+    TMPDIR_WV=$(mktemp -d)
+
+    if ! curl -sL -f -o "$TMPCAB" "$HD_WEBVIEW2_URL"; then
+      rm -f "$TMPCAB"
+      echo "    the WebView2 runtime could not be fetched" >&2
+      exit 1
+    fi
+
+    if [ -n "${HD_WEBVIEW2_SHA256:-}" ]; then
+      got=$(sha256sum "$TMPCAB" | cut -d' ' -f1)
+
+      if [ "$got" != "$HD_WEBVIEW2_SHA256" ]; then
+        rm -f "$TMPCAB"
+        rm -rf "$TMPDIR_WV"
+        echo "    the WebView2 runtime does not match the pinned checksum" >&2
+        echo "    expected $HD_WEBVIEW2_SHA256" >&2
+        echo "    got      $got" >&2
+        exit 1
+      fi
+
+      echo "    checksum matches"
+    fi
+
+    # A .cab, unpacked. 7z handles it and does not mind the trailing padding
+    # the archive has, which cabextract warns about.
+    if command -v 7z >/dev/null 2>&1; then
+      (cd "$TMPDIR_WV" && 7z x -y "$TMPCAB" >/dev/null)
+    elif command -v cabextract >/dev/null 2>&1; then
+      cabextract -q -d "$TMPDIR_WV" "$TMPCAB" >/dev/null
+    else
+      rm -f "$TMPCAB"
+      rm -rf "$TMPDIR_WV"
+      echo "    neither 7z nor cabextract is available to unpack the runtime" >&2
+      exit 1
+    fi
+
+    # The archive holds one folder named after the version; its contents are
+    # what the application looks for beside itself.
+    INNER=$(find "$TMPDIR_WV" -maxdepth 3 -name msedgewebview2.exe -printf '%h\n' | head -1)
+
+    if [ -z "$INNER" ]; then
+      rm -f "$TMPCAB"
+      rm -rf "$TMPDIR_WV"
+      echo "    the archive held no msedgewebview2.exe" >&2
+      exit 1
+    fi
+
+    mkdir -p "$OUT/webview2"
+    cp -a "$INNER/." "$OUT/webview2/"
+    rm -f "$TMPCAB"
+    rm -rf "$TMPDIR_WV"
+
+    echo "    $(find "$OUT/webview2" -type f | wc -l) files, $(du -sh "$OUT/webview2" | cut -f1)"
+  elif [ -f "$WEBVIEW2_SRC" ]; then
     echo "==> carrying the bundled WebView2 runtime"
     mkdir -p "$OUT/webview2"
     cp -a "$ROOT/packaging/windows/webview2/." "$OUT/webview2/"
