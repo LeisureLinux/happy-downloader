@@ -2,7 +2,10 @@
 
 package main
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 // openAppWindow is not implemented outside Windows.
 //
@@ -10,6 +13,6 @@ import "errors"
 // and each of them would be a different implementation with its own
 // dependencies; the browser the program already opens is the answer there, and
 // on a server there is nobody at the screen to open a window for.
-func openAppWindow(url string) error {
-	return errors.New("this build has no window of its own")
+func openAppWindow(url string) (time.Duration, error) {
+	return 0, errors.New("this build has no window of its own")
 }

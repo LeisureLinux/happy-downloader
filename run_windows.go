@@ -6,6 +6,7 @@ import (
 	"context"
 	"io/fs"
 	"log/slog"
+	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server"
 )
@@ -49,11 +50,31 @@ func runFrontend(ctx context.Context, appFS fs.FS) error {
 		return nil
 	}
 
-	if err := openAppWindow(url); err != nil {
+	// A window that was closed within this long was not somebody closing a
+	// window: it is a window that could not be shown. There is no desktop to
+	// put it on, or the runtime started and gave up.
+	const instant = 1500 * time.Millisecond
+
+	lived, err := openAppWindow(url)
+
+	if err != nil {
 		// No WebView2 on this machine. The browser is what is left, and it is
 		// what this program did before it had a window: the interface is the
 		// same either way.
 		slog.Warn("no window available, opening a browser instead", "err", err)
+
+		whenReady(url)
+
+		return <-done
+	}
+
+	if lived < instant {
+		// The server is fine and the window is not. It is left running, and
+		// the interface is opened where it can be: stopping a working server
+		// because a window failed to appear would make the program look
+		// broken on a machine where it works.
+		slog.Warn("the window did not stay open; leaving the server running",
+			"lived", lived.String())
 
 		whenReady(url)
 

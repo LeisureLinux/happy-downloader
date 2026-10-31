@@ -295,7 +295,14 @@ jobs:
           try { $found = Invoke-RestMethod -Uri 'http://127.0.0.1:3033/api/v1/version' -TimeoutSec 5 } catch { }
           $found | ConvertTo-Json -Compress
 
-          if (-not $found) { throw "the installed application did not answer" }
+          if (-not $found) {
+            # The application's own log says what it did with its window and
+            # whether it reached the port.
+            $appLog = "$env:APPDATA\happy-downloader\happy-downloader.log"
+            "--- the application log ---"
+            if (Test-Path $appLog) { Get-Content $appLog -Tail 30 } else { "no log at $appLog" }
+            throw "the installed application did not answer"
+          }
           if ($found.ytdlpPath -notmatch 'hd-test') { throw "it is not running the installed yt-dlp: $($found.ytdlpPath)" }
 
           $sse = & curl.exe -sN --max-time 3 http://127.0.0.1:3033/log/sse 2>$null

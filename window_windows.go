@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	webview "github.com/jchv/go-webview2"
 
@@ -51,12 +52,19 @@ func bundledRuntimeDir() string {
 	return dir
 }
 
-// openAppWindow shows the interface in a window and returns when it closes.
+// openAppWindow shows the interface in a window and returns when it closes,
+// with how long it was up.
+//
+// The duration is what separates a window somebody closed from a window that
+// never worked. A WebView2 window that cannot be created — no desktop to put it
+// on, a runtime that starts and stops — returns from the message loop at once,
+// and treating that as "the user closed it" would stop a server that is
+// working perfectly well.
 //
 // It must be called from the main goroutine: the window belongs to the thread
 // that created it, and the message loop that runs it is the one that keeps it
 // alive.
-func openAppWindow(url string) error {
+func openAppWindow(url string) (time.Duration, error) {
 	if dir := bundledRuntimeDir(); dir != "" {
 		slog.Info("using the bundled WebView2 runtime", "path", dir)
 		_ = os.Setenv("WEBVIEW2_BROWSER_EXECUTABLE_FOLDER", dir)
@@ -77,13 +85,15 @@ func openAppWindow(url string) error {
 
 	w := webview.NewWithOptions(opts)
 	if w == nil {
-		return errors.New("WebView2 is not available on this machine")
+		return 0, errors.New("WebView2 is not available on this machine")
 	}
 
 	defer w.Destroy()
 
 	w.Navigate(url)
+
+	start := time.Now()
 	w.Run()
 
-	return nil
+	return time.Since(start), nil
 }
