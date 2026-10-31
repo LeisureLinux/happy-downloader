@@ -15,6 +15,7 @@ type Config struct {
 	Logging     LoggingConfig  `mapstructure:"logging"`
 	Paths       PathsConfig    `mapstructure:"paths"`
 	YtDlp       YtDlpConfig    `mapstructure:"ytdlp"`
+	Cookies     CookiesConfig  `mapstructure:"cookies"`
 	Frontend    FrontendConfig `mapstructure:"frontend"`
 	AutoArchive bool           `mapstructure:"auto_archive"`
 	Twitch      TwitchConfig   `mapstructure:"twitch"`
@@ -59,6 +60,30 @@ type PathsConfig struct {
 	//
 	// Relative paths resolve against the config file's directory.
 	CookiePath string `mapstructure:"cookie_path"`
+}
+
+// CookiesConfig is where the credentials come from.
+//
+// Two ways of answering that, and they are not alternatives on one machine:
+// a file is what a server uses, because the browser it belongs to is not on
+// that machine, and reading the browser is what a desktop uses, because it is.
+type CookiesConfig struct {
+	// FromBrowser asks yt-dlp to read the browser's own cookie database
+	// instead of a file.
+	//
+	// The value is passed to yt-dlp unchanged: "chrome", "edge", "firefox",
+	// "brave", and so on, optionally with a profile after a colon. Empty or
+	// "none" means the export file is used.
+	//
+	// This is the difference between a photograph and the thing itself. An
+	// export is a copy taken at one moment and forgotten; the database is the
+	// session as it is now, so a download that starts tomorrow still has the
+	// cookies from tomorrow.
+	//
+	// It only works where the browser and the browser's user are the same as
+	// the program's — which on Windows is the normal case, and on a server is
+	// never.
+	FromBrowser string `mapstructure:"from_browser"`
 }
 
 // YtDlpConfig carries the credentials and network settings every yt-dlp

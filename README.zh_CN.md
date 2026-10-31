@@ -417,6 +417,8 @@ GPL-3.0-only。见 [LICENSE](LICENSE)。
 
 本项目是 [marcopeocchi/yt-dlp-web-ui](https://github.com/marcopeocchi/yt-dlp-web-ui) 的分支，上游同样是 GPL-3.0。原始的版权声明和许可条款完整保留；本分支的修改以相同条款发布。
 
+本许可证无法改为宽松许可。git 历史中包含上游作者与其贡献者的提交，因此这份工作是他们的，也是本分支的；GPL-3.0 不允许在未取得全部版权持有人同意的情况下重新授权。改用宽松许可需要重写代码，而不是改个名字。
+
 yt-dlp 自身是 Unlicense；yt-dlp 调用的 ffmpeg 有自己的许可条款，重新分发下载内容前请自行确认。
 
 ## English

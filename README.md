@@ -525,6 +525,13 @@ This is a fork of [marcopeocchi/yt-dlp-web-ui](https://github.com/marcopeocchi/y
 which is also GPL-3.0. The original copyright notice and licence are kept
 intact; the modifications in this fork are released under the same terms.
 
+This licence cannot be changed to a permissive one. The project is a fork:
+its git history contains commits by the authors of the original project and by
+their contributors, so the work is theirs as much as it is the fork's, and
+GPL-3.0 does not allow the result to be relicensed without the agreement of
+every one of those copyright holders. A permissive licence would need the code
+to be rewritten rather than renamed.
+
 yt-dlp itself is Unlicense; ffmpeg, which yt-dlp calls, has its own licensing
 that you should check before redistributing anything you download.
 

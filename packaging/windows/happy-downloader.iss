@@ -235,7 +235,9 @@ begin
   S := S + Space + 'http://localhost:3033/' + NewLine + NewLine;
   S := S + '程序没有窗口，关闭浏览器不会停止下载。要退出程序，请到设置页最下方的'
     + '「退出程序」。' + NewLine + NewLine;
-  S := S + '下载的文件保存在用户目录下的 Downloads\happy-downloader。' + NewLine;
+  S := S + '下载的文件保存在用户目录下的 Downloads\happy-downloader。' + NewLine + NewLine;
+  S := S + '可选：在配置文件中设置 cookies.from_browser（例如 chrome、edge、firefox），'
+    + '程序将直接读取该浏览器的 cookie，无需导出导入。' + NewLine;
   S := S + 'Happy Downloader runs in the background with no window: closing the'
     + ' browser does not stop it, and the settings page has a quit action.';
 

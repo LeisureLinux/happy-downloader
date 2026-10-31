@@ -176,12 +176,17 @@ const Footer: React.FC = () => {
             direction="row"
             spacing={0.5}
             alignItems="center"
-            sx={{ flexShrink: 0, mr: 0.5 }}
+            sx={{ display: { xs: 'none', sm: 'flex' }, flexShrink: 0, mr: 0.5 }}
           >
             {/* The catalogue arrives as a promise, so it is read inside a
                 Suspense boundary like every other indicator here. Reading an
                 async atom without one takes the page down with a minified
-                React error that says nothing about what was wrong. */}
+                React error that says nothing about what was wrong.
+
+                Hidden on a phone. Thirteen icons at that width take the row
+                the footer is for — what is downloading and how fast — and
+                they say less there than they do on a wide screen, because
+                they are the only thing on it. */}
             <Suspense fallback={null}>
               <SiteIcons />
             </Suspense>

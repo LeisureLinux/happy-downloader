@@ -165,7 +165,20 @@ func (p Profile) Argv(rawURL, cookieStaging, jsRuntime string) []string {
 		args = append(args, "--js-runtimes", jsRuntime)
 	}
 
-	if cookieStaging != "" {
+	// Where the credentials come from.
+	//
+	// An export file is the portable answer, and it is the one that works when
+	// this runs on a machine that is not the one with the browser in it. On a
+	// desktop the browser is right there, and yt-dlp can read its cookie
+	// database itself — which removes the whole import step, and the staleness
+	// that comes with it: the export is a photograph, the database is the
+	// thing that changes.
+	//
+	// The browser wins when it is configured, because it is the more specific
+	// instruction; a file is used otherwise.
+	if browser := BrowserForCookies(); browser != "" {
+		args = append(args, "--cookies-from-browser", browser)
+	} else if cookieStaging != "" {
 		args = append(args, "--cookies", cookieStaging)
 	}
 
