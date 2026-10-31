@@ -105,6 +105,12 @@ application, which opens a browser at `http://localhost:3033/`.
 Nothing needs administrator rights: the program goes under `%LOCALAPPDATA%` and
 its settings under `%APPDATA%`.
 
+The interface opens in a window of its own, using the WebView2 runtime that
+Windows 10 and 11 already have. Where WebView2 is missing, or where there is no
+desktop to put a window on, it falls back to the browser. Setting
+`HD_NO_WINDOW=1` skips the window deliberately — for a scheduled task or a
+session being driven by a script.
+
 ### Linux
 
 Download the static binary for the architecture from the same

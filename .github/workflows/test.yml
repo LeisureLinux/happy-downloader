@@ -287,6 +287,10 @@ jobs:
           if ($cfgText -notmatch 'ffmpeg\.exe') { throw "the configuration does not name ffmpeg" }
           if ($cfgText -notmatch 'Downloads') { throw "the configuration does not set a download folder" }
 
+          # Without a window: a runner has no desktop to put one on, and what is
+          # being tested here is the installation and the configuration, not the
+          # window.
+          $env:HD_NO_WINDOW = '1'
           $app = Start-Process -FilePath "$dir\happy-downloader.exe" `
             -ArgumentList '-conf', $cfg -PassThru
           Start-Sleep -Seconds 10

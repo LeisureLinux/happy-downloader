@@ -6,6 +6,7 @@ import (
 	"context"
 	"io/fs"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server"
@@ -18,6 +19,18 @@ import (
 // there. The address is passed over a channel rather than assumed: the window
 // is created when the port is actually listening, not a second before.
 func runFrontend(ctx context.Context, appFS fs.FS) error {
+	// HD_NO_WINDOW=1 serves the interface and opens nothing.
+	//
+	// It exists for the places where a window is the wrong answer and there is
+	// no way to say so: a session that is not on a screen — a scheduled task, a
+	// remote session being driven by a script — and the test that installs the
+	// program and asks it what it is running.
+	if os.Getenv("HD_NO_WINDOW") != "" {
+		slog.Info("HD_NO_WINDOW is set: serving without a window")
+
+		return server.Run(ctx, &server.RunConfig{App: appFS, Ready: whenReady})
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
