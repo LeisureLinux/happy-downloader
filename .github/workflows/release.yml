@@ -248,7 +248,18 @@ jobs:
 
           $setup = Get-ChildItem dist -Filter '*setup.exe' | Select-Object -First 1
           if (-not $setup) { throw "the installer was not produced" }
-          "built $($setup.Name), $([math]::Round($setup.Length/1MB,1)) MB"
+
+          $size = [math]::Round($setup.Length/1MB, 1)
+          "built $($setup.Name), $size MB"
+
+          # The runtime is 445 MB before compression and makes the installer
+          # around four times larger than one without it. A build that was meant
+          # to carry it and did not is one that falls back to a browser on the
+          # machine it was built for, and nothing else in this pipeline would
+          # notice: the installer compiles, installs and works on Windows 10.
+          if ($size -lt 100) {
+            throw "the installer is $size MB, so it does not carry the WebView2 runtime"
+          }
 
       - uses: actions/upload-artifact@v4
         with:

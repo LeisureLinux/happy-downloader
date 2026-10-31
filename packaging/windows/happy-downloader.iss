@@ -101,9 +101,8 @@ Source: "{#BundleDir}\README.txt"; DestDir: "{app}"; DestName: "README.txt"; Fla
 ; no longer install one — the last version that runs there is 109 — so a build
 ; that is expected to work there carries that runtime here and points WebView2
 ; at it. Without this the application still works; it opens a browser instead.
-#if FileExists('{#BundleDir}\webview2\msedgewebview2.exe')
-Source: "{#BundleDir}\webview2\*"; DestDir: "{app}\webview2"; Flags: ignoreversion recursesubdirs createallsubdirs
-#endif
+Source: "{#BundleDir}\webview2\*"; DestDir: "{app}\webview2"; \
+    Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"; IconIndex: 0
