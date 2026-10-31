@@ -126,17 +126,20 @@ if [ "$PLATFORM" = "windows" ]; then
   # The folder is not in this repository: it is Microsoft's build, downloaded
   # from their fixed-version page and unpacked into
   # packaging/windows/webview2/ (see the README there).
-  if [ -d "$ROOT/packaging/windows/webview2" ]; then
-    if [ ! -f "$ROOT/packaging/windows/webview2/msedgewebview2.exe" ]; then
-      echo "packaging/windows/webview2/ is present but holds no msedgewebview2.exe" >&2
-      exit 1
-    fi
+  WEBVIEW2_SRC="$ROOT/packaging/windows/webview2/msedgewebview2.exe"
 
+  if [ -f "$WEBVIEW2_SRC" ]; then
     echo "==> carrying the bundled WebView2 runtime"
     mkdir -p "$OUT/webview2"
     cp -a "$ROOT/packaging/windows/webview2/." "$OUT/webview2/"
+  elif [ "${HD_REQUIRE_WEBVIEW2:-0}" = "1" ]; then
+    # A build that is meant to work on Windows 7 must carry the runtime: there
+    # is nothing there to fall back to but a browser.
+    echo "this build was asked to carry a WebView2 runtime and there is none" >&2
+    echo "see packaging/windows/webview2/README.md" >&2
+    exit 1
   else
-    echo "    no bundled WebView2 runtime: this build needs one on the machine"
+    echo "    no bundled WebView2 runtime: the window uses the one the machine has"
   fi
 fi
 
