@@ -105,6 +105,11 @@ application, which opens a browser at `http://localhost:3033/`.
 Nothing needs administrator rights: the program goes under `%LOCALAPPDATA%` and
 its settings under `%APPDATA%`.
 
+The installer is about 190 MB because it carries the WebView2 runtime that
+Windows 7 needs — 109 is the last version that runs there and Microsoft no
+longer offers it for download. Windows 10 and 11 already have a runtime and use
+their own; the bundled one is what a machine with no browser has.
+
 The interface opens in a window of its own, using the WebView2 runtime that
 Windows 10 and 11 already have. Where WebView2 is missing, or where there is no
 desktop to put a window on, it falls back to the browser. Setting
