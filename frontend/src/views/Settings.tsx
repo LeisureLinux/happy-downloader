@@ -48,6 +48,7 @@ import {
 import DownloadCredentials from '../components/DownloadCredentials'
 import NetworkSettings from '../components/NetworkSettings'
 import QuitButton from '../components/QuitButton'
+import CookiesFromBrowser from '../components/CookiesFromBrowser'
 import { useToast } from '../hooks/toast'
 import { useI18n } from '../hooks/useI18n'
 import Translator from '../lib/i18n'
@@ -313,6 +314,17 @@ export function SettingsContent() {
             {i18n.t('networkAnchor')}
           </Typography>
           <NetworkSettings />
+        </Grid>
+
+        {/* Cookie 的来源。
+            在桌面机器上，浏览器的 cookie 数据库就在本机，直接读它就是当前
+            会话；导出文件只是某个时刻的副本。这不是总能成功（Chromium 127
+            起把数据库加密到只有浏览器自己能读），所以保存时会实测一次。 */}
+        <Grid sx={{ mr: 1, mt: 2 }}>
+          <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
+            {i18n.t('cookieSourceLabel')}
+          </Typography>
+          <CookiesFromBrowser />
         </Grid>
 
         {/* 退出程序。

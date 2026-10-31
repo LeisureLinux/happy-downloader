@@ -43,6 +43,11 @@ func ApplyRouter(args *ContainerArgs) func(chi.Router) {
 
 		// The cookie export the user imported. It takes precedence over the
 		// automatic one while it works.
+		// Where the credentials come from: a file, or the browser itself.
+		r.Get("/cookies/browser", h.GetCookieBrowser())
+		r.Put("/cookies/browser", h.SetCookieBrowser())
+		r.Post("/cookies/probe", h.ProbeCookies())
+
 		r.Post("/cookies/import", h.ImportCookies())
 		r.Delete("/cookies/import", h.RemoveImportedCookies())
 

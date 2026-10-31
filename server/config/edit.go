@@ -62,6 +62,10 @@ type Editable struct {
 	//
 	// An empty value means the default is kept.
 	DownloadPath string `yaml:"download_path"`
+	// FromBrowser is the browser whose cookies yt-dlp reads, or empty for a
+	// file. It is written even when empty, because "go back to a file" is a
+	// choice and has to survive a restart.
+	FromBrowser string `yaml:"from_browser"`
 }
 
 // Update writes the settings that the interface can change.
@@ -102,6 +106,21 @@ func Update(editable Editable) error {
 
 	doc["ytdlp"] = ytdlp
 
+	if strings.TrimSpace(editable.FromBrowser) != "" {
+		cookies, _ := doc["cookies"].(map[string]any)
+		if cookies == nil {
+			cookies = map[string]any{}
+		}
+
+		cookies["from_browser"] = strings.TrimSpace(editable.FromBrowser)
+		doc["cookies"] = cookies
+	} else if existing, ok := doc["cookies"].(map[string]any); ok {
+		// Removing the key is how "use a file" is expressed, and leaving the
+		// old value behind would mean the next start reads the browser again.
+		delete(existing, "from_browser")
+		doc["cookies"] = existing
+	}
+
 	// The download directory is under "paths", and it is only written when
 	// it was given: an empty value means "keep what is there", so a form
 	// that does not know about the setting cannot empty it by saving.
@@ -137,6 +156,8 @@ func Update(editable Editable) error {
 	instance := Instance()
 	instance.YtDlp.PotBaseURL = strings.TrimSpace(editable.PotBaseURL)
 	instance.YtDlp.Proxy = strings.TrimSpace(editable.Proxy)
+
+	instance.Cookies.FromBrowser = strings.TrimSpace(editable.FromBrowser)
 
 	// The download directory takes effect at once: a change that needs a
 	// restart is a change nobody makes.

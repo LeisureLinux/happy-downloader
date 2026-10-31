@@ -47,3 +47,8 @@ SHA256SUMS
 
 # Generated at build time: the Windows icon, version resource and manifest.
 rsrc_*.syso
+
+# The bundled WebView2 runtime: Microsoft's files, over 250 MB, not ours to
+# commit. See packaging/windows/webview2/README.md.
+packaging/windows/webview2/*
+!packaging/windows/webview2/README.md

@@ -94,6 +94,17 @@ Source: "{#BundleDir}\yt-dlp.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BundleDir}\ffmpeg.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BundleDir}\README.txt"; DestDir: "{app}"; DestName: "README.txt"; Flags: ignoreversion
 
+; A WebView2 runtime to carry, when the build has one.
+;
+; Windows 10 and 11 have the Evergreen runtime, and the application uses it:
+; the window appears with nothing extra installed. Windows 7 has none and can
+; no longer install one — the last version that runs there is 109 — so a build
+; that is expected to work there carries that runtime here and points WebView2
+; at it. Without this the application still works; it opens a browser instead.
+#if FileExists('{#BundleDir}\webview2\msedgewebview2.exe')
+Source: "{#BundleDir}\webview2\*"; DestDir: "{app}\webview2"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
+
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"; IconIndex: 0
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"

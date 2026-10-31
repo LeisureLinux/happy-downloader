@@ -147,10 +147,7 @@ func main() {
 		return
 	}
 
-	if err := server.Run(ctx, &server.RunConfig{
-		App:   appFS,
-		Ready: whenReady,
-	}); err != nil {
+	if err := runFrontend(ctx, appFS); err != nil {
 		slog.Error("server stopped with error", "error", err)
 		whenFatal(err.Error())
 		os.Exit(1)

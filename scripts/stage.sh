@@ -113,6 +113,31 @@ chmod +x "$OUT/ffmpeg${exe_suffix}"
 # executable at build time, and the wizard and the shortcuts read it from here.
 if [ "$PLATFORM" = "windows" ]; then
   cp "$ROOT/packaging/windows/happy-downloader.ico" "$OUT/"
+
+  # A WebView2 runtime to carry, for machines that have none.
+  #
+  # Windows 10 and 11 have the Evergreen runtime and it updates itself. Windows
+  # 7 does not and cannot install one any more — the last version that runs
+  # there is 109 — so an installer that is expected to work there has to carry
+  # that runtime itself. It is over 250 MB, which is why it is optional here
+  # rather than always: a build without it still works on every machine that
+  # already has WebView2.
+  #
+  # The folder is not in this repository: it is Microsoft's build, downloaded
+  # from their fixed-version page and unpacked into
+  # packaging/windows/webview2/ (see the README there).
+  if [ -d "$ROOT/packaging/windows/webview2" ]; then
+    if [ ! -f "$ROOT/packaging/windows/webview2/msedgewebview2.exe" ]; then
+      echo "packaging/windows/webview2/ is present but holds no msedgewebview2.exe" >&2
+      exit 1
+    fi
+
+    echo "==> carrying the bundled WebView2 runtime"
+    mkdir -p "$OUT/webview2"
+    cp -a "$ROOT/packaging/windows/webview2/." "$OUT/webview2/"
+  else
+    echo "    no bundled WebView2 runtime: this build needs one on the machine"
+  fi
 fi
 
 # The README is installed beside the program, so its reader has already got
