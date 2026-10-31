@@ -70,6 +70,28 @@ someone, read that section instead of this list: it covers the four external
 components in the order they have to be set up, and the checks that tell you
 each one works before moving on.
 
+## Cookies
+
+Two ways to supply the signed-in session that some sites require.
+
+**From the browser** — the desktop case. yt-dlp reads the browser's own cookie
+database, so there is nothing to export and nothing to keep fresh:
+
+```yaml
+cookies:
+  from_browser: chrome     # or edge, firefox, brave, opera, vivaldi
+```
+
+A profile can be named after a colon, as yt-dlp names it:
+`chrome:Profile 1`, or `firefox::/home/me/.mozilla/firefox/abc.default`.
+
+**From a file** — the server case, where the browser is on a different machine.
+Put the export in `paths.cookie_path`; JSON exports and Netscape `cookies.txt`
+are both read, and the file is watched, so replacing it refreshes the session
+without a restart.
+
+`cookies.from_browser` wins when both are configured.
+
 ## Install
 
 ### Windows
@@ -166,6 +188,28 @@ A matching systemd timer is in [`packaging/systemd/`](packaging/systemd/), and
 `scripts/install-cookie-timer.sh` installs it with this checkout's path filled
 in — the notes there explain why it must not be copied by hand, and the keyring
 requirement.
+
+## Cookies
+
+Two ways to supply the signed-in session that some sites require.
+
+**From the browser** — the desktop case. yt-dlp reads the browser's own cookie
+database, so there is nothing to export and nothing to keep fresh:
+
+```yaml
+cookies:
+  from_browser: chrome     # or edge, firefox, brave, opera, vivaldi
+```
+
+A profile can be named after a colon, as yt-dlp names it:
+`chrome:Profile 1`, or `firefox::/home/me/.mozilla/firefox/abc.default`.
+
+**From a file** — the server case, where the browser is on a different machine.
+Put the export in `paths.cookie_path`; JSON exports and Netscape `cookies.txt`
+are both read, and the file is watched, so replacing it refreshes the session
+without a restart.
+
+`cookies.from_browser` wins when both are configured.
 
 ## Installing for an AI agent
 

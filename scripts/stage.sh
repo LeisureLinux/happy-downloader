@@ -144,6 +144,12 @@ Where things are
 The downloads folder, the proxy and the PO Token provider are changed on the
 settings page. The rest of the configuration is edited by hand.
 
+Cookies come from a file by default. To read them from a browser instead, so
+that there is nothing to export and nothing to keep fresh:
+
+  cookies:
+    from_browser: chrome     # or edge, firefox, brave, opera, vivaldi
+
 The PO Token provider is not included
 -------------------------------------
 
