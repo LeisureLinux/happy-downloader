@@ -1,4 +1,4 @@
-# Happy Downloader · 欢喜下载
+# Happy Downloader · 欢乐下载
 
 A self-hosted web UI for [yt-dlp](https://github.com/yt-dlp/yt-dlp). One static
 binary, no runtime dependencies, no database server — point a browser at it

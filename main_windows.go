@@ -139,5 +139,5 @@ func whenReady(url string) {
 // whenFatal is called when the program cannot start.
 func whenFatal(message string) {
 	slog.Error("cannot start", "err", message)
-	tellUser("欢喜下载 / happy-downloader", message)
+	tellUser("欢乐下载 / happy-downloader", message)
 }

@@ -1,4 +1,4 @@
-# 欢喜下载 · Happy Downloader
+# 欢乐下载 · Happy Downloader
 
 一个自托管的 [yt-dlp](https://github.com/yt-dlp/yt-dlp) 网页界面。单个静态二进制，不依赖运行时，不需要数据库服务——在局域网里任何一台机器的浏览器上打开它，视频就下载到有磁盘空间的那台机器上。
 
@@ -111,7 +111,7 @@ scripts/refresh-cookies.sh \
 
 > **如果你是 Agent，正在给用户的机器装这个东西，先把这一整节读完再动手。**
 > 这一节是照着做就能完成的：每条命令都是完整的，版本是互相测试过的，顺序不能换。
-> 欢喜下载本身是最小的一部分——一个静态二进制。真正要做的是它调用的那四样东西。
+> 欢乐下载本身是最小的一部分——一个静态二进制。真正要做的是它调用的那四样东西。
 
 ### 必须先有的东西
 
@@ -122,7 +122,7 @@ scripts/refresh-cookies.sh \
 | `ffmpeg` | 合并分离的视频流和音频流；转换音频格式 | 必需，除非每次都只下单一流 |
 | PO Token 提供方 | 证明这个会话不是机器人。YouTube 现在对大部分内容都要求它，没有就会报「Sign in to confirm you're not a bot」 | YouTube 必需 |
 | Cookie 导出文件 | 携带登录状态。年龄限制、会员、地区限制的内容必需，普通视频现在也越来越多需要 | 实际上必需 |
-| 欢喜下载 | 网页界面 | 必需 |
+| 欢乐下载 | 网页界面 | 必需 |
 
 `yt-dlp` 大约每月发一版，YouTube 也经常把旧版本搞坏。把它装在**不用重新编译本项目就能更新**的地方——二进制从配置里读路径，不捆绑它。
 
@@ -231,7 +231,7 @@ scp ~/youtube-cookie.json user@server:/home/user/.config/happy-downloader/youtub
   `chrome+gnomekeyring`（或 `+kwallet`）。导出文件看起来一切正常——但它大概只有
   170 条 cookie，而不是几千条。
 
-### 第 5 步 —— 欢喜下载本体
+### 第 5 步 —— 欢乐下载本体
 
 ```sh
 mkdir -p ~/.local/share/happy-downloader/bin ~/.config/happy-downloader

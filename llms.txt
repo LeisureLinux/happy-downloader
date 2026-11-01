@@ -3,7 +3,7 @@
 > A self-hosted web UI for yt-dlp: one static Go binary with an embedded React
 > frontend, built for a headless host that has no browser of its own.
 
-Happy Downloader (欢喜下载) lets a browser anywhere on the LAN queue downloads
+Happy Downloader (欢乐下载) lets a browser anywhere on the LAN queue downloads
 that run on a server. It exists because the usual yt-dlp GUI assumes the machine
 doing the downloading is the machine you are sitting at. Here it is not: the
 server has no desktop session, so cookies have to arrive as a file from
