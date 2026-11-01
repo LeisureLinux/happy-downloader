@@ -96,19 +96,20 @@ without a restart.
 
 ### Windows
 
+**Windows 10 or later.** The program is written in Go, and Go 1.21 dropped
+Windows 7 — a binary built with it does not start there at all, silently. The
+downloader it runs has the same floor for the same kind of reason: current
+yt-dlp requires Python 3.11, and Python 3.9 was the last release that could run
+on Windows 7.
+
 Download the installer from
-[Releases](https://github.com/LeisureLinux/happy-downloader/releases) — one for
-x64, one for ARM64 — and run it. It asks where to put the program, writes a
+[Releases](https://github.com/LeisureLinux/happy-downloader/releases) and run
+it. It asks where to put the program, writes a
 configuration naming the yt-dlp and ffmpeg it installs beside it, and starts the
 application, which opens a browser at `http://localhost:3033/`.
 
 Nothing needs administrator rights: the program goes under `%LOCALAPPDATA%` and
 its settings under `%APPDATA%`.
-
-The installer is about 190 MB because it carries the WebView2 runtime that
-Windows 7 needs — 109 is the last version that runs there and Microsoft no
-longer offers it for download. Windows 10 and 11 already have a runtime and use
-their own; the bundled one is what a machine with no browser has.
 
 The interface opens in a window of its own, using the WebView2 runtime that
 Windows 10 and 11 already have. Where WebView2 is missing, or where there is no
