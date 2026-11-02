@@ -135,7 +135,16 @@ func Run(ctx context.Context, rc *RunConfig) error {
 		address = conf.Server.Host
 	}
 
-	listener, err := net.Listen(network, address)
+	// Go 1.24 and later open TCP listeners as MPTCP sockets by default.
+	// CVE-2026-98432 is a kernel use-after-free in the IPv4 TCP request
+	// path, and the only demonstrated remote code execution against it
+	// needs an MPTCP listener. Opting out here keeps this listener plain
+	// TCP, which closes that path. It does not repair the kernel: the
+	// kernel still has to be updated. Unix sockets are not affected.
+	lc := net.ListenConfig{}
+	lc.SetMultipathTCP(false)
+
+	listener, err := lc.Listen(runCtx, network, address)
 	if err != nil {
 		// A port that is already taken is usually this program, started
 		// earlier: a previous version, a copy left running, something the
