@@ -188,6 +188,10 @@ const DownloadsTableView: React.FC = () => {
         // stream lasts. What it has is how much has been recorded, so that
         // is what is said.
         return i18n.t('statusLivestream')
+      case ProcessStatus.POSTPROCESSING:
+        // The bytes are down; the file is still being finished. A full bar
+        // labelled "Downloading" reads as a hung download.
+        return i18n.t('statusPostprocessing')
       default:
         return ''
     }
@@ -358,7 +362,12 @@ const DownloadsTableView: React.FC = () => {
               // percentage to show, so the bar moves instead of sitting
               // at zero — and so does one that is being put into its
               // container: the work is not measured in bytes.
+              //
+              // Postprocessing is the same: 100% is only the end of the
+              // transfer, so a determinate full bar would lie about there
+              // being nothing left to wait for.
               download.progress.process_status === ProcessStatus.REMUXING ||
+              download.progress.process_status === ProcessStatus.POSTPROCESSING ||
               (download.progress.process_status === ProcessStatus.LIVESTREAM &&
                 !download.progress.percentage) ||
               download.progress.process_status === 0

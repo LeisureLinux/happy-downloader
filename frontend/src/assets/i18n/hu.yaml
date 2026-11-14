@@ -215,6 +215,7 @@ keys:
   statusErrored: 'Sikertelen'
   statusPaused: 'Szüneteltetve'
   statusRemuxing: 'Újracsomagolás'
+  statusPostprocessing: 'Fájl befejezése'
   startRecording: 'Felvétel indítása'
   stopRecording: 'Felvétel leállítása'
   recordingReady: 'A felvétel elkészült'

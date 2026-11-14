@@ -164,7 +164,12 @@ export function buildDownloadArgs(o: DownloadOptions): string[] {
   }
 
   if (o.writeMetadata) {
-    args.push('--embed-metadata', '--embed-thumbnail')
+    // Only embed the metadata. `--embed-thumbnail` asks ffmpeg to attach a
+    // cover image to the container; on ffmpeg 7.1 it fails for many mp4s
+    // with "Error opening output files: Invalid argument". The video is
+    // already complete by then, but yt-dlp exits non-zero, so the row was
+    // marked failed and people pressed download again.
+    args.push('--embed-metadata')
   }
 
   return args

@@ -168,7 +168,16 @@ func consumeLogs(ctx context.Context, logs <-chan []byte, c LogConsumer, d Downl
 				slog.String("id", c.GetName()),
 			)
 			return
-		case entry := <-logs:
+		case entry, ok := <-logs:
+			if !ok {
+				// The writer has finished: drain the buffered lines first,
+				// then leave. Closing is how a normal exit ends the consumer;
+				// cancelling the context is how a killed download ends it.
+				for remaining := range logs {
+					c.ParseLogEntry(remaining, d)
+				}
+				return
+			}
 			c.ParseLogEntry(entry, d)
 		}
 	}

@@ -177,6 +177,7 @@ keys:
   statusErrored: 'Failed'
   statusPaused: 'Paused'
   statusRemuxing: 'Remuxing'
+  statusPostprocessing: 'Finishing file'
   startRecording: 'Start recording'
   stopRecording: 'Stop recording'
   recordingReady: 'Recording finished'

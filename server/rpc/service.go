@@ -32,6 +32,19 @@ type NoArgs struct{}
 // Exec spawns a Process.
 // The result of the execution is the newly spawned process Id.
 func (s *Service) Exec(args internal.DownloadRequest, result *string) error {
+	// Two rows for one video is the bug this prevents. The UI used to offer
+	// a second download whenever a finished row said "file missing"; both
+	// rows then raced the same output file and the second one got the credit.
+	// Returning the existing id keeps one row and lets the caller follow it.
+	if existing, ok := s.db.FindActiveByURL(args.URL); ok {
+		slog.Info("download already queued for this URL",
+			slog.String("id", existing.GetId()),
+			slog.String("url", args.URL))
+
+		*result = existing.GetId()
+		return nil
+	}
+
 	d := downloaders.NewGenericDownload(args.URL, args.Params)
 	d.SetOutput(internal.DownloadOutput{
 		Path:     args.Path,
@@ -216,11 +229,27 @@ func (s *Service) Retry(args string, result *string) error {
 
 	s.db.Delete(args)
 
+	// A retry can arrive while the original is still finishing (the UI shows
+	// the retry button as soon as a row is marked failed). FindActiveByURL
+	// runs after the delete, so it sees only other rows.
+	if existing, ok := s.db.FindActiveByURL(url); ok {
+		slog.Info("retry matched a download that is already running",
+			slog.String("id", existing.GetId()),
+			slog.String("url", url))
+
+		*result = existing.GetId()
+		return nil
+	}
+
 	d := downloaders.NewGenericDownload(url, downloaders.StripOutputArgs(snapshot.Params))
 	d.SetOutput(internal.DownloadOutput{
 		Path:     snapshot.Output.Path,
 		Filename: snapshot.Output.Filename,
 	})
+	// The address that asked for the original is the one that asked for the
+	// retry. Retry used to drop it, so the second line in downloads.log said
+	// from_ip "-" and could not be tied back to the machine that tried again.
+	d.SetFromIP(snapshot.FromIP)
 
 	s.db.Set(d)
 	s.mq.Publish(d)
@@ -333,6 +362,7 @@ func (s *Service) Resume(args string, resumed *string) error {
 		Path:     snapshot.Output.Path,
 		Filename: snapshot.Output.Filename,
 	})
+	d.SetFromIP(snapshot.FromIP)
 
 	s.db.Set(d)
 	s.mq.Publish(d)

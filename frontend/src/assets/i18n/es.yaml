@@ -215,6 +215,7 @@ keys:
   statusErrored: 'Fallido'
   statusPaused: 'En pausa'
   statusRemuxing: 'Remultiplexando'
+  statusPostprocessing: 'Terminando el archivo'
   startRecording: 'Iniciar grabación'
   stopRecording: 'Detener grabación'
   recordingReady: 'Grabación terminada'

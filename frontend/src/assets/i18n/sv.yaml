@@ -215,6 +215,7 @@ keys:
   statusErrored: 'Misslyckades'
   statusPaused: 'Pausad'
   statusRemuxing: 'Packar om'
+  statusPostprocessing: 'Färdigställer filen'
   startRecording: 'Starta inspelning'
   stopRecording: 'Stoppa inspelning'
   recordingReady: 'Inspelningen är klar'

@@ -62,6 +62,10 @@ export enum ProcessStatus {
   // yet. It lasts seconds, and it is the difference between "nothing yet"
   // and "working on it".
   REMUXING,
+  // A download whose bytes are all on disk while yt-dlp merges, embeds and
+  // moves the file. 100% is not "done": showing a full bar with the label
+  // "Downloading" is what made people start the same video a second time.
+  POSTPROCESSING,
 }
 
 type DownloadProgress = {

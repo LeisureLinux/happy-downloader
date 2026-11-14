@@ -215,6 +215,7 @@ keys:
   statusErrored: '실패'
   statusPaused: '일시 중지됨'
   statusRemuxing: '변환 중'
+  statusPostprocessing: '파일 마무리 중'
   startRecording: '녹화 시작'
   stopRecording: '녹화 중지'
   recordingReady: '녹화 완료'

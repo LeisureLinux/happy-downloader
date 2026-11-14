@@ -13,9 +13,12 @@ type ProgressTemplate struct {
 }
 
 type PostprocessTemplate struct {
-	FilePath string  `json:"filepath"`
-	Width    float64 `json:"width"`
-	Height   float64 `json:"height"`
+	FilePath      string  `json:"filepath"`
+	FinalDir      string  `json:"finaldir"`
+	Status        string  `json:"status"`
+	Postprocessor string  `json:"postprocessor"`
+	Width         float64 `json:"width"`
+	Height        float64 `json:"height"`
 }
 
 // Defines where and how the download needs to be saved
@@ -154,4 +157,16 @@ const (
 	// person who has just pressed stop is watching for the file, and
 	// "nothing yet" and "working on it" look the same from outside.
 	StatusRemuxing
+
+	// StatusPostprocessing is a download whose bytes are all on disk but
+	// whose file is not finished yet: yt-dlp is merging streams, embedding
+	// metadata or a thumbnail, and moving the result out of the temporary
+	// directory.
+	//
+	// It exists because 100% is not "done". yt-dlp reports 100% as soon as
+	// the last byte arrives and can spend another half a minute afterwards;
+	// a bar that sits full while nothing appears reads as a hung download,
+	// which is what made people press download a second time. Appended at the
+	// end so the numbers of every existing status stay where clients expect.
+	StatusPostprocessing
 )

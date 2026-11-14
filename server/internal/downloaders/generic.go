@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/LeisureLinux/happy-downloader/v4/server/common"
 	"github.com/LeisureLinux/happy-downloader/v4/server/config"
@@ -25,10 +27,18 @@ const downloadTemplate = `download:
 	"speed":%(progress.speed)s
 }`
 
-// filename not returning the correct extension after postprocess
+// The postprocess template reports where the file is *going*, not just where
+// it is now. `filepath` is the intermediate in the temp directory; `__finaldir`
+// is the directory MoveFiles will move it into. Keeping only `filepath` made
+// every finished row point at a file that no longer existed.
+//
+// `status` is emitted at every postprocessor start/finish, so it also marks
+// the stage after the last byte arrived: the download is no longer downloading.
 const postprocessTemplate = `postprocess:
 {
 	"filepath":"%(info.filepath)s",
+	"finaldir":"%(info.__finaldir)s",
+	"status":"%(progress.status)s",
 	"width":%(info.width)s,
 	"height":%(info.height)s
 }
@@ -129,6 +139,16 @@ func (g *GenericDownloader) Start() error {
 		// are not worth failing a video over.
 		"--no-write-subs",
 		"--no-write-auto-subs",
+		// Throttle progress output. Several lines per fragment on a slow HLS
+		// download filled the log with identical percentages and pushed the
+		// real errors out of the in-memory history.
+		"--progress-delta", "0.5",
+		// A transfer that stalls on one fragment used to burn ten retries and
+		// then fail a download whose bytes were almost all on disk. Give each
+		// fragment a longer allowance and more attempts before giving up.
+		"--socket-timeout", "30",
+		"--retries", "20",
+		"--fragment-retries", "20",
 		"--progress-template",
 		templateReplacer.Replace(downloadTemplate),
 		"--progress-template",
@@ -169,6 +189,7 @@ func (g *GenericDownloader) Start() error {
 
 	LogCommand("download", g.URL, params)
 
+	started := time.Now()
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cmd := exec.CommandContext(ctx, tools.YtDlp(), params...)
@@ -194,56 +215,96 @@ func (g *GenericDownloader) Start() error {
 	g.proc = cmd.Process
 
 	// The cleanup that runs when yt-dlp exits, whether it finished, was
-	// killed or failed.
+	// killed or failed. It runs exactly once: the stderr reader used to call
+	// it too, which closed stdout and marked the download complete while
+	// yt-dlp was still writing the file.
 	//
-	// A killed download is not a finished one: it becomes paused, so it
-	// stays in the queue and can be resumed. The kill is detected by the
-	// process having been stopped deliberately, which Stop() records.
-	//
-	// A failed download is not a finished one either. It used to be marked
-	// completed here, and the queue marked it errored afterwards — but by
-	// then it was already complete, so it left the queue and never showed
-	// up at all. The person saw the download vanish with no trace, and the
-	// only evidence was a line in the log.
 	failed := false
+	var once sync.Once
 	stop := func() {
-		stdout.Close()
-
-		switch {
-		case g.stopped:
-			g.progress.Status = internal.StatusPaused
-		case failed:
-			g.progress.Status = internal.StatusErrored
-		default:
-			g.Complete()
-			g.progress.Status = internal.StatusCompleted
-		}
-
-		cancel()
+		once.Do(func() {
+			switch {
+			case g.stopped:
+				g.progress.Status = internal.StatusPaused
+			case failed:
+				g.progress.Status = internal.StatusErrored
+			default:
+				g.Complete()
+				g.progress.Status = internal.StatusCompleted
+			}
+		})
 	}
 	defer stop()
 
+	// stdout and stderr are drained to completion before the outcome is
+	// decided. cmd.Wait() returns as soon as the process is gone, but the
+	// pipes still hold the last postprocess lines — the ones that name the
+	// final path. The consumer is joined below, not abandoned to the
+	// deferred cleanup.
 	logs := make(chan []byte, 2)
-	go produceLogs(stdout, logs)
-	go consumeLogs(ctx, logs, g.logConsumer, g)
+	var readers sync.WaitGroup
+	readers.Add(2)
 
 	go func() {
+		defer readers.Done()
+		defer close(logs)
+		produceLogs(stdout, logs)
+	}()
+	go func() {
+		defer readers.Done()
 		if err := printYtDlpErrors(stderr, g.Id, g.URL, g); err != nil {
-			stop()
+			slog.Warn("could not read the rest of yt-dlp's stderr",
+				slog.String("id", g.Id), slog.String("err", err.Error()))
 		}
+	}()
+
+	consumerDone := make(chan struct{})
+	go func() {
+		defer close(consumerDone)
+		consumeLogs(ctx, logs, g.logConsumer, g)
 	}()
 
 	g.SetPending(false)
 
 	err = cmd.Wait()
+	readers.Wait()
+	// The writer closed the channel after EOF; the consumer drains the rest
+	// before leaving. Join it so the last postprocess line — the one naming
+	// the final path — is applied before the outcome is decided.
+	<-consumerDone
+	cancel()
 
-	// A download that failed is not a finished one.
-	//
-	// The exit code is the only thing that says so: yt-dlp writes its
-	// errors to stderr and exits non-zero, and a download that produced no
-	// file at all is the case that matters here.
+	// A download that failed is not a finished one — but a non-zero exit is
+	// not proof of failure either. `--ignore-errors` applies to
+	// postprocessing: yt-dlp reports the postprocessor's error and exits
+	// non-zero even when the video is already on disk. Judging that a
+	// failure discarded a finished file and sent people back to press
+	// download a second time. Only the absence of a playable file is a
+	// failure here.
 	if err != nil && !g.stopped {
-		failed = true
+		// When a postprocessor dies before the last progress line, no
+		// postprocess event ever names the finished file. Look for it by the
+		// output template before concluding that nothing was produced.
+		if !fileExists(g.output.SavedFilePath) {
+			if found := findFinishedFile(g, started); found != "" {
+				g.output.SavedFilePath = found
+			}
+		}
+
+		failed = !fileExists(g.output.SavedFilePath)
+		if !failed {
+			slog.Warn("yt-dlp reported a postprocessing error but the file is complete",
+				slog.String("id", g.Id),
+				slog.String("url", g.URL),
+				slog.String("path", g.output.SavedFilePath),
+				slog.String("err", err.Error()))
+		}
+	}
+
+	// Now the file is at its final path. Record the source once, for the
+	// file browser's captions and the archive's dedupe index.
+	if fileExists(g.output.SavedFilePath) {
+		RememberSource(g, g.output.SavedFilePath)
 	}
 
 	return err
@@ -318,7 +379,19 @@ func (g *GenericDownloader) Status() internal.ProcessSnapshot {
 	}
 }
 
-func (g *GenericDownloader) UpdateSavedFilePath(p string) { g.output.SavedFilePath = p }
+// UpdateSavedFilePath records the finished file.
+//
+// The postprocess event names the temp file; MoveFiles has not run yet when
+// it is emitted. Translating here as well as in the log consumer means every
+// writer — including a restored snapshot or a build whose template did not
+// report `finaldir` — lands on the final path. The translation is idempotent:
+// an absolute path outside the temp directory is returned unchanged.
+func (g *GenericDownloader) UpdateSavedFilePath(p string) {
+	if strings.TrimSpace(p) == "" {
+		return
+	}
+	g.output.SavedFilePath = finalOutputPath(p, "")
+}
 
 // SetDuration records the video length, in seconds.
 //

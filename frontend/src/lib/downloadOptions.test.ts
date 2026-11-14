@@ -16,8 +16,16 @@ describe('buildDownloadArgs', () => {
   it('merges video and audio by default', () => {
     expect(buildDownloadArgs(defaultOptions)).toEqual([
       '-f', 'bestvideo+bestaudio/best',
-      '--embed-metadata', '--embed-thumbnail'
+      '--embed-metadata'
     ])
+  })
+
+  it('does not embed a thumbnail by default', () => {
+    // ffmpeg 7.1 fails to attach a cover to many mp4s. yt-dlp exits
+    // non-zero after the video is already on disk, which used to mark a
+    // finished download as failed and start a second one.
+    expect(buildDownloadArgs(defaultOptions)).not.toContain('--embed-thumbnail')
+    expect(buildDownloadArgs(withOpts({ writeMetadata: false }))).not.toContain('--embed-metadata')
   })
 
   it('folds the height cap into the format selector', () => {

@@ -77,8 +77,18 @@ func PlaylistDetect(req internal.DownloadRequest, mq *queue.MessageQueue, db *kv
 			//XXX: it's idiotic but it works: virtually delay the creation time
 			meta.CreatedAt = time.Now().Add(time.Millisecond * time.Duration(i*10))
 
+			// A playlist can list the same video twice, and a re-submitted
+			// playlist meets the rows from the last one. Either way two
+			// processes would write the same file.
+			if _, exists := db.FindActiveByURL(meta.URL); exists {
+				slog.Info("playlist entry is already queued",
+					slog.String("url", meta.URL))
+				continue
+			}
+
 			downloader := downloaders.NewGenericDownload(meta.URL, req.Params)
 			downloader.SetOutput(internal.DownloadOutput{Filename: req.Rename})
+			downloader.SetFromIP(req.FromIP)
 			// downloader.SetMetadata(meta)
 
 			db.Set(downloader)
@@ -88,7 +98,15 @@ func PlaylistDetect(req internal.DownloadRequest, mq *queue.MessageQueue, db *kv
 		return nil
 	}
 
+	if existing, ok := db.FindActiveByURL(req.URL); ok {
+		slog.Info("download already queued for this URL",
+			slog.String("id", existing.GetId()),
+			slog.String("url", req.URL))
+		return nil
+	}
+
 	d := downloaders.NewGenericDownload(req.URL, req.Params)
+	d.SetFromIP(req.FromIP)
 
 	db.Set(d)
 	mq.Publish(d)

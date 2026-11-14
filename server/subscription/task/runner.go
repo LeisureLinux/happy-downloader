@@ -164,8 +164,17 @@ func (t *CronTaskRunner) fetcher(ctx context.Context, req *monitorTask) time.Dur
 			}...),
 	)
 
-	t.db.Set(d)     // give it an id
-	t.mq.Publish(d) // send it to the message queue waiting to be processed
+	// Two polls of the same channel, or a poll while the last one's video
+	// is still downloading, would otherwise start a second process writing
+	// the same file. Completed rows are deliberately not a match: asking
+	// for a video again later is a new request.
+	if _, exists := t.db.FindActiveByURL(latestVideoURL); exists {
+		slog.Info("subscription video is already queued",
+			slog.String("url", latestVideoURL))
+	} else {
+		t.db.Set(d)     // give it an id
+		t.mq.Publish(d) // send it to the message queue waiting to be processed
+	}
 
 	slog.Info(
 		"cron task runner next schedule",

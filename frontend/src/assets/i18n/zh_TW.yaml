@@ -178,6 +178,7 @@ keys:
   statusErrored: '失敗'
   statusPaused: '已暫停'
   statusRemuxing: '轉碼中'
+  statusPostprocessing: '整理檔案中'
   startRecording: '開始錄製'
   stopRecording: '停止錄製'
   recordingReady: '錄製完成'

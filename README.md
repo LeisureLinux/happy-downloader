@@ -496,8 +496,13 @@ ytdlp:
 
 logging:
   log_path: /var/log/happy-downloader.log
-  enable_file_logging: false
+  enable_file_logging: true
 ```
+
+Keep `enable_file_logging: true` on a server. The in-memory log panel only
+holds the most recent 200 lines and the systemd journal rotates: without a
+file, the yt-dlp output that explains a slow or failed download is gone by the
+time anybody goes looking. Rotated logs are compressed beside `log_path`.
 
 Relative paths resolve against the config file's directory.
 

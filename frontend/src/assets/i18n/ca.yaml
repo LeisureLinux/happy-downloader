@@ -215,6 +215,7 @@ keys:
   statusErrored: 'Fallit'
   statusPaused: 'En pausa'
   statusRemuxing: 'Remultiplexant'
+  statusPostprocessing: 'Acabant el fitxer'
   startRecording: 'Inicia la gravació'
   stopRecording: 'Atura la gravació'
   recordingReady: 'Gravació enllestida'

@@ -101,6 +101,34 @@ func (m *Store) Keys() *[]string {
 	return &running
 }
 
+// FindActiveByURL returns an unfinished download of the same video, if one
+// exists. A completed row is not a duplicate: its file is already in the
+// browser, and asking for the video again is a new request.
+//
+// This is the guard against the double-download bug. A finished download
+// whose row said "file missing" sent people back to the form; the second run
+// only appeared to succeed because yt-dlp found the first file already there.
+func (m *Store) FindActiveByURL(raw string) (downloaders.Downloader, bool) {
+	key := KeyForURL(raw)
+	if key == "" {
+		return nil, false
+	}
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	for _, d := range m.table {
+		if d.IsCompleted() {
+			continue
+		}
+		if KeyForURL(d.GetUrl()) == key {
+			return d, true
+		}
+	}
+
+	return nil, false
+}
+
 // Returns a slice of all currently stored processes progess
 func (m *Store) All() *[]internal.ProcessSnapshot {
 	running := []internal.ProcessSnapshot{}

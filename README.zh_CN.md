@@ -347,8 +347,12 @@ ytdlp:
 
 logging:
   log_path: /var/log/happy-downloader.log
-  enable_file_logging: false
+  enable_file_logging: true
 ```
+
+服务器上建议保持 `enable_file_logging: true`。界面日志面板只留最近 200 行，
+systemd journal 也会轮转；不落盘的话，等要排查一次慢下载或失败下载时，
+yt-dlp 的输出早就没了。轮转后的日志会压缩存放在 `log_path` 同目录。
 
 相对路径按配置文件所在目录解析。
 

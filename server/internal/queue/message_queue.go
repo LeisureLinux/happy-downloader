@@ -110,11 +110,14 @@ func (m *MessageQueue) downloadWorker(workerId int) {
 					continue
 				}
 
-				slog.Error("failed to start download",
+				// Start() already decided whether a non-zero exit is a real
+				// failure: a postprocessor may complain after the file is
+				// complete. Overwriting the status here undid that decision
+				// and turned a finished video into a retryable failure.
+				slog.Warn("yt-dlp exited with an error",
 					slog.String("id", p.GetId()),
 					slog.String("err", err.Error()),
 				)
-				p.SetProgress(internal.DownloadProgress{Status: internal.StatusErrored})
 			}
 
 			recordOutcome(p, err, started)
@@ -136,12 +139,22 @@ func recordOutcome(d downloaders.Downloader, startErr error, started time.Time) 
 		return
 	}
 
+	path := snapshot.Output.SavedFilePath
+
+	// Status is Start()'s decision, not ours. It already checked whether the
+	// finished file exists when yt-dlp exited non-zero. Guessing "success"
+	// here from a file on disk would be wrong for a retry: the file left by
+	// the *first* attempt is still there while the second one fails, and the
+	// log would record a success nobody earned.
+	_, size, _ := statFile(path)
+
 	outcome := downloadlog.Outcome{
 		FromIP:     snapshot.FromIP,
 		URL:        snapshot.URL,
-		Path:       snapshot.Output.SavedFilePath,
+		Path:       path,
 		Elapsed:    time.Since(started),
 		Downloader: snapshot.DownloaderName,
+		Size:       size,
 	}
 
 	if status == internal.StatusCompleted {
@@ -161,15 +174,22 @@ func recordOutcome(d downloaders.Downloader, startErr error, started time.Time) 
 		}
 	}
 
-	// The size is what is on disk, not what the source promised: a recording
-	// that was stopped early, or a download that was capped, is smaller.
-	if outcome.Path != "" {
-		if info, err := os.Stat(outcome.Path); err == nil && !info.IsDir() {
-			outcome.Size = info.Size()
-		}
+	downloadlog.Record(outcome)
+}
+
+// statFile is the file check shared by the outcome record. A file must be
+// non-empty: a zero-byte artefact is not a video.
+func statFile(path string) (os.FileInfo, int64, bool) {
+	if path == "" {
+		return nil, 0, false
 	}
 
-	downloadlog.Record(outcome)
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() || info.Size() == 0 {
+		return nil, 0, false
+	}
+
+	return info, info.Size(), true
 }
 
 func (m *MessageQueue) metadataWorker() {

@@ -215,6 +215,7 @@ keys:
   statusErrored: 'Ошибка'
   statusPaused: 'Приостановлено'
   statusRemuxing: 'Упаковка'
+  statusPostprocessing: 'Завершение файла'
   startRecording: 'Начать запись'
   stopRecording: 'Остановить запись'
   recordingReady: 'Запись завершена'

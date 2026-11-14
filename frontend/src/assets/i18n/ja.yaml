@@ -215,6 +215,7 @@ keys:
   statusErrored: '失敗'
   statusPaused: '一時停止中'
   statusRemuxing: '変換中'
+  statusPostprocessing: 'ファイルを仕上げています'
   startRecording: '録画を開始'
   stopRecording: '録画を停止'
   recordingReady: '録画完了'
