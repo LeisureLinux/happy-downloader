@@ -50,7 +50,7 @@ func FilePath() string {
 type Editable struct {
 	// PotBaseURL is the bgutil PO Token provider.
 	PotBaseURL string `yaml:"pot_base_url"`
-	// Proxy is the proxy for the sites that need one.
+	// Proxy is passed to yt-dlp unchanged; empty means no proxy.
 	Proxy string `yaml:"proxy"`
 	// DownloadPath is where the finished files go.
 	//

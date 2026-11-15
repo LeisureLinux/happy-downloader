@@ -104,9 +104,8 @@ func TestStoreSeedsNoPerSiteSettings(t *testing.T) {
 		t.Errorf("bilibili resolved to %q, want its own profile", p3.Name)
 	}
 
-	// Nothing on a profile carries a route any more: the proxy is chosen
-	// when the download is built, by asking whether the site answers
-	// directly.
+	// Nothing on a profile carries a route: the proxy is a deployment
+	// setting and is applied uniformly when configured.
 	for _, u := range []string{
 		"https://example.com/video",
 		"https://www.bilibili.com/video/BV1xx",

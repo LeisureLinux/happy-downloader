@@ -166,7 +166,7 @@ keys:
   potProviderLabel: 'Fornitore di PO Token'
   potProviderHint: 'Solo per YouTube: la sfida che recupera è compresa solo da YouTube.'
   proxyLabel: 'Proxy'
-  proxyHint: 'Per i siti che ne hanno bisogno. Gli altri si raggiungono direttamente.'
+  proxyHint: 'Vuoto significa nessun proxy; un valore configurato viene passato invariato a ogni chiamata.'
   networkSaved: 'Le impostazioni di rete sono state salvate'
   saveButton: 'Salva'
   downloadQueue: 'Coda dei download'

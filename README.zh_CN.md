@@ -257,7 +257,7 @@ paths:
 
 ytdlp:
   pot_base_url: http://127.0.0.1:4416
-  # proxy: http://127.0.0.1:8888   # 只有主机需要代理才能访问 YouTube 时才填
+  # proxy: http://127.0.0.1:8888   # 留空不用代理；填写后每次调用原样传入 --proxy
 ```
 
 按[用用户级服务常驻](#用用户级服务常驻)那一节装好单元并启动。注意
@@ -309,16 +309,18 @@ curl -s -X POST http://127.0.0.1:3033/rpc/http \
 | `Requested format is not available` / `Only images are available` | 没有 PO Token 提供方，或缺少 JavaScript 运行时。检查第 2、3 步。 |
 | `n challenge solving failed` | JavaScript 运行时缺失或太旧。`node --version` 必须 20+。 |
 | 字幕 `HTTP Error 429` | YouTube 在限流字幕。服务端带了 `--ignore-errors`，视频照样下；这是预期行为。 |
-| 什么都超时 | 主机到不了 YouTube。确认是否需要代理，设置 `ytdlp.proxy`。 |
+| 什么都超时 | 主机无法直连目标站点。若部署需要代理，请设置 `ytdlp.proxy`。 |
 | 退出登录后服务就停 | 没跑 `loginctl enable-linger`。 |
 
 这些问题在日志面板里都能看到，连完整命令行一起——这正是它们可诊断而不是神秘的原因。
 
 ### 如果主机需要代理
 
-在 YouTube 直连不通的网络上——DNS 被污染、IP 段被封——设置 `ytdlp.proxy`，
-服务端会在每次调用时带上 `--proxy`。PO Token 提供方需要同样的出口，但它自己没有
-`--proxy` 参数；服务端会把代理写进它的 extractor-args 值里，所以设置一次两边都管。
+`ytdlp.proxy` 按字面解析：留空就不向 yt-dlp 传 `--proxy`；填写后，Happy
+Downloader 会在每次构建的调用里原样传入 `--proxy`。代码不维护「哪些站点需要代理」
+的硬编码列表，也不自动探测或记忆路由；站点例外应写在配置里。PO Token 提供方需要
+同样的出口，但它自己没有 `--proxy` 参数；当 YouTube 使用该提供方时，服务端会把
+同一个配置值写进 extractor-args。
 
 先确认再假设：如果 `curl -sI https://www.youtube.com` 返回 `000` 或者连接被重置，
 那就是直连不可用，代理不是可选项。
@@ -343,7 +345,7 @@ paths:
 
 ytdlp:
   pot_base_url: http://127.0.0.1:4416   # bgutil PO Token 提供方
-  proxy: http://127.0.0.1:8888          # 出口代理，如果主机需要
+  proxy: http://127.0.0.1:8888          # 原样传入 --proxy；留空表示不用代理
 
 logging:
   log_path: /var/log/happy-downloader.log

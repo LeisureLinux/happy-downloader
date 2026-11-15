@@ -95,16 +95,12 @@ type YtDlpConfig struct {
 	// http://127.0.0.1:4416. Empty disables the explicit override and yt-dlp
 	// falls back to its own config or to no provider.
 	PotBaseURL string `mapstructure:"pot_base_url"`
-	// Proxy is the proxy the sites that need one are given.
+	// Proxy is passed to yt-dlp as --proxy exactly as configured.
 	//
-	// It is a seed rather than a fallback: it goes into the profiles of the
-	// sites that are reached through a proxy — YouTube, out of here — and
-	// not into the others. It used to be the fallback for every site a
-	// profile did not name, which sent Bilibili through it as well, and
-	// Bilibili answers a request from another country with 412 rather than
-	// with the video.
-	//
-	// A site that needs a different route has one in its own profile.
+	// An empty value means no proxy; a non-empty value means every invocation
+	// built by this application uses that proxy. Site-specific exceptions are
+	// configuration, not code-level policy, and may be expressed through
+	// profile ExtraArgs if an operator needs them.
 	Proxy string `mapstructure:"proxy"`
 }
 

@@ -9,10 +9,9 @@ import (
 
 // The settings that belong to the installation rather than to a site.
 //
-// The PO Token provider and the proxy were per-site fields in the profile
-// table, which meant the same value was typed into every row of it. They are
-// one setting each now, and they are written back to the configuration file
-// so that they survive a restart.
+// The PO Token provider and the proxy are deployment-wide values, written
+// back to the configuration file so that they survive a restart. The code
+// does not infer a proxy route from a URL or from a hardcoded site list.
 //
 // NetworkConfig is what the interface reads and writes.
 type NetworkConfig struct {
@@ -20,8 +19,7 @@ type NetworkConfig struct {
 	// http://127.0.0.1:4416. It is only used for YouTube: the challenge it
 	// fetches is one only YouTube's extractor understands.
 	PotBaseURL string `json:"potBaseUrl"`
-	// Proxy is the proxy for the sites that need one. Which sites those
-	// are is worked out when a download is built.
+	// Proxy is passed to yt-dlp unchanged. Empty means no proxy.
 	Proxy string `json:"proxy"`
 	// DownloadPath is where the finished files go.
 	//

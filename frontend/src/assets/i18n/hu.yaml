@@ -166,7 +166,7 @@ keys:
   potProviderLabel: 'PO Token szolgáltató'
   potProviderHint: 'Csak a YouTube-hoz: a kihívást, amit visszaszer, csak a YouTube érti.'
   proxyLabel: 'Proxy'
-  proxyHint: 'Azoknak az oldalaknak, amelyeknek kell. A többi közvetlenül érhető el.'
+  proxyHint: 'Üres érték esetén nincs proxy; a beállított értéket minden hívás változtatás nélkül használja.'
   networkSaved: 'A hálózati beállítások mentve'
   saveButton: 'Mentés'
   downloadQueue: 'Letöltési sor'

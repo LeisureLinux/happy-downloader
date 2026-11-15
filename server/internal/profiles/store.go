@@ -58,9 +58,9 @@ func NewStore(db *bolt.DB, seed Profile) (*Store, error) {
 		// and the profile is left with what is genuinely per site: the
 		// extra arguments, and whether the free formats are preferred.
 		//
-		// The one thing that was lost by moving them is the ability to
-		// reach one site through a route that another does not need, which
-		// is what the proxy now decides on its own.
+		// A site-specific route, if one is ever needed, belongs in
+		// explicit configuration such as profile ExtraArgs. The proxy
+		// value itself is parsed faithfully and is not a site policy.
 
 		if err := s.write(t); err != nil {
 			return nil, err
@@ -70,7 +70,7 @@ func NewStore(db *bolt.DB, seed Profile) (*Store, error) {
 
 	s.table = s.read()
 
-	// Move the proxy off the fallback.
+	// Publish the store for package-level ForURL lookups.
 	//
 	globalMu.Lock()
 	global = s

@@ -20,15 +20,10 @@ import { useToast } from '../hooks/toast'
 // which meant the same value was typed into every row of it — three settings
 // and a site each, for two values that never differed.
 //
-// They are here instead: one provider, one proxy, and the sites that need
-// one are worked out when a download is built.
-//
-// The proxy in particular is not a row any more. It was the fallback for every
-// site a profile did not name, so a proxy that was there for YouTube was also
-// sent to Bilibili — which answers a request from another country with a
-// block rather than with the video. The route is now decided per site: the
-// ones that are known to need the proxy get it, and the rest are reached
-// directly, with the answer remembered.
+// They are here instead: one provider and one proxy. A configured proxy is
+// passed to yt-dlp unchanged for every invocation built by this application;
+// an empty proxy means direct access. The code does not decide which sites
+// "need" a proxy, probe routes, or remember a per-host answer.
 
 type NetworkConfig = {
   potBaseUrl: string

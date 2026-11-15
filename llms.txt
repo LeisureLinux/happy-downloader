@@ -106,7 +106,7 @@ Two traps that pass a superficial check:
 Failure messages map one-to-one to causes: "not a bot" means cookies; "format
 not available" or "only images" means PO Token or JS runtime; "n challenge
 solving failed" means the runtime is missing or older than 20; timeouts mean the
-host cannot reach YouTube and needs `ytdlp.proxy`.
+host cannot reach the site directly and `ytdlp.proxy` is empty or wrong.
 
 ## Configuration
 
@@ -118,8 +118,10 @@ Top-level keys of the config file, all optional:
 - `ytdlp`: `pot_base_url` (bgutil PO Token provider), `proxy`
 - `logging`: `log_path`, `enable_file_logging`
 
-Per-site overrides (proxy, cookie file, extra arguments, PO Token URL) are stored
-in the local database and edited from the Settings page, not in this file.
+Per-site overrides (extra arguments and format preferences) are stored in the
+local database and edited from the Settings page, not in this file. The proxy
+is a deployment-wide setting in `ytdlp.proxy` and is applied uniformly when
+configured; site-specific exceptions are not inferred by code.
 
 ## HTTP surface
 
@@ -140,8 +142,9 @@ downloading, so these live on the host and are updated independently:
   — required for YouTube now; two halves (a venv plugin and a Node server).
 - ffmpeg — required unless every download is a single stream.
 
-On a network where YouTube is unreachable directly (poisoned DNS, blocked range),
-set `ytdlp.proxy`. The server passes `--proxy` on every invocation and carries
-the same value into the PO Token provider's extractor-args, which has no proxy
-flag of its own. Test with `curl -sI https://www.youtube.com`; `000` or a reset
-means a proxy is not optional.
+`ytdlp.proxy` is parsed literally: empty means no `--proxy`; a configured
+value is passed unchanged to yt-dlp as `--proxy` for every invocation built by
+Happy Downloader, and is also carried into the YouTube PO Token provider's
+extractor-args. The code has no hardcoded list of sites requiring a proxy and
+does not probe or remember routes. Site-specific exceptions, when needed,
+belong in explicit configuration.

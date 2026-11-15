@@ -164,7 +164,7 @@ keys:
   potProviderLabel: 'Proveïdor de PO Token'
   potProviderHint: 'Només per a YouTube: el repte que obté només YouTube l''entén.'
   proxyLabel: 'Proxy'
-  proxyHint: 'Per als llocs que el necessiten. Els altres s''accedeixen directament.'
+  proxyHint: "Si el valor és buit, no s'usa cap proxy. Si està configurat, s'usa per a totes les crides."
   networkSaved: 'Els ajustos de xarxa s''han desat'
   saveButton: 'Desa'
   downloadQueue: 'Cua de descàrregues'

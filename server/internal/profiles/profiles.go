@@ -200,9 +200,8 @@ func (p Profile) Argv(rawURL, cookieStaging, jsRuntime string) []string {
 		args = append(args, "--extractor-args", potArg)
 	}
 
-	// The proxy, chosen by where the site is and whether the direct route
-	// works. It is one setting for the whole application: the per-site
-	// version of it meant the same value was typed into every row.
+	// The proxy comes from the installation configuration. An empty value
+	// means direct access; a configured value is passed through unchanged.
 	if proxy := ProxyFor(rawURL); proxy != "" {
 		args = append(args, "--proxy", proxy)
 	}

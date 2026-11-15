@@ -166,7 +166,7 @@ keys:
   potProviderLabel: 'PO Token-leverantör'
   potProviderHint: 'Bara för YouTube: utmaningen den hämtar förstår bara YouTube.'
   proxyLabel: 'Proxy'
-  proxyHint: 'För de webbplatser som behöver det. De andra nås direkt.'
+  proxyHint: 'Tomt betyder ingen proxy; ett inställt värde skickas oförändrat till alla anrop.'
   networkSaved: 'Nätverksinställningarna har sparats'
   saveButton: 'Spara'
   downloadQueue: 'Nedladdningskö'

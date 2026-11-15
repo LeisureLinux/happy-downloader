@@ -165,7 +165,7 @@ keys:
   potProviderLabel: 'PO Token プロバイダー'
   potProviderHint: 'YouTube 専用です：取得するチャレンジを理解できるのは YouTube だけです。'
   proxyLabel: 'プロキシ'
-  proxyHint: '必要なサイトで使用します。それ以外は直接接続します。'
+  proxyHint: '空の場合はプロキシを使いません。設定した値はすべての呼び出しでそのまま使われます。'
   networkSaved: 'ネットワーク設定を保存しました'
   saveButton: '保存'
   downloadQueue: 'ダウンロード待ち'

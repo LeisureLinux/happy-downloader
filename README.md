@@ -396,9 +396,8 @@ paths:
 
 ytdlp:
   pot_base_url: http://127.0.0.1:4416
-  # The proxy is a seed for the sites that need one — YouTube, out of here.
-  # It is not a fallback for every site: a site inside China answers a
-  # request from another country with a block rather than with the video.
+  # Empty means no proxy. A configured value is passed to yt-dlp unchanged
+  # as --proxy for every invocation built by Happy Downloader.
   # proxy: http://127.0.0.1:8888
 ```
 
@@ -455,7 +454,7 @@ The failure messages are specific and each maps to one cause:
 | `Requested format is not available` / `Only images are available` | No PO Token provider, or the JavaScript runtime is missing. Check steps 2 and 3. |
 | `n challenge solving failed` | The JS runtime is missing or too old. `node --version` must be 20+. |
 | `HTTP Error 429` on subtitles | YouTube rate-limits captions. The server passes `--ignore-errors` so the video still downloads; this is expected. |
-| Everything times out | The host cannot reach YouTube. Check whether it needs a proxy and set `ytdlp.proxy`. |
+| Everything times out | The host cannot reach the site directly. Set `ytdlp.proxy` if the installation needs a proxy. |
 | The service stops when you log out | `loginctl enable-linger` was not run. |
 
 Every one of these is visible in the log panel with the full command line, which
@@ -463,11 +462,13 @@ is what makes them diagnosable rather than mysterious.
 
 ### If the host needs a proxy
 
-On a network where YouTube is unreachable directly — a poisoned DNS resolver, a
-blocked range — set `ytdlp.proxy` and the server passes `--proxy` on every
-invocation. The PO Token provider needs the same egress but has no `--proxy`
-flag of its own; the server carries the proxy into its extractor-args value, so
-setting it once is enough for both.
+`ytdlp.proxy` is parsed literally. If it is empty, yt-dlp is invoked without
+`--proxy`. If it is set, the same value is passed to yt-dlp as `--proxy` for
+every invocation built by Happy Downloader; the application does not maintain
+a list of sites that "need" a proxy and does not probe routes. The PO Token
+provider needs the same egress but has no `--proxy` flag of its own, so the
+configured proxy is also carried into its extractor-args value when YouTube
+uses that provider.
 
 Check the host before assuming: if `curl -sI https://www.youtube.com` returns
 `000` or a reset, direct access is not available and a proxy is not optional.
@@ -492,7 +493,7 @@ paths:
 
 ytdlp:
   pot_base_url: http://127.0.0.1:4416   # bgutil PO Token provider
-  proxy: http://127.0.0.1:8888          # for the sites that need one — YouTube
+  proxy: http://127.0.0.1:8888          # passed as --proxy; empty disables it
 
 logging:
   log_path: /var/log/happy-downloader.log

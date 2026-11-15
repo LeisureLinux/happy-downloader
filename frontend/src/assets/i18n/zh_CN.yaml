@@ -152,7 +152,7 @@ keys:
   potProviderLabel: 'PO Token 提供方'
   potProviderHint: '只用于 YouTube：它取回的挑战只有 YouTube 认得。'
   proxyLabel: '代理'
-  proxyHint: '给需要的站点使用，其余的站点直连。'
+  proxyHint: '留空则不使用代理；填写后，该值会原样传给每次调用。'
   networkSaved: '网络设置已保存'
   saveButton: '保存'
   profilesHint: '每个站点一组参数。按主机名匹配，最长后缀优先，主机名留空则匹配所有未命中的地址。新增站点只需加一行，无需重启。'

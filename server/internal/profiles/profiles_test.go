@@ -3,6 +3,8 @@ package profiles
 import (
 	"strings"
 	"testing"
+
+	"github.com/LeisureLinux/happy-downloader/v4/server/config"
 )
 
 func TestHostOf(t *testing.T) {
@@ -114,6 +116,53 @@ func TestArgvOmitsEmptyValues(t *testing.T) {
 	if len(got) != 1 || got[0] != "--ignore-config" {
 		t.Errorf("argv = %v, want just [--ignore-config]", got)
 	}
+}
+
+// The proxy is deployment configuration, not a site policy. The URL must not
+// change whether the configured value is passed through.
+func TestProxyIsConfigDriven(t *testing.T) {
+	urls := []string{
+		"https://x.com/user/status/1/video/1",
+		"https://www.youtube.com/watch?v=x",
+		"https://www.bilibili.com/video/BV1xx",
+		"https://example.com/video",
+	}
+
+	t.Run("empty means no proxy", func(t *testing.T) {
+		config.SetInstance(&config.Config{YtDlp: config.YtDlpConfig{Proxy: ""}})
+		t.Cleanup(func() { config.SetInstance(&config.Config{}) })
+
+		for _, u := range urls {
+			if got := ProxyFor(u); got != "" {
+				t.Errorf("ProxyFor(%q) = %q, want empty", u, got)
+			}
+
+			p := Profile{}
+			argv := strings.Join(p.Argv(u, "", ""), " ")
+			if strings.Contains(argv, "--proxy") {
+				t.Errorf("argv for %q contains --proxy: %s", u, argv)
+			}
+		}
+	})
+
+	t.Run("configured value is passed unchanged", func(t *testing.T) {
+		proxy := "socks5://127.0.0.1:1080"
+		config.SetInstance(&config.Config{YtDlp: config.YtDlpConfig{Proxy: "  " + proxy + "  "}})
+		t.Cleanup(func() { config.SetInstance(&config.Config{}) })
+
+		for _, u := range urls {
+			if got := ProxyFor(u); got != proxy {
+				t.Errorf("ProxyFor(%q) = %q, want %q", u, got, proxy)
+			}
+
+			p := Profile{}
+			argv := p.Argv(u, "", "")
+			want := []string{"--ignore-config", "--proxy", proxy}
+			if strings.Join(argv, " ") != strings.Join(want, " ") {
+				t.Errorf("argv for %q = %v, want %v", u, argv, want)
+			}
+		}
+	})
 }
 
 // Blank extra-arg rows (an artefact of the UI table) must not reach yt-dlp.
