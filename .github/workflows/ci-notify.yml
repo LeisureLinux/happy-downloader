@@ -1,0 +1,92 @@
+# ci-notify.yml — 通用模板：复制到任意仓库的 .github/workflows/ci-notify.yml
+#
+# 作用：监听本仓库【所有】其他 workflow 的完成事件，把结论推到 Telegram。
+#      不需要改动任何现有 workflow 文件；新增的 workflow 也自动被覆盖。
+# 前置：该仓库需设置 2 个 Actions secrets：
+#      TELEGRAM_BOT_TOKEN   bot token（@BotFather）
+#      TELEGRAM_CHAT_ID     目标 chat id
+#  可用 scripts/ci-notify/deploy-notify.sh 批量设置。
+#
+# ⚠️ 文件名必须是 .yml 且放在 .github/workflows/ 才生效；
+#    本文件带 .example 后缀，放这里只是模板，不会触发 Actions。
+name: CI notify
+
+on:
+  workflow_run:
+    types: [completed]
+    # 匹配本仓库所有 workflow；按 name 排除自己，避免自触发无限循环。
+    # '**' 覆盖含 '/' 的 workflow 名；负模式必须放在最后。
+    workflows: ["**", "!CI notify"]
+
+permissions: {}          # 最小权限：不需要读写仓库内容
+
+jobs:
+  notify:
+    # 双保险：即便过滤器漏了也绝不处理自己
+    if: ${{ github.event.workflow_run.name != 'CI notify' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Send result to Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPO:      ${{ github.repository }}
+          WF_NAME:   ${{ github.event.workflow_run.name }}
+          WF_CONC:   ${{ github.event.workflow_run.conclusion }}
+          WF_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WF_EVENT:  ${{ github.event.workflow_run.event }}
+          WF_URL:    ${{ github.event.workflow_run.html_url }}
+          WF_START:  ${{ github.event.workflow_run.run_started_at }}
+          WF_END:    ${{ github.event.workflow_run.updated_at }}
+          WF_ACTOR:  ${{ github.event.workflow_run.actor.login }}
+          WF_TITLE:  ${{ github.event.workflow_run.display_title }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BOT_TOKEN:-}" ] || [ -z "${CHAT_ID:-}" ]; then
+            echo "未配置 TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID，跳过（不影响 CI）"
+            exit 0
+          fi
+          # 用 python 构造 JSON，避免 shell 注入 / 转义问题；token 只在 env 里，不进命令行
+          python3 - <<'PY' > /tmp/tg-payload.json
+          import json, os, datetime
+          e = os.environ
+          conc = e.get('WF_CONC', 'unknown')
+          icon = {'success':'✅','failure':'❌','cancelled':'⚠️',
+                  'timed_out':'⏱','skipped':'⏭'}.get(conc, 'ℹ️')
+          def dur():
+              try:
+                  a = datetime.datetime.fromisoformat(e['WF_START'].replace('Z','+00:00'))
+                  b = datetime.datetime.fromisoformat(e['WF_END'].replace('Z','+00:00'))
+                  s = max(0, int((b-a).total_seconds()))
+                  return (f"{s//3600}h{(s%3600)//60:02d}m{s%60:02d}s" if s >= 3600
+                          else f"{(s%3600)//60}m{s%60:02d}s")
+              except Exception:
+                  return '?'
+          lines = [
+              f"{icon} CI {conc}",
+              "",
+              f"仓库: {e.get('REPO','?')}",
+              f"Workflow: {e.get('WF_NAME','?')}",
+              f"分支: {e.get('WF_BRANCH','?')}   触发: {e.get('WF_EVENT','?')}",
+              f"提交: {e.get('WF_TITLE','')}"[:120],
+              f"耗时: {dur()}   发起人: {e.get('WF_ACTOR','?')}",
+              "",
+              e.get('WF_URL',''),
+          ]
+          print(json.dumps({
+              'chat_id': e['CHAT_ID'],
+              'text': '\n'.join(lines)[:4000],
+              'disable_web_page_preview': True,
+          }, ensure_ascii=False))
+          PY
+          # 通知失败绝对不能让 CI 变红：这是独立的 workflow_run，本身就与上游解耦
+          if curl -4 -sS --max-time 25 --retry 2 --retry-delay 3 \
+               -H 'Content-Type: application/json' \
+               --data-binary @/tmp/tg-payload.json \
+               "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+               -o /tmp/tg-resp.json -w 'telegram HTTP %{http_code}\n'; then
+            python3 -c "import json;d=json.load(open('/tmp/tg-resp.json'));print('telegram ok:',d.get('ok'),d.get('description',''))" 2>/dev/null || true
+          else
+            echo "通知发送失败（不影响 CI 结论）"
+          fi
